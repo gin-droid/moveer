@@ -161,7 +161,7 @@ export async function extractVideoFrames(file, numFrames = 3) {
               }
             },
             "image/jpeg",
-            0.72
+            0.85
           );
         };
 
@@ -240,7 +240,7 @@ export async function extractVideoFrames(file, numFrames = 3) {
           canvas.height = Math.max(1, Math.round(h * scale));
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const blob = await new Promise((res) =>
-            canvas.toBlob(res, "image/jpeg", 0.72)
+            canvas.toBlob(res, "image/jpeg", 0.85)
           );
           if (blob)
             frames.push(new File([blob], "frame_0.jpg", { type: "image/jpeg" }));

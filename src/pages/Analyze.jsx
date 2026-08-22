@@ -66,7 +66,7 @@ export default function Analyze() {
       let frameFiles = [];
       if (isVideoFile(file)) {
         setProgressMsg("Estrazione dei frame dal video…");
-        frameFiles = await extractVideoFrames(file, 3);
+        frameFiles = await extractVideoFrames(file, 6);
         if (frameFiles.length === 0) {
           throw new Error("Impossibile estrarre frame dal video. Prova con un formato MP4/H.264 più leggero.");
         }
