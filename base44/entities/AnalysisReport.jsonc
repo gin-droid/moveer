@@ -1,0 +1,116 @@
+{
+  "name": "AnalysisReport",
+  "type": "object",
+  "properties": {
+    "exercise_name": {
+      "type": "string",
+      "title": "Esercizio"
+    },
+    "macro_category": {
+      "type": "string",
+      "title": "Macro-categoria"
+    },
+    "subcategory": {
+      "type": "string",
+      "title": "Sottocategoria"
+    },
+    "video_url": {
+      "type": "string",
+      "title": "Video",
+      "format": "url"
+    },
+    "score": {
+      "type": "number",
+      "title": "Punteggio esecuzione (0-100)"
+    },
+    "summary": {
+      "type": "string",
+      "title": "Sintesi"
+    },
+    "issues_detected": {
+      "type": "array",
+      "title": "Problemi rilevati",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "Lievo",
+              "Moderato",
+              "Grave"
+            ]
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "corrections": {
+      "type": "array",
+      "title": "Correzioni",
+      "items": {
+        "type": "object",
+        "properties": {
+          "issue": {
+            "type": "string"
+          },
+          "correction": {
+            "type": "string"
+          },
+          "cue": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "corrective_exercises": {
+      "type": "array",
+      "title": "Esercizi correttivi",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "sets_reps": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Raccomandazioni"
+    }
+  },
+  "required": [
+    "exercise_name",
+    "score"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "create": {},
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

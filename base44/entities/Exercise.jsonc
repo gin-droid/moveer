@@ -1,0 +1,80 @@
+{
+  "name": "Exercise",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Nome esercizio"
+    },
+    "macro_category": {
+      "type": "string",
+      "title": "Macro-categoria",
+      "enum": [
+        "Forza",
+        "Powerlifting",
+        "Body Building",
+        "Calisthenics",
+        "Corpo Libero",
+        "Cardio",
+        "Mobilit\u00e0",
+        "Funzionale",
+        "Kettlebell"
+      ]
+    },
+    "subcategory": {
+      "type": "string",
+      "title": "Sottocategoria"
+    },
+    "description": {
+      "type": "string",
+      "title": "Descrizione"
+    },
+    "muscle_groups": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Gruppi muscolari"
+    },
+    "equipment": {
+      "type": "string",
+      "title": "Attrezzatura"
+    },
+    "difficulty": {
+      "type": "string",
+      "title": "Difficolt\u00e0",
+      "enum": [
+        "Principiante",
+        "Intermedio",
+        "Avanzato"
+      ]
+    },
+    "setup_instructions": {
+      "type": "string",
+      "title": "Istruzioni di setup"
+    },
+    "common_mistakes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Errori comuni"
+    },
+    "image_url": {
+      "type": "string",
+      "title": "Immagine",
+      "format": "url"
+    },
+    "demo_video_url": {
+      "type": "string",
+      "title": "Video dimostrativo (YouTube o file)",
+      "format": "url"
+    }
+  },
+  "required": [
+    "name",
+    "macro_category",
+    "subcategory",
+    "difficulty"
+  ]
+}

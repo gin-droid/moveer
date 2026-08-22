@@ -1,0 +1,235 @@
+import React from "react";
+import { FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+
+const sevLabel = { Lievo: "Lievo", Moderato: "Moderato", Grave: "Grave" };
+const sevColors = {
+  Lievo: [251, 191, 36],
+  Moderato: [249, 115, 22],
+  Grave: [251, 113, 133],
+};
+
+export default function ReportPdfExport({ report }) {
+  const generate = () => {
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 56;
+    const maxW = pageW - margin * 2;
+    let y = margin;
+
+    const ensureSpace = (h) => {
+      if (y + h > pageH - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    const addText = (text, size, opts = {}) => {
+      doc.setFontSize(size);
+      doc.setFont("helvetica", opts.style || "normal");
+      const color = opts.color || [39, 39, 42];
+      doc.setTextColor(color[0], color[1], color[2]);
+      const lines = doc.splitTextToSize(text, maxW);
+      const lineH = size * 1.45;
+      lines.forEach((line) => {
+        ensureSpace(lineH);
+        doc.text(line, margin, y);
+        y += lineH;
+      });
+    };
+
+    const addSectionTitle = (title) => {
+      y += 18;
+      // Keep title with at least its first line of content
+      ensureSpace(48);
+      doc.setFillColor(16, 185, 129);
+      doc.rect(margin, y - 12, 4, 18, "F");
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(24, 24, 27);
+      doc.text(title, margin + 14, y + 2);
+      // subtle divider
+      doc.setDrawColor(228, 228, 231);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y + 12, margin + maxW, y + 12);
+      y += 24;
+    };
+
+    // ---- Header bar ----
+    doc.setFillColor(9, 9, 11);
+    doc.rect(0, 0, pageW, 78, "F");
+    doc.setTextColor(52, 211, 153);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("FORMAI", margin, 32);
+    doc.setTextColor(161, 161, 170);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("REPORT DI ANALISI", margin + 56, 32);
+    const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
+    doc.setTextColor(161, 161, 170);
+    doc.setFontSize(9);
+    doc.text(`Generato il ${date}`, margin, 52);
+    y = 110;
+
+    // ---- Title ----
+    addText(report.exercise_name || "Esercizio", 22, { style: "bold", color: [24, 24, 27] });
+    if (report.macro_category || report.subcategory) {
+      addText(
+        `${report.macro_category || ""}${report.macro_category && report.subcategory ? " / " : ""}${report.subcategory || ""}`,
+        11,
+        { color: [16, 185, 129], style: "bold" }
+      );
+    }
+
+    // ---- Score box ----
+    y += 12;
+    ensureSpace(60);
+    const score = report.score ?? 0;
+    const scoreColor = score >= 75 ? [16, 185, 129] : score >= 50 ? [251, 191, 36] : [251, 113, 133];
+    doc.setFillColor(244, 244, 245);
+    doc.roundedRect(margin, y, maxW, 56, 10, 10, "F");
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(82, 82, 91);
+    doc.text("PUNTEGGIO ESECUZIONE", margin + 18, y + 22);
+    doc.setFontSize(28);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+    doc.text(`${score}/100`, margin + 18, y + 46);
+    // qualitative label on the right
+    const ql = score >= 75 ? "Ottima" : score >= 50 ? "Da migliorare" : "Critica";
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(82, 82, 91);
+    doc.text(ql, margin + maxW - 18, y + 46, { align: "right" });
+    y += 76;
+
+    // ---- Summary ----
+    if (report.summary) {
+      addSectionTitle("Sintesi");
+      addText(report.summary, 11, { color: [63, 63, 70] });
+    }
+
+    // ---- Issues ----
+    if ((report.issues_detected || []).length > 0) {
+      addSectionTitle("Problemi rilevati");
+      report.issues_detected.forEach((iss, i) => {
+        ensureSpace(60);
+        // number + title
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(24, 24, 27);
+        const titleLines = doc.splitTextToSize(`${i + 1}. ${iss.title}`, maxW - 70);
+        titleLines.forEach((line, idx) => {
+          ensureSpace(18);
+          doc.text(line, margin, y);
+          if (idx === 0) {
+            // severity badge aligned to first line
+            const sev = sevLabel[iss.severity] || iss.severity || "";
+            const sc = sevColors[iss.severity] || [161, 161, 170];
+            if (sev) {
+              const sevW = doc.getTextWidth(sev) + 18;
+              doc.setFillColor(sc[0], sc[1], sc[2]);
+              doc.roundedRect(pageW - margin - sevW, y - 11, sevW, 16, 8, 8, "F");
+              doc.setTextColor(255, 255, 255);
+              doc.setFontSize(8);
+              doc.setFont("helvetica", "bold");
+              doc.text(sev, pageW - margin - sevW / 2, y, { align: "center" });
+            }
+          }
+          y += 18;
+        });
+        if (iss.description) {
+          addText(iss.description, 10, { color: [82, 82, 91] });
+        }
+        y += 10;
+      });
+    }
+
+    // ---- Corrections ----
+    if ((report.corrections || []).length > 0) {
+      addSectionTitle("Correzioni");
+      report.corrections.forEach((c, i) => {
+        if (c.issue) addText(`${i + 1}. ${c.issue}`, 12, { style: "bold", color: [24, 24, 27] });
+        if (c.correction) addText(c.correction, 11, { color: [63, 63, 70] });
+        if (c.cue) {
+          ensureSpace(28);
+          doc.setFillColor(236, 253, 245);
+          doc.roundedRect(margin, y, maxW, 24, 6, 6, "F");
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "italic");
+          doc.setTextColor(16, 185, 129);
+          const cueLines = doc.splitTextToSize(`Cue: ${c.cue}`, maxW - 20);
+          doc.text(cueLines, margin + 12, y + 16);
+          y += 24 + cueLines.length * 4;
+        }
+        y += 8;
+      });
+    }
+
+    // ---- Corrective exercises ----
+    if ((report.corrective_exercises || []).length > 0) {
+      addSectionTitle("Esercizi correttivi");
+      report.corrective_exercises.forEach((ex, i) => {
+        addText(
+          `${i + 1}. ${ex.name}${ex.target ? " — " + ex.target : ""}${ex.sets_reps ? " (" + ex.sets_reps + ")" : ""}`,
+          11,
+          { style: "bold", color: [24, 24, 27] }
+        );
+        if (ex.why) addText(ex.why, 10, { color: [82, 82, 91] });
+        y += 6;
+      });
+    }
+
+    // ---- Recommendations ----
+    if ((report.recommendations || []).length > 0) {
+      addSectionTitle("Raccomandazioni");
+      report.recommendations.forEach((r) => {
+        const lines = doc.splitTextToSize(r, maxW - 16);
+        lines.forEach((line, idx) => {
+          ensureSpace(16);
+          if (idx === 0) {
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(16, 185, 129);
+            doc.text("•", margin, y);
+          }
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(63, 63, 70);
+          doc.text(line, margin + 16, y);
+          y += 16;
+        });
+        y += 4;
+      });
+    }
+
+    // ---- Footer page numbers ----
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= pageCount; p++) {
+      doc.setPage(p);
+      doc.setDrawColor(228, 228, 231);
+      doc.setLineWidth(0.5);
+      doc.line(margin, pageH - 34, pageW - margin, pageH - 34);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(161, 161, 170);
+      doc.text(`FormAI — Report di analisi`, margin, pageH - 20);
+      doc.text(`Pagina ${p}/${pageCount}`, pageW - margin, pageH - 20, { align: "right" });
+    }
+
+    const fileName = `report_${(report.exercise_name || "esercizio").toLowerCase().replace(/\s+/g, "_")}.pdf`;
+    doc.save(fileName);
+  };
+
+  return (
+    <button
+      onClick={generate}
+      className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-sm px-5 py-3 rounded-xl transition-colors border border-zinc-700"
+    >
+      <FileDown className="w-4 h-4" /> Esporta PDF
+    </button>
+  );
+}
