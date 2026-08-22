@@ -55,7 +55,7 @@ export default function SettingsDrawer({ open, onOpenChange }) {
           side="right"
           className="w-full sm:max-w-sm p-0 bg-sidebar border-sidebar-border text-foreground flex flex-col"
         >
-          <SheetHeader className="px-5 pt-6 pb-4 border-b border-sidebar-border">
+          <SheetHeader className="px-5 pt-safe pt-6 pb-4 border-b border-sidebar-border">
             <SheetTitle className="font-display text-white">Impostazioni</SheetTitle>
             <SheetDescription className="text-muted-foreground">
               Gestisci il tuo account e le preferenze.

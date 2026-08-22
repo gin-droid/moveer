@@ -4,6 +4,7 @@ import { Trash2, Loader2, ShieldCheck, User as UserIcon, ArrowLeft } from "lucid
 import { Link } from "react-router-dom";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import InfoDialog from "@/components/InfoDialog";
+import PullToRefresh from "@/components/PullToRefresh";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -13,23 +14,25 @@ export default function Users() {
   const [confirmState, setConfirmState] = useState({ open: false, user: null });
   const [infoState, setInfoState] = useState({ open: false, title: "", description: "" });
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const me = await base44.auth.me();
-        if (me?.role !== "admin") {
-          setError("Accesso riservato agli amministratori.");
-          setLoading(false);
-          return;
-        }
-        const data = await base44.entities.User.list("-created_date", 200);
-        setUsers(data);
-      } catch (err) {
-        setError(err.message || "Errore nel caricamento degli utenti.");
-      } finally {
+  const loadUsers = async () => {
+    try {
+      const me = await base44.auth.me();
+      if (me?.role !== "admin") {
+        setError("Accesso riservato agli amministratori.");
         setLoading(false);
+        return;
       }
-    })();
+      const data = await base44.entities.User.list("-created_date", 200);
+      setUsers(data);
+    } catch (err) {
+      setError(err.message || "Errore nel caricamento degli utenti.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
   }, []);
 
   const requestDelete = (u) => {
@@ -86,6 +89,7 @@ export default function Users() {
 
   return (
     <>
+    <PullToRefresh onRefresh={loadUsers}>
     <div className="space-y-7 max-w-3xl">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Gestione utenti</h1>
@@ -119,6 +123,7 @@ export default function Users() {
         </div>
       </div>
     </div>
+    </PullToRefresh>
     <ConfirmDialog
       open={confirmState.open}
       onOpenChange={(open) => setConfirmState((s) => ({ ...s, open }))}

@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Search, Play, ExternalLink, Loader2 } from "lucide-react";
 import { hasDemoVideo, youtubeSearchUrl } from "@/lib/videoEmbed";
 import DemoModal from "@/components/DemoModal";
+import PullToRefresh from "@/components/PullToRefresh";
 
 export default function Demos() {
   const [exercises, setExercises] = useState([]);
@@ -11,16 +12,18 @@ export default function Demos() {
   const [activeMacro, setActiveMacro] = useState("Tutti");
   const [selected, setSelected] = useState(null);
 
+  const loadDemos = async () => {
+    try {
+      setExercises(await base44.entities.Exercise.list("-created_date", 500));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        setExercises(await base44.entities.Exercise.list("-created_date", 500));
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    loadDemos();
   }, []);
 
   const macros = useMemo(
@@ -41,6 +44,7 @@ export default function Demos() {
   }, [exercises, activeMacro, query]);
 
   return (
+    <PullToRefresh onRefresh={loadDemos}>
     <div className="space-y-7">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Video dimostrativi</h1>
@@ -120,5 +124,6 @@ export default function Demos() {
 
       <DemoModal exercise={selected} onClose={() => setSelected(null)} />
     </div>
+    </PullToRefresh>
   );
 }

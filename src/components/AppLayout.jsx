@@ -175,8 +175,8 @@ export default function AppLayout() {
       </main>
 
       {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-sidebar border-t border-sidebar-border h-[calc(4rem+env(safe-area-inset-bottom))]">
-        <div className="flex items-stretch justify-around h-full">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 pb-safe bg-sidebar border-t border-sidebar-border h-[calc(4rem+env(safe-area-inset-bottom))]">
+        <div className="flex items-center justify-around h-16">
           {primaryItems.map((item) => {
             const Icon = item.icon;
             return (
