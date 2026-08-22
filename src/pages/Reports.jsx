@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { FileText, ArrowRight, AlertTriangle, Trash2, Loader2 } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function Reports() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmState, setConfirmState] = useState({ open: false, id: null });
   const { toast } = useToast();
 
   const loadReports = async () => {
@@ -25,8 +27,11 @@ export default function Reports() {
     loadReports();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Eliminare definitivamente questo report?")) return;
+  const requestDelete = (id) => setConfirmState({ open: true, id });
+
+  const handleDelete = async () => {
+    const id = confirmState.id;
+    if (!id) return;
     setDeletingId(id);
     const previous = reports;
     setReports((prev) => prev.filter((r) => r.id !== id)); // optimistic update
@@ -41,10 +46,12 @@ export default function Reports() {
       });
     } finally {
       setDeletingId(null);
+      setConfirmState({ open: false, id: null });
     }
   };
 
   return (
+    <>
     <PullToRefresh onRefresh={loadReports}>
     <div className="space-y-7">
       <div>
@@ -79,7 +86,7 @@ export default function Reports() {
                 <ArrowRight className="w-5 h-5 text-zinc-600 group-hover:text-emerald-300 transition-colors shrink-0" />
               </Link>
               <button
-                onClick={() => handleDelete(r.id)}
+                onClick={() => requestDelete(r.id)}
                 disabled={deletingId === r.id}
                 title="Elimina report"
                 className="p-2 rounded-lg text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 disabled:opacity-50 transition-colors shrink-0"
@@ -92,6 +99,18 @@ export default function Reports() {
       )}
     </div>
     </PullToRefresh>
+    <ConfirmDialog
+      open={confirmState.open}
+      onOpenChange={(open) => setConfirmState((s) => ({ ...s, open }))}
+      onConfirm={handleDelete}
+      opts={{
+        title: "Elimina report",
+        description: "Eliminare definitivamente questo report? L'operazione è irreversibile.",
+        confirmLabel: "Elimina",
+        loading: deletingId !== null,
+      }}
+    />
+    </>
   );
 }
 

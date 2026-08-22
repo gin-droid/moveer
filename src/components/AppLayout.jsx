@@ -5,8 +5,8 @@ import {
   LayoutDashboard, Dumbbell, Video, FileText, Activity, TrendingUp,
   Users as UsersIcon, PlayCircle, User as UserIcon, ArrowLeft, Menu,
 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/lib/AuthContext";
 import LogoutButton from "@/components/LogoutButton";
 import SettingsDrawer from "@/components/SettingsDrawer";
 import MoreMenuSheet from "@/components/MoreMenuSheet";
@@ -25,22 +25,14 @@ const secondaryItems = [
 ];
 
 export default function AppLayout() {
-  const [isAdmin, setIsAdmin] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const location = useLocation();
   const outlet = useOutlet();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const me = await base44.auth.me();
-        setIsAdmin(me?.role === "admin");
-      } catch (e) {}
-    })();
-  }, []);
-
+  const isAdmin = user?.role === "admin";
   const visibleSecondary = isAdmin
     ? secondaryItems
     : secondaryItems.filter((i) => i.to !== "/utenti");
@@ -183,7 +175,7 @@ export default function AppLayout() {
       </main>
 
       {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 pb-safe bg-sidebar border-t border-sidebar-border h-16">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-sidebar border-t border-sidebar-border h-[calc(4rem+env(safe-area-inset-bottom))]">
         <div className="flex items-stretch justify-around h-full">
           {primaryItems.map((item) => {
             const Icon = item.icon;

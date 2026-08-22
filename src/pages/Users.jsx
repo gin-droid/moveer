@@ -2,12 +2,16 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Trash2, Loader2, ShieldCheck, User as UserIcon, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import InfoDialog from "@/components/InfoDialog";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
+  const [confirmState, setConfirmState] = useState({ open: false, user: null });
+  const [infoState, setInfoState] = useState({ open: false, title: "", description: "" });
 
   useEffect(() => {
     (async () => {
@@ -28,20 +32,34 @@ export default function Users() {
     })();
   }, []);
 
-  const handleDelete = async (u) => {
+  const requestDelete = (u) => {
     if (u.role === "admin") {
-      alert("Non puoi eliminare un account amministratore.");
+      setInfoState({
+        open: true,
+        title: "Operazione non consentita",
+        description: "Non puoi eliminare un account amministratore.",
+      });
       return;
     }
-    if (!window.confirm(`Eliminare definitivamente l'utente "${u.email}"?`)) return;
+    setConfirmState({ open: true, user: u });
+  };
+
+  const handleDelete = async () => {
+    const u = confirmState.user;
+    if (!u) return;
     setDeletingId(u.id);
     try {
       await base44.entities.User.delete(u.id);
       setUsers((prev) => prev.filter((x) => x.id !== u.id));
     } catch (err) {
-      alert(err.message || "Errore durante l'eliminazione dell'utente.");
+      setInfoState({
+        open: true,
+        title: "Eliminazione fallita",
+        description: err.message || "Errore durante l'eliminazione dell'utente.",
+      });
     } finally {
       setDeletingId(null);
+      setConfirmState({ open: false, user: null });
     }
   };
 
@@ -67,6 +85,7 @@ export default function Users() {
   }
 
   return (
+    <>
     <div className="space-y-7 max-w-3xl">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Gestione utenti</h1>
@@ -88,7 +107,7 @@ export default function Users() {
                 {u.role === "admin" ? "Admin" : "Utente"}
               </span>
               <button
-                onClick={() => handleDelete(u)}
+                onClick={() => requestDelete(u)}
                 disabled={deletingId === u.id || u.role === "admin"}
                 title={u.role === "admin" ? "Gli amministratori non possono essere eliminati" : "Elimina utente"}
                 className="p-2 rounded-lg text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 disabled:opacity-40 disabled:hover:text-zinc-600 disabled:hover:bg-transparent transition-colors shrink-0"
@@ -100,5 +119,25 @@ export default function Users() {
         </div>
       </div>
     </div>
+    <ConfirmDialog
+      open={confirmState.open}
+      onOpenChange={(open) => setConfirmState((s) => ({ ...s, open }))}
+      onConfirm={handleDelete}
+      opts={{
+        title: "Elimina utente",
+        description: `Eliminare definitivamente l'utente "${confirmState.user?.email ?? ""}"? L'operazione è irreversibile.`,
+        confirmLabel: "Elimina",
+        loading: deletingId !== null,
+      }}
+    />
+    <InfoDialog
+      open={infoState.open}
+      onOpenChange={(open) => setInfoState((s) => ({ ...s, open }))}
+      opts={{
+        title: infoState.title,
+        description: infoState.description,
+      }}
+    />
+    </>
   );
 }
