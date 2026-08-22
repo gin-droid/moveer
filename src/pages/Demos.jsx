@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search, Play, ExternalLink, Loader2 } from "lucide-react";
 import { hasDemoVideo, youtubeSearchUrl } from "@/lib/videoEmbed";

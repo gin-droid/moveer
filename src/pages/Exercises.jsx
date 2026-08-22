@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Search, Dumbbell, ChevronRight, Video } from "lucide-react";
+import { Search, ChevronRight, Video } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
 
 export default function Exercises() {

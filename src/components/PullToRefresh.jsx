@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2, ArrowDown } from "lucide-react";
 
 const THRESHOLD = 70;

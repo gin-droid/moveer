@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, ChevronRight, Dumbbell } from "lucide-react";
 
 export default function ExercisePicker({ exercises, selectedId, onSelect }) {

@@ -1,8 +1,6 @@
-import React from "react";
 import { FileDown } from "lucide-react";
 import jsPDF from "jspdf";
 
-const sevLabel = { Lievo: "Lievo", Moderato: "Moderato", Grave: "Grave" };
 const sevColors = {
   Lievo: [251, 191, 36],
   Moderato: [249, 115, 22],
@@ -127,7 +125,7 @@ export default function ReportPdfExport({ report }) {
           doc.text(line, margin, y);
           if (idx === 0) {
             // severity badge aligned to first line
-            const sev = sevLabel[iss.severity] || iss.severity || "";
+            const sev = iss.severity || "";
             const sc = sevColors[iss.severity] || [161, 161, 170];
             if (sev) {
               const sevW = doc.getTextWidth(sev) + 18;
