@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { computeJointStress } from './biomechanics.ts';
 
 export default async function(req: Request): Promise<Response> {
   try {
@@ -197,7 +198,7 @@ Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili,
       corrections: llmRes.corrections || [],
       corrective_exercises: llmRes.corrective_exercises || [],
       recommendations: llmRes.recommendations || [],
-      body_diagram: llmRes.body_diagram || null
+      body_diagram: computeJointStress(llmRes.body_diagram) || null
     });
 
     return Response.json({ report });
