@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2 } from "lucide-react";
 import ReportPdfExport from "@/components/ReportPdfExport";
 import BodyDiagram from "@/components/BodyDiagram";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useToast } from "@/components/ui/use-toast";
 
 const sevColor = { Lievo: "text-amber-300 bg-amber-400/10 border-amber-400/20", Moderato: "text-orange-300 bg-orange-400/10 border-orange-400/20", Grave: "text-rose-300 bg-rose-400/10 border-rose-400/20" };
 
 export default function ReportDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -23,6 +29,22 @@ export default function ReportDetail() {
       }
     })();
   }, [id]);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await base44.entities.AnalysisReport.delete(id);
+      navigate("/report");
+    } catch (err) {
+      toast({
+        title: "Eliminazione fallita",
+        description: "Impossibile eliminare il report. Riprova.",
+        variant: "destructive",
+      });
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
 
   if (loading) return <div className="text-zinc-500 text-sm">Caricamento…</div>;
   if (!report) return <div className="text-zinc-500 text-sm">Report non trovato.</div>;
@@ -126,7 +148,26 @@ export default function ReportDetail() {
           <Video className="w-4 h-4" /> Nuova analisi
         </Link>
         <ReportPdfExport report={report} />
+        <button
+          onClick={() => setConfirmOpen(true)}
+          disabled={deleting}
+          className="inline-flex items-center gap-2 border border-zinc-700 hover:border-rose-500/50 text-zinc-300 hover:text-rose-400 font-medium text-sm px-5 py-3 rounded-xl transition-colors disabled:opacity-50"
+        >
+          {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Elimina
+        </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirm={handleDelete}
+        opts={{
+          title: "Elimina report",
+          description: "Eliminare definitivamente questo report? L'operazione è irreversibile.",
+          confirmLabel: "Elimina",
+          loading: deleting,
+        }}
+      />
     </div>
   );
 }
