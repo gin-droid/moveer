@@ -186,26 +186,26 @@ export default function ReportPdfExport({ report }) {
     doc.text(ql, margin + maxW - 18, y + 46, { align: "right" });
     y += 76;
 
-    // ---- Mappa posturale & stress articolare ----
+    // ---- Mappa posturale & stress articolare (singolo corpo) ----
     if (report.body_diagram) {
-      ensureSpace(180);
+      const dSize = 170;
+      ensureSpace(dSize + 44);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(24, 24, 27);
       doc.text("Mappa posturale & stress articolare", margin, y);
       y += 12;
-      const dSize = 140;
-      const dGap = 36;
-      const dStartX = margin + 40;
-      doc.setFontSize(7);
+      const g = report.gender || "maschio";
+      const useFront = !!report.body_diagram.front;
+      const viewData = useFront ? report.body_diagram.front : report.body_diagram.side;
+      const viewName = useFront ? "front" : "side";
+      const dStartX = margin + (maxW - dSize) / 2;
+      doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(82, 82, 91);
-      doc.text("VISTA FRONTALE", dStartX + dSize / 2, y, { align: "center" });
-      doc.text("VISTA LATERALE", dStartX + dSize + dGap + dSize / 2, y, { align: "center" });
+      doc.text(useFront ? "VISTA FRONTALE" : "VISTA LATERALE", dStartX + dSize / 2, y, { align: "center" });
       y += 6;
-      const g = report.gender || "maschio";
-      drawDiagram(report.body_diagram.front, "front", dStartX, y, dSize, g);
-      drawDiagram(report.body_diagram.side, "side", dStartX + dSize + dGap, y, dSize, g);
+      drawDiagram(viewData, viewName, dStartX, y, dSize, g);
       y += dSize + 10;
       // legenda
       const legY = y;
