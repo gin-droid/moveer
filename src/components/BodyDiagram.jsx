@@ -1,11 +1,9 @@
+import { useState } from "react";
 import { Activity } from "lucide-react";
 import { silhouettePath } from "@/lib/bodySilhouette";
 
 const stressColor = (s) =>
   s >= 61 ? "#fb7185" : s >= 31 ? "#fbbf24" : "#34d399";
-
-const stressLabel = (s) =>
-  s >= 61 ? "Alto" : s >= 31 ? "Moderato" : "Basso";
 
 const SILHOUETTE_FILL = "rgba(161,161,170,0.12)";
 
@@ -14,10 +12,18 @@ function Silhouette({ view, gender }) {
 }
 
 export default function BodyDiagram({ diagram, gender = "maschio" }) {
+  const [view, setView] = useState("front");
   if (!diagram) return null;
+
+  const front = diagram.front;
+  const side = diagram.side;
+  const hasFront = !!front;
+  const hasSide = !!side;
+  const activeData = view === "front" ? front : side;
+
   const allJoints = [
-    ...((diagram.front || {}).joints || []),
-    ...((diagram.side || {}).joints || []),
+    ...((front || {}).joints || []),
+    ...((side || {}).joints || []),
   ];
   const maxStress = allJoints.length
     ? Math.max(...allJoints.map((j) => j.stress || 0))
@@ -25,10 +31,38 @@ export default function BodyDiagram({ diagram, gender = "maschio" }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
-        <DiagramView view={diagram.front} title="Vista frontale" silhouette="front" gender={gender} />
-        <DiagramView view={diagram.side} title="Vista laterale" silhouette="side" gender={gender} />
+      {/* Toggle vista — un solo corpo alla volta */}
+      <div className="inline-flex rounded-xl border border-zinc-800 bg-zinc-900/40 p-1">
+        <button
+          onClick={() => hasFront && setView("front")}
+          disabled={!hasFront}
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            view === "front"
+              ? "bg-emerald-400 text-zinc-950"
+              : "text-zinc-400 hover:text-white disabled:opacity-40"
+          }`}
+        >
+          Vista frontale
+        </button>
+        <button
+          onClick={() => hasSide && setView("side")}
+          disabled={!hasSide}
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            view === "side"
+              ? "bg-emerald-400 text-zinc-950"
+              : "text-zinc-400 hover:text-white disabled:opacity-40"
+          }`}
+        >
+          Vista laterale
+        </button>
       </div>
+
+      <DiagramView
+        view={activeData}
+        title={view === "front" ? "Vista frontale" : "Vista laterale"}
+        silhouette={view}
+        gender={gender}
+      />
 
       {/* Legenda stress */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
@@ -43,7 +77,8 @@ export default function BodyDiagram({ diagram, gender = "maschio" }) {
         </div>
         {maxStress > 0 && (
           <p className="mt-3 text-xs text-zinc-500">
-            Picco di stress massimo rilevato: <span className="font-medium" style={{ color: stressColor(maxStress) }}>{maxStress}%</span>
+            Picco di stress massimo rilevato:{" "}
+            <span className="font-medium" style={{ color: stressColor(maxStress) }}>{maxStress}%</span>
           </p>
         )}
       </div>
@@ -65,7 +100,7 @@ function DiagramView({ view, title, silhouette, gender }) {
     return (
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
         <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">{title}</div>
-        <div className="h-48 flex items-center justify-center text-sm text-zinc-600">Non disponibile</div>
+        <div className="h-64 flex items-center justify-center text-sm text-zinc-600">Non disponibile</div>
       </div>
     );
   }
@@ -76,7 +111,7 @@ function DiagramView({ view, title, silhouette, gender }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
       <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">{title}</div>
-      <svg viewBox="0 0 100 100" className="w-full h-auto" style={{ maxHeight: 320 }}>
+      <svg viewBox="0 0 100 100" className="w-full h-auto mx-auto" style={{ maxWidth: 360, maxHeight: 440 }}>
         {/* sagoma corporea di sfondo */}
         <Silhouette view={silhouette} gender={gender} />
 

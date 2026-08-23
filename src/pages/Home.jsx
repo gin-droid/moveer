@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Video, Dumbbell, FileText, ArrowRight, AlertTriangle, Activity } from "lucide-react";
+import GenderOnboarding from "@/components/GenderOnboarding";
 
 export default function Home() {
   const [reports, setReports] = useState([]);
@@ -108,6 +109,8 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      <GenderOnboarding />
     </div>
   );
 }

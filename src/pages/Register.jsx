@@ -19,6 +19,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [gender, setGender] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,6 +46,9 @@ export default function Register() {
       const result = await base44.auth.verifyOtp({ email, otpCode });
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
+        if (gender) {
+          try { await base44.auth.updateMe({ gender }); } catch (e) { /* non-blocking */ }
+        }
       }
       window.location.href = safeReturnTo();
     } catch (err) {
@@ -216,7 +220,22 @@ export default function Register() {
             />
           </div>
         </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+        <div className="space-y-2">
+          <Label>Genere</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {[{ v: "maschio", l: "Maschio" }, { v: "femmina", l: "Femmina" }].map((opt) => (
+              <button
+                type="button"
+                key={opt.v}
+                onClick={() => setGender(opt.v)}
+                className={`h-11 rounded-md border text-sm font-medium transition-colors ${gender === opt.v ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:border-primary/50"}`}
+              >
+                {opt.l}
+              </button>
+            ))}
+          </div>
+        </div>
+        <Button type="submit" className="w-full h-12 font-medium" disabled={loading || !gender}>
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
