@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Video, Dumbbell, FileText, ArrowRight, AlertTriangle, Activity } from "lucide-react";
 import GenderOnboarding from "@/components/GenderOnboarding";
-import DownloadStoriaButton from "@/components/DownloadStoriaButton";
 
 export default function Home() {
   const [reports, setReports] = useState([]);
@@ -62,7 +61,6 @@ export default function Home() {
             >
               <Dumbbell className="w-4 h-4" /> Esplora esercizi
             </Link>
-            <DownloadStoriaButton />
           </div>
         </div>
       </section>
