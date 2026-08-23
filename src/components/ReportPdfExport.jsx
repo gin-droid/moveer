@@ -54,6 +54,69 @@ export default function ReportPdfExport({ report }) {
       y += 24;
     };
 
+    const drawDiagram = (view, ox, oy, size) => {
+      if (!view) return;
+      const joints = view.joints || [];
+      const segments = view.segments || [];
+      const jointMap = {};
+      joints.forEach((j) => (jointMap[j.id] = j));
+      const mx = (x) => ox + (x / 100) * size;
+      const my = (yv) => oy + (yv / 100) * size;
+      const L = (v) => (v / 100) * size;
+      const sc = (s) => (s >= 61 ? [251, 113, 133] : s >= 31 ? [251, 191, 36] : [16, 185, 129]);
+
+      // reference centerline
+      doc.setDrawColor(228, 228, 231);
+      doc.setLineWidth(0.3);
+      doc.setLineDashPattern([1, 1.5], 0);
+      doc.line(mx(50), my(2), mx(50), my(98));
+      doc.setLineDashPattern([], 0);
+
+      // segments
+      segments.forEach((s) => {
+        const a = jointMap[s.from];
+        const b = jointMap[s.to];
+        if (!a || !b) return;
+        const col = s.misaligned ? [251, 113, 133] : [113, 113, 122];
+        doc.setDrawColor(col[0], col[1], col[2]);
+        doc.setLineWidth(s.misaligned ? 1.1 : 0.8);
+        doc.line(mx(a.x), my(a.y), mx(b.x), my(b.y));
+      });
+
+      // stress gauges (collegamenti esterni)
+      joints
+        .filter((j) => (j.stress || 0) > 0)
+        .forEach((j) => {
+          const left = j.x < 50;
+          const ex = left ? Math.max(4, j.x - 10) : Math.min(96, j.x + 10);
+          const ey = j.y;
+          const col = sc(j.stress);
+          const barW = 7;
+          const bx = left ? ex - barW : ex;
+          doc.setDrawColor(col[0], col[1], col[2]);
+          doc.setLineWidth(0.25);
+          doc.setLineDashPattern([0.4, 0.4], 0);
+          doc.line(mx(j.x), my(j.y), mx(ex), my(ey));
+          doc.setLineDashPattern([], 0);
+          doc.setFillColor(240, 240, 240);
+          doc.rect(mx(bx), my(ey) - L(1.4), L(barW), L(2.8), "F");
+          doc.setFillColor(col[0], col[1], col[2]);
+          doc.rect(mx(bx), my(ey) - L(1.4), L((barW * j.stress) / 100), L(2.8), "F");
+          doc.setFontSize(6);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(col[0], col[1], col[2]);
+          const tx = left ? mx(bx) - 1 : mx(bx) + L(barW) + 1;
+          doc.text(`${j.stress}%`, tx, my(ey) + 1.5, { align: left ? "right" : "left" });
+        });
+
+      // joints
+      joints.forEach((j) => {
+        const col = sc(j.stress || 0);
+        doc.setFillColor(col[0], col[1], col[2]);
+        doc.circle(mx(j.x), my(j.y), L(1.6), "F");
+      });
+    };
+
     // ---- Header bar ----
     doc.setFillColor(9, 9, 11);
     doc.rect(0, 0, pageW, 78, "F");
@@ -103,6 +166,46 @@ export default function ReportPdfExport({ report }) {
     doc.setTextColor(82, 82, 91);
     doc.text(ql, margin + maxW - 18, y + 46, { align: "right" });
     y += 76;
+
+    // ---- Mappa posturale & stress articolare ----
+    if (report.body_diagram) {
+      ensureSpace(180);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(24, 24, 27);
+      doc.text("Mappa posturale & stress articolare", margin, y);
+      y += 12;
+      const dSize = 140;
+      const dGap = 36;
+      const dStartX = margin + 40;
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(82, 82, 91);
+      doc.text("VISTA FRONTALE", dStartX + dSize / 2, y, { align: "center" });
+      doc.text("VISTA LATERALE", dStartX + dSize + dGap + dSize / 2, y, { align: "center" });
+      y += 6;
+      drawDiagram(report.body_diagram.front, dStartX, y, dSize);
+      drawDiagram(report.body_diagram.side, dStartX + dSize + dGap, y, dSize);
+      y += dSize + 10;
+      // legenda
+      const legY = y;
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      const legs = [
+        { c: [16, 185, 129], t: "Basso (0-30%)" },
+        { c: [251, 191, 36], t: "Moderato (31-60%)" },
+        { c: [251, 113, 133], t: "Alto (61-100%)" },
+      ];
+      let lx = dStartX;
+      legs.forEach((lg) => {
+        doc.setFillColor(lg.c[0], lg.c[1], lg.c[2]);
+        doc.circle(lx, legY, 2, "F");
+        doc.setTextColor(82, 82, 91);
+        doc.text(lg.t, lx + 5, legY + 1.8);
+        lx += doc.getTextWidth(lg.t) + 24;
+      });
+      y = legY + 16;
+    }
 
     // ---- Summary ----
     if (report.summary) {
