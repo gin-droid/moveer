@@ -75,7 +75,7 @@ export default function BodyDiagram({ diagram, gender = "maschio" }) {
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
         <div className="flex items-center gap-2 mb-3">
           <Activity className="w-4 h-4 text-emerald-400" />
-          <h3 className="font-display font-semibold text-white text-sm">Scala stress articolare a riposo</h3>
+          <h3 className="font-display font-semibold text-white text-sm">Stress articolare vs esecuzione ottima</h3>
         </div>
         <div className="flex items-center gap-4 text-xs">
           <Legend color="#34d399" label="Basso (0-30%)" />
@@ -84,7 +84,7 @@ export default function BodyDiagram({ diagram, gender = "maschio" }) {
         </div>
         {maxStress > 0 && (
           <p className="mt-3 text-xs text-zinc-500">
-            Picco di stress massimo rilevato:{" "}
+            Articolazione più stressata rispetto all'esecuzione ottima:{" "}
             <span className="font-medium" style={{ color: stressColor(maxStress) }}>{maxStress}%</span>
           </p>
         )}

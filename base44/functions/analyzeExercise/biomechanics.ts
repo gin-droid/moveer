@@ -1,7 +1,8 @@
-// Calcolo deterministico dello stress articolare a riposo a partire dalla
-// postura osservata (posizioni delle giunzioni normalizzate 0-100).
-// Sostituisce le stime soggettive del modello LLM con un punteggio riproducibile
-// basato su scostamento dalla posizione neutra, asimmetrie e disallineamenti.
+// Calcolo deterministico dello stress articolare rispetto all'esecuzione
+// ottima/neutra a partire dalla postura osservata (posizioni delle giunzioni
+// normalizzate 0-100). Sostituisce le stime soggettive del modello LLM con un
+// punteggio riproducibile basato su scostamento dalla posizione neutra,
+// asimmetrie e disallineamenti.
 
 interface Point { x: number; y: number; }
 interface Joint { id: string; label?: string; x: number; y: number; stress?: number; }
