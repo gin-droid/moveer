@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity } from "lucide-react";
 import ReportPdfExport from "@/components/ReportPdfExport";
+import BodyDiagram from "@/components/BodyDiagram";
 
 const sevColor = { Lievo: "text-amber-300 bg-amber-400/10 border-amber-400/20", Moderato: "text-orange-300 bg-orange-400/10 border-orange-400/20", Grave: "text-rose-300 bg-rose-400/10 border-rose-400/20" };
 
@@ -40,14 +41,16 @@ export default function ReportDetail() {
             <div className="text-[11px] uppercase tracking-widest text-emerald-300/80">{report.macro_category} / {report.subcategory}</div>
             <h1 className="mt-1 font-display text-2xl md:text-3xl font-semibold text-white tracking-tight">{report.exercise_name}</h1>
             <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{report.summary}</p>
-            {report.video_url && (
-              <div className="mt-4 rounded-xl overflow-hidden border border-zinc-800 bg-black">
-                <video src={report.video_url} controls className="w-full max-h-80 object-contain" />
-              </div>
-            )}
           </div>
         </div>
       </div>
+
+      {/* Diagramma corporeo */}
+      {report.body_diagram && (
+        <Section icon={Activity} title="Mappa posturale & stress articolare">
+          <BodyDiagram diagram={report.body_diagram} />
+        </Section>
+      )}
 
       {/* Issues */}
       {(report.issues_detected || []).length > 0 && (

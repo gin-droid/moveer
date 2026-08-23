@@ -43,9 +43,18 @@ MODELLO TECNICO DI RIFERIMENTO (usa questi criteri per giudicare l'esecuzione):
       ? `Sono stati estratti ${frameUrls.length} frame dal video, in ordine cronologico (coprono setup → fase eccentrica → punto di massima escursione → fase concentrica → lockout). Analizza OGNI fase separatamente valutando: allineamento articolare (caviglia/ginocchio/anca/colonna/spalla/gomito), angoli di ROM, baricentro e traiettoria del carico, controllo eccentrico, simmetria destra-sinistra, timing e respirazione. Confronta quanto osservi con il modello tecnico di riferimento.`
       : 'Nessun materiale fornito: basa l\'analisi sugli errori più comuni e frequenti per questo esercizio.';
 
+    const diagramBlock = `
+
+Genera anche un body_diagram: rappresentazione scheletrica del corpo in DUE viste (front e side) che sintetizza visivamente la postura osservata e lo stress articolare a riposo.
+Per ogni vista fornisci:
+- joints: lista di giunzioni articolari. Vista FRONTALE usa id: head, neck, shoulder_l, shoulder_r, elbow_l, elbow_r, wrist_l, wrist_r, hip_l, hip_r, knee_l, knee_r, ankle_l, ankle_r. Vista LATERALE usa id: head, neck, shoulder, elbow, wrist, hip, knee, ankle. Per ognuna: label (nome italiano), x e y (coordinate normalizzate 0-100, dove 0,0 è in alto a sinistra e 100,100 in basso a destra), stress (0-100 = percentuale di stress dell'articolazione a riposo derivata dai difetti rilevati; 0 = nessuno stress, 100 = stress massimo). POSIZIONA le giunzioni per riflettere la postura reale osservata: se l'anca è disallineata, le due anche non saranno alla stessa y; se il ginocchio valgo, la knee si avvicina alla linea mediana; se c'è antiversione del bacino, l'hip si sposta in avanti nella vista laterale, ecc.
+- segments: collegamenti tra giunzioni (from id, to id). Imposta misaligned=true per i segmenti che presentano disallineamento rispetto alla posizione neutra (es. linea delle anche non orizzontale, linea delle spalle inclinata, ginocchia non allineati alle anche, colonna non verticale). I segmenti del tronco vanno: neck→head, neck→shoulder_l/r, shoulder_l→shoulder_r, shoulder_l/r→elbow_l/r, elbow_l/r→wrist_l/r, shoulder_l/r→hip_l/r, hip_l→hip_r, hip_l/r→knee_l/r, knee_l/r→ankle_l/r. Vista laterale: head→neck, neck→shoulder, shoulder→elbow, elbow→wrist, shoulder→hip, hip→knee, knee→ankle.
+
+Lo stress articolare a riposo va stimato in base al carico passivo sull'articolazione derivante dalla postura/difetti osservati (non dal movimento dinamico). Articolazioni in posizione neutra = stress basso (0-20); deviazioni moderate = 30-60; deviazioni gravi o carichi sbilanciati = 60-100.`;
+
     const prompt = `Sei un coach esperto di biomeccanica, postura e tecnica di allenamento.
 Analizza l'esecuzione dell'esercizio "${exerciseName}" (macro-categoria: ${macroCategory}, sottocategoria: ${subcategory}).
-${frameGuidance}${refBlock}
+${frameGuidance}${refBlock}${diagramBlock}
 ${notes ? `\nNote dell'utente: ${notes}` : ''}
 
 Restituisci un report strutturato in italiano con:
@@ -55,8 +64,9 @@ Restituisci un report strutturato in italiano con:
 - corrections: per ogni problema, una correzione concreta con issue, correction (cosa fare) e cue (un cue mentale breve per ricordarlo).
 - corrective_exercises: esercizi specifici per correggere i difetti rilevati, ognuno con name, target (cosa allena/mobilizza), sets_reps (es. "3x10"), why (perché aiuta).
 - recommendations: 3-5 raccomandazioni pratiche per migliorare nel tempo.
+- body_diagram: come specificato sopra.
 
-Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili, fornisci comunque indicazioni utili sugli errori tipici di questo esercizio.`;
+Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili, fornisci comunque indicazioni utili sugli errori tipici di questo esercizio e genera un body_diagram coerente con i difetti più probabili.`;
 
     // Use extracted frames (images) for LLM vision — video files are not supported by vision models.
     const fileUrls = hasFrames ? frameUrls : null;
@@ -106,9 +116,72 @@ Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili,
           recommendations: {
             type: 'array',
             items: { type: 'string' }
+          },
+          body_diagram: {
+            type: 'object',
+            properties: {
+              front: {
+                type: 'object',
+                properties: {
+                  joints: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        label: { type: 'string' },
+                        x: { type: 'number' },
+                        y: { type: 'number' },
+                        stress: { type: 'number' }
+                      }
+                    }
+                  },
+                  segments: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        from: { type: 'string' },
+                        to: { type: 'string' },
+                        misaligned: { type: 'boolean' }
+                      }
+                    }
+                  }
+                }
+              },
+              side: {
+                type: 'object',
+                properties: {
+                  joints: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        label: { type: 'string' },
+                        x: { type: 'number' },
+                        y: { type: 'number' },
+                        stress: { type: 'number' }
+                      }
+                    }
+                  },
+                  segments: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        from: { type: 'string' },
+                        to: { type: 'string' },
+                        misaligned: { type: 'boolean' }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
-        required: ['score', 'summary', 'issues_detected', 'corrections', 'corrective_exercises', 'recommendations']
+        required: ['score', 'summary', 'issues_detected', 'corrections', 'corrective_exercises', 'recommendations', 'body_diagram']
       }
     });
 
@@ -122,7 +195,8 @@ Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili,
       issues_detected: llmRes.issues_detected || [],
       corrections: llmRes.corrections || [],
       corrective_exercises: llmRes.corrective_exercises || [],
-      recommendations: llmRes.recommendations || []
+      recommendations: llmRes.recommendations || [],
+      body_diagram: llmRes.body_diagram || null
     });
 
     return Response.json({ report });

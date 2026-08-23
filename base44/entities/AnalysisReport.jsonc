@@ -95,6 +95,102 @@
         "type": "string"
       },
       "title": "Raccomandazioni"
+    },
+    "body_diagram": {
+      "type": "object",
+      "title": "Diagramma corporeo",
+      "properties": {
+        "front": {
+          "type": "object",
+          "properties": {
+            "joints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "stress": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "segments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "misaligned": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "side": {
+          "type": "object",
+          "properties": {
+            "joints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "stress": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "segments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "misaligned": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [
