@@ -5,10 +5,17 @@ import { silhouettePath } from "@/lib/bodySilhouette";
 const stressColor = (s) =>
   s >= 61 ? "#fb7185" : s >= 31 ? "#fbbf24" : "#34d399";
 
-const SILHOUETTE_FILL = "rgba(161,161,170,0.12)";
-
 function Silhouette({ view, gender }) {
-  return <path d={silhouettePath(view, gender)} fill={SILHOUETTE_FILL} />;
+  return (
+    <path
+      d={silhouettePath(view, gender)}
+      fill="none"
+      stroke="rgba(161,161,170,0.6)"
+      strokeWidth="0.5"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
+  );
 }
 
 export default function BodyDiagram({ diagram, gender = "maschio" }) {
@@ -107,6 +114,12 @@ function DiagramView({ view, title, silhouette, gender }) {
   const joints = view.joints || [];
   const segments = view.segments || [];
   const jointMap = Object.fromEntries(joints.map((j) => [j.id, j]));
+  const refYs = [
+    jointMap["shoulder_l"] || jointMap["shoulder"],
+    jointMap["hip_l"] || jointMap["hip"],
+    jointMap["knee_l"] || jointMap["knee"],
+    jointMap["ankle_l"] || jointMap["ankle"],
+  ].filter(Boolean).map((j) => j.y);
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
@@ -115,9 +128,12 @@ function DiagramView({ view, title, silhouette, gender }) {
         {/* sagoma corporea di sfondo */}
         <Silhouette view={silhouette} gender={gender} />
 
-        {/* linee di riferimento allineamento */}
-        <line x1="50" y1="2" x2="50" y2="98" stroke="rgba(255,255,255,0.06)" strokeWidth="0.3" strokeDasharray="1 1.5" />
-        <line x1="2" y1="50" x2="98" y2="50" stroke="rgba(255,255,255,0.04)" strokeWidth="0.3" strokeDasharray="1 1.5" />
+        {/* linee di riferimento orizzontali (spalle, bacino, ginocchia, caviglie) */}
+        {refYs.map((y, i) => (
+          <line key={`ref-${i}`} x1="2" y1={y} x2="98" y2={y} stroke="rgba(255,255,255,0.12)" strokeWidth="0.3" strokeDasharray="1.2 1.2" />
+        ))}
+        {/* asse verticale di riferimento */}
+        <line x1="50" y1="2" x2="50" y2="98" stroke="rgba(255,255,255,0.07)" strokeWidth="0.3" strokeDasharray="1 1.5" />
 
         {/* segmenti scheletrici */}
         {segments.map((s, i) => {

@@ -66,20 +66,28 @@ export default function ReportPdfExport({ report }) {
       const L = (v) => (v / 100) * size;
       const sc = (s) => (s >= 61 ? [251, 113, 133] : s >= 31 ? [251, 191, 36] : [16, 185, 129]);
 
-      // sagoma corporea di sfondo (contorno organico)
+      // sagoma corporea: contorno a linea sottile
       const silPts = silhouettePoints(viewName, gender);
-      doc.setFillColor(228, 228, 231);
+      doc.setDrawColor(161, 161, 170);
+      doc.setLineWidth(0.5);
       doc.moveTo(mx(silPts[0][0]), my(silPts[0][1]));
       for (let i = 1; i < silPts.length; i++) {
         doc.lineTo(mx(silPts[i][0]), my(silPts[i][1]));
       }
       doc.close();
-      doc.fill();
+      doc.stroke();
 
-      // reference centerline
-      doc.setDrawColor(228, 228, 231);
+      // linee di riferimento orizzontali (spalle, bacino, ginocchia, caviglie) + asse verticale
+      const refYs = [
+        jointMap["shoulder_l"] || jointMap["shoulder"],
+        jointMap["hip_l"] || jointMap["hip"],
+        jointMap["knee_l"] || jointMap["knee"],
+        jointMap["ankle_l"] || jointMap["ankle"],
+      ].filter(Boolean).map((j) => j.y);
+      doc.setDrawColor(210, 210, 210);
       doc.setLineWidth(0.3);
-      doc.setLineDashPattern([1, 1.5], 0);
+      doc.setLineDashPattern([1, 1.2], 0);
+      refYs.forEach((yv) => doc.line(mx(2), my(yv), mx(98), my(yv)));
       doc.line(mx(50), my(2), mx(50), my(98));
       doc.setLineDashPattern([], 0);
 
