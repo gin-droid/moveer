@@ -1,4 +1,5 @@
 import { Activity } from "lucide-react";
+import { silhouetteFor } from "@/lib/bodySilhouette";
 
 const stressColor = (s) =>
   s >= 61 ? "#fb7185" : s >= 31 ? "#fbbf24" : "#34d399";
@@ -6,7 +7,32 @@ const stressColor = (s) =>
 const stressLabel = (s) =>
   s >= 61 ? "Alto" : s >= 31 ? "Moderato" : "Basso";
 
-export default function BodyDiagram({ diagram }) {
+const SILHOUETTE_FILL = "rgba(161,161,170,0.12)";
+
+function Silhouette({ view, gender }) {
+  const { ellipses, capsules } = silhouetteFor(view, gender);
+  return (
+    <g>
+      {capsules.map((c, i) => (
+        <line
+          key={`c${i}`}
+          x1={c.x1}
+          y1={c.y1}
+          x2={c.x2}
+          y2={c.y2}
+          stroke={SILHOUETTE_FILL}
+          strokeWidth={c.w}
+          strokeLinecap="round"
+        />
+      ))}
+      {ellipses.map((e, i) => (
+        <ellipse key={`e${i}`} cx={e.cx} cy={e.cy} rx={e.rx} ry={e.ry} fill={SILHOUETTE_FILL} />
+      ))}
+    </g>
+  );
+}
+
+export default function BodyDiagram({ diagram, gender = "maschio" }) {
   if (!diagram) return null;
   const allJoints = [
     ...((diagram.front || {}).joints || []),
@@ -19,8 +45,8 @@ export default function BodyDiagram({ diagram }) {
   return (
     <div className="space-y-4">
       <div className="grid sm:grid-cols-2 gap-4">
-        <DiagramView view={diagram.front} title="Vista frontale" />
-        <DiagramView view={diagram.side} title="Vista laterale" />
+        <DiagramView view={diagram.front} title="Vista frontale" silhouette="front" gender={gender} />
+        <DiagramView view={diagram.side} title="Vista laterale" silhouette="side" gender={gender} />
       </div>
 
       {/* Legenda stress */}
@@ -53,7 +79,7 @@ function Legend({ color, label }) {
   );
 }
 
-function DiagramView({ view, title }) {
+function DiagramView({ view, title, silhouette, gender }) {
   if (!view) {
     return (
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
@@ -70,6 +96,9 @@ function DiagramView({ view, title }) {
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
       <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">{title}</div>
       <svg viewBox="0 0 100 100" className="w-full h-auto" style={{ maxHeight: 320 }}>
+        {/* sagoma corporea di sfondo */}
+        <Silhouette view={silhouette} gender={gender} />
+
         {/* linee di riferimento allineamento */}
         <line x1="50" y1="2" x2="50" y2="98" stroke="rgba(255,255,255,0.06)" strokeWidth="0.3" strokeDasharray="1 1.5" />
         <line x1="2" y1="50" x2="98" y2="50" stroke="rgba(255,255,255,0.04)" strokeWidth="0.3" strokeDasharray="1 1.5" />

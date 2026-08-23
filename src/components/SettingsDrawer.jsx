@@ -18,12 +18,16 @@ export default function SettingsDrawer({ open, onOpenChange }) {
   const [emailConfirm, setEmailConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [gender, setGender] = useState("");
+  const [savingGender, setSavingGender] = useState(false);
 
   useEffect(() => {
     if (open) {
       (async () => {
         try {
-          setMe(await base44.auth.me());
+          const u = await base44.auth.me();
+          setMe(u);
+          setGender(u.gender || "");
         } catch (e) {
           /* ignore */
         }
@@ -45,6 +49,19 @@ export default function SettingsDrawer({ open, onOpenChange }) {
     } catch (err) {
       setError(err.message || "Errore durante l'eliminazione dell'account.");
       setDeleting(false);
+    }
+  };
+
+  const saveGender = async (g) => {
+    setGender(g);
+    setSavingGender(true);
+    try {
+      const updated = await base44.auth.updateMe({ gender: g });
+      setMe(updated || { ...me, gender: g });
+    } catch (e) {
+      /* ignore */
+    } finally {
+      setSavingGender(false);
     }
   };
 
@@ -86,6 +103,36 @@ export default function SettingsDrawer({ open, onOpenChange }) {
                 <span className="text-muted-foreground">
                   {me?.role === "admin" ? "Amministratore" : "Utente"}
                 </span>
+              </div>
+            </div>
+
+            {/* Genere / sagoma corporea */}
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <div className="text-sm text-white mb-1">Sagoma corporea</div>
+              <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                Seleziona il genere per visualizzare la sagoma corretta (maschile o femminile) nella mappa posturale dei report.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { v: "maschio", label: "Maschio" },
+                  { v: "femmina", label: "Femmina" },
+                ].map((opt) => {
+                  const active = gender === opt.v;
+                  return (
+                    <button
+                      key={opt.v}
+                      onClick={() => saveGender(opt.v)}
+                      disabled={savingGender}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-card text-foreground border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

@@ -14,6 +14,14 @@
       "type": "string",
       "title": "Sottocategoria"
     },
+    "gender": {
+      "type": "string",
+      "title": "Genere atleta",
+      "enum": [
+        "maschio",
+        "femmina"
+      ]
+    },
     "video_url": {
       "type": "string",
       "title": "Video",

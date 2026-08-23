@@ -1,5 +1,6 @@
 import { FileDown } from "lucide-react";
 import jsPDF from "jspdf";
+import { silhouetteFor } from "@/lib/bodySilhouette";
 
 const sevColors = {
   Lievo: [251, 191, 36],
@@ -54,7 +55,7 @@ export default function ReportPdfExport({ report }) {
       y += 24;
     };
 
-    const drawDiagram = (view, ox, oy, size) => {
+    const drawDiagram = (view, viewName, ox, oy, size, gender) => {
       if (!view) return;
       const joints = view.joints || [];
       const segments = view.segments || [];
@@ -64,6 +65,20 @@ export default function ReportPdfExport({ report }) {
       const my = (yv) => oy + (yv / 100) * size;
       const L = (v) => (v / 100) * size;
       const sc = (s) => (s >= 61 ? [251, 113, 133] : s >= 31 ? [251, 191, 36] : [16, 185, 129]);
+
+      // sagoma corporea di sfondo
+      const sil = silhouetteFor(viewName, gender);
+      doc.setLineCap("round");
+      doc.setDrawColor(228, 228, 231);
+      sil.capsules.forEach((c) => {
+        doc.setLineWidth(L(c.w));
+        doc.line(mx(c.x1), my(c.y1), mx(c.x2), my(c.y2));
+      });
+      doc.setFillColor(228, 228, 231);
+      sil.ellipses.forEach((e) => {
+        doc.ellipse(mx(e.cx), my(e.cy), L(e.rx), L(e.ry), "F");
+      });
+      doc.setLineCap("butt");
 
       // reference centerline
       doc.setDrawColor(228, 228, 231);
@@ -184,8 +199,9 @@ export default function ReportPdfExport({ report }) {
       doc.text("VISTA FRONTALE", dStartX + dSize / 2, y, { align: "center" });
       doc.text("VISTA LATERALE", dStartX + dSize + dGap + dSize / 2, y, { align: "center" });
       y += 6;
-      drawDiagram(report.body_diagram.front, dStartX, y, dSize);
-      drawDiagram(report.body_diagram.side, dStartX + dSize + dGap, y, dSize);
+      const g = report.gender || "maschio";
+      drawDiagram(report.body_diagram.front, "front", dStartX, y, dSize, g);
+      drawDiagram(report.body_diagram.side, "side", dStartX + dSize + dGap, y, dSize, g);
       y += dSize + 10;
       // legenda
       const legY = y;

@@ -48,7 +48,7 @@ export default function ReportDetail() {
       {/* Diagramma corporeo */}
       {report.body_diagram && (
         <Section icon={Activity} title="Mappa posturale & stress articolare">
-          <BodyDiagram diagram={report.body_diagram} />
+          <BodyDiagram diagram={report.body_diagram} gender={report.gender || "maschio"} />
         </Section>
       )}
 

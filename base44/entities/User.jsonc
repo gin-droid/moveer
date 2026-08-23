@@ -7,6 +7,14 @@
         "admin",
         "user"
       ]
+    },
+    "gender": {
+      "type": "string",
+      "description": "Genere dell'atleta, usato per la sagoma corporea nella mappa posturale",
+      "enum": [
+        "maschio",
+        "femmina"
+      ]
     }
   },
   "required": [
