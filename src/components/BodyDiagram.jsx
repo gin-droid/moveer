@@ -1,5 +1,5 @@
 import { Activity } from "lucide-react";
-import { silhouetteFor } from "@/lib/bodySilhouette";
+import { silhouettePath } from "@/lib/bodySilhouette";
 
 const stressColor = (s) =>
   s >= 61 ? "#fb7185" : s >= 31 ? "#fbbf24" : "#34d399";
@@ -10,26 +10,7 @@ const stressLabel = (s) =>
 const SILHOUETTE_FILL = "rgba(161,161,170,0.12)";
 
 function Silhouette({ view, gender }) {
-  const { ellipses, capsules } = silhouetteFor(view, gender);
-  return (
-    <g>
-      {capsules.map((c, i) => (
-        <line
-          key={`c${i}`}
-          x1={c.x1}
-          y1={c.y1}
-          x2={c.x2}
-          y2={c.y2}
-          stroke={SILHOUETTE_FILL}
-          strokeWidth={c.w}
-          strokeLinecap="round"
-        />
-      ))}
-      {ellipses.map((e, i) => (
-        <ellipse key={`e${i}`} cx={e.cx} cy={e.cy} rx={e.rx} ry={e.ry} fill={SILHOUETTE_FILL} />
-      ))}
-    </g>
-  );
+  return <path d={silhouettePath(view, gender)} fill={SILHOUETTE_FILL} />;
 }
 
 export default function BodyDiagram({ diagram, gender = "maschio" }) {

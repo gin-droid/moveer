@@ -1,6 +1,6 @@
 import { FileDown } from "lucide-react";
 import jsPDF from "jspdf";
-import { silhouetteFor } from "@/lib/bodySilhouette";
+import { silhouettePoints } from "@/lib/bodySilhouette";
 
 const sevColors = {
   Lievo: [251, 191, 36],
@@ -66,19 +66,15 @@ export default function ReportPdfExport({ report }) {
       const L = (v) => (v / 100) * size;
       const sc = (s) => (s >= 61 ? [251, 113, 133] : s >= 31 ? [251, 191, 36] : [16, 185, 129]);
 
-      // sagoma corporea di sfondo
-      const sil = silhouetteFor(viewName, gender);
-      doc.setLineCap("round");
-      doc.setDrawColor(228, 228, 231);
-      sil.capsules.forEach((c) => {
-        doc.setLineWidth(L(c.w));
-        doc.line(mx(c.x1), my(c.y1), mx(c.x2), my(c.y2));
-      });
+      // sagoma corporea di sfondo (contorno organico)
+      const silPts = silhouettePoints(viewName, gender);
       doc.setFillColor(228, 228, 231);
-      sil.ellipses.forEach((e) => {
-        doc.ellipse(mx(e.cx), my(e.cy), L(e.rx), L(e.ry), "F");
-      });
-      doc.setLineCap("butt");
+      doc.moveTo(mx(silPts[0][0]), my(silPts[0][1]));
+      for (let i = 1; i < silPts.length; i++) {
+        doc.lineTo(mx(silPts[i][0]), my(silPts[i][1]));
+      }
+      doc.close();
+      doc.fill();
 
       // reference centerline
       doc.setDrawColor(228, 228, 231);
