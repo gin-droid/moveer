@@ -25,7 +25,8 @@ Fornisce correzione posturale in tempo reale e feedback mirato sull'esecuzione d
 
 ### Entità dati create
 - **Exercise**: catalogo esercizi (nome, macro-categoria, sottocategoria, descrizione, gruppi muscolari, attrezzatura, difficoltà, istruzioni di setup, errori comuni, immagine, video).
-- **AnalysisReport**: report di analisi generati dall'IA (esercizio, punteggio, sintesi, problemi rilevati, correzioni, esercizi correttivi, raccomandazioni) con RLS che isola i report per utente (`created_by_id`).
+- **AnalysisReport**: report di analisi generati dall'IA (esercizio, genere atleta, punteggio, sintesi, problemi rilevati, correzioni, esercizi correttivi, raccomandazioni, body_diagram con giunzioni/segmenti/stress articolare) con RLS che isola i report per utente (`created_by_id`).
+- **User**: entità built-in con campo `gender` personalizzato (maschio/femmina) per la personalizzazione anatomica delle sagome.
 
 ### Funzioni backend
 - **analyzeExercise**: analizza frame video estratti dall'upload e genera un report strutturato.
@@ -120,12 +121,43 @@ Interventi sulla pipeline di analisi per renderla più efficace:
 
 ---
 
-## 9. Stato attuale
+## 9. Diagramma corporeo e sagome anatomiche
+
+- **Campo gender**: aggiunto a `User` e `AnalysisReport` per personalizzare la sagoma anatomica (maschio/femmina).
+- **Sagome realistiche** (`src/lib/bodySilhouette.js`): contorni corporei definiti come punti di ancoraggio (coordinate 0-100) smussati da una spline Catmull-Rom chiusa; sorgente unica per SVG (schermo) e jsPDF (export).
+- **Quattro sagome**: vista frontale e laterale, ciascuna con variante maschile (spalle larghe, vita a V) e femminile (spalle strette, anche larghe, curve).
+- **BodyDiagram** (`src/components/BodyDiagram.jsx`): render SVG con sagoma di sfondo a linea sottile, linee di riferimento orizzontali (spalle/bacino/ginocchia/caviglie) e asse verticale, segmenti scheletrici, gauge di stress esterni e giunzioni colorate; toggle singola vista frontale/laterale.
+- **Onboarding genere**: selezione obbligatoria in `Register` per i nuovi utenti; componente `GenderOnboarding` per prompt a richiesta agli utenti esistenti; selezione persistente in `SettingsDrawer`.
+- **Integrazione**: `BodyDiagram` integrato in `ReportDetail`; il campo `gender` viene propagato dal profilo utente al report durante l'analisi.
+
+## 10. Calcolo biomeccanico dello stress articolare
+
+- **Modulo** (`base44/functions/analyzeExercise/biomechanics.ts`): calcolo deterministico dello stress articolare a riposo a partire dalla postura osservata, in sostituzione delle stime soggettive del modello LLM.
+- **Posizioni neutre di riferimento**: definite per vista frontale e laterale (es. spalle a y=22, anche a y=52, ginocchia a y=74).
+- **Contributi di stress**:
+  - Disallineamento segmenti: ogni segmento `misaligned` collegato a una giunzione aggiunge stress.
+  - Scostamento dalla posizione neutra: distanza euclidea pesata.
+  - Asimmetria (front): differenza di y tra giunzioni accoppiate (spalle, anche, ginocchia, caviglie).
+  - Ginocchio valgo (front): avvicinamento delle ginocchia alla linea mediana.
+  - Deviazione laterale colonna (front): head/neck lontani da x=50.
+  - Stacking verticale (side): disallineamento anca-ginocchio-caviglia.
+  - Antiversione bacino (side) e forward head (side).
+- **Output**: stress 0-100 per ogni giunzione, clamped e arrotondato; salvato nel `body_diagram` del report e visualizzato automaticamente da schermo e PDF.
+
+## 11. Export PDF
+
+- **ReportPdfExport** (`src/components/ReportPdfExport.jsx`): generazione PDF via jsPDF con header, score box, mappa posturale, sintesi, problemi, correzioni, esercizi correttivi, raccomandazioni e footer numerato.
+- **Mappa posturale PDF**: singolo corpo (vista frontale, fallback laterale) più grande e centrato, con sagoma a linea sottile, linee di riferimento, segmenti, gauge di stress e legenda; coerente con la visualizzazione a schermo.
+
+## 12. Stato attuale
 
 - App funzionante con autenticazione, catalogo esercizi esteso, analisi video IA, storico report, confronto e gestione utenti.
 - Catalogo esercizi completo con nomenclatura e descrizioni professionali.
 - Pipeline di analisi ottimizzata con modello tecnico di riferimento e analisi fase-per-fase.
+- Sagome anatomiche realistiche gender-specific (frontale/laterale, maschile/femminile) con diagramma corporeo interattivo.
+- Calcolo biomeccanico deterministico dello stress articolare a riposo basato sulla postura, integrato nel report e nell'export PDF.
+- Export PDF con mappa posturale a corpo singolo centrato.
 
 ---
 
-*Documento generato il 22 agosto 2026.*
+*Documento aggiornato il 23 agosto 2026.*
