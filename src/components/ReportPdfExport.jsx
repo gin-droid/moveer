@@ -248,33 +248,81 @@ export default function ReportPdfExport({ report }) {
 
       // Indicazione articolazione / arto più sollecitato (vista frontale)
       if (topJoint || topLimb) {
-        ensureSpace(40);
+        const boxH = 78;
+        ensureSpace(boxH + 8);
+        // sfondo
         doc.setFillColor(254, 242, 242);
-        doc.roundedRect(margin, y, maxW, 34, 6, 6, "F");
+        doc.roundedRect(margin, y, maxW, boxH, 8, 8, "F");
+        // bordo sinistro spesso
+        doc.setFillColor(251, 113, 133);
+        doc.roundedRect(margin, y, 5, boxH, 2.5, 2.5, "F");
+        // bordo sottile attorno
         doc.setDrawColor(251, 113, 133);
-        doc.setLineWidth(2);
-        doc.line(margin, y, margin, y + 34);
-        doc.setLineWidth(0.5);
-        let infoY = y + 14;
-        doc.setFontSize(8);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(margin, y, maxW, boxH, 8, 8, "S");
+
+        const padX = 20;
+        const innerW = maxW - padX * 2;
+        const colW = innerW / 2;
+        const col1X = margin + padX;
+        const col2X = margin + padX + colW;
+
+        // Titolo sezione
+        doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(251, 113, 133);
-        doc.text("FOCUS STRESS ARTICOLARE", margin + 10, infoY);
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(63, 63, 70);
+        doc.text("FOCUS STRESS ARTICOLARE", col1X, y + 18);
+
+        // separatore verticale tra le due colonne
+        doc.setDrawColor(251, 113, 133);
+        doc.setLineWidth(0.3);
+        doc.setLineDashPattern([1.5, 1.5], 0);
+        doc.line(col2X, y + 28, col2X, y + boxH - 10);
+        doc.setLineDashPattern([], 0);
+
+        // Colonna 1 — Articolazione più sollecitata
         if (topJoint) {
-          doc.text(
-            `Articolazione più sollecitata: ${topJoint.label || topJoint.id} (${topJoint.stress}%)`,
-            margin + 10,
-            infoY + 14
-          );
+          // pallino
+          doc.setFillColor(251, 113, 133);
+          doc.circle(col1X + 2, y + 40, 2.6, "F");
+          // etichetta
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(153, 27, 27);
+          doc.text("ARTICOLAZIONE PIÙ SOLLECITATA", col1X + 10, y + 41);
+          // valore
+          doc.setFontSize(13);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(24, 24, 27);
+          doc.text(`${topJoint.label || topJoint.id}`, col1X, y + 58);
+          // percentuale
+          const stressCol = topJoint.stress >= 61 ? [251, 113, 133] : topJoint.stress >= 31 ? [251, 191, 36] : [16, 185, 129];
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(stressCol[0], stressCol[1], stressCol[2]);
+          doc.text(`${topJoint.stress}% di stress`, col1X, y + 72);
         }
+
+        // Colonna 2 — Arto più sollecitato
         if (topLimb) {
-          const limbText = topJoint ? `  •  Arto più sollecitato: ${topLimb.label}` : `Arto più sollecitato: ${topLimb.label}`;
-          doc.text(limbText, margin + 10, infoY + 14);
+          doc.setFillColor(251, 113, 133);
+          doc.circle(col2X + 2, y + 40, 2.6, "F");
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(153, 27, 27);
+          doc.text("ARTO PIÙ SOLLECITATO", col2X + 10, y + 41);
+          doc.setFontSize(13);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(24, 24, 27);
+          doc.text(topLimb.label, col2X, y + 58);
+          // indicatore cumulativo
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(120, 120, 130);
+          doc.text("Stress cumulativo massimo", col2X, y + 72);
         }
-        y += 44;
+
+        y += boxH + 12;
       }
     }
 
