@@ -56,30 +56,36 @@ const frontFemale = [
   [44, 8],
 ];
 
-// Vista laterale — maschio (profilo piuttosto dritto, schiena piatta)
-const sideMale = [
-  [40, 5], [45, 8], [46, 13], [45, 17], [43, 20],
-  [45, 24], [46, 30], [45, 40], [44, 48], [45, 54],
-  [44, 58], [50, 62], [52, 70], [53, 78], [54, 90],
-  [58, 94], [58, 97], [48, 97], [42, 95], [42, 90],
-  [40, 78], [38, 70], [37, 60], [36, 52], [37, 46],
-  [36, 38], [35, 30], [35, 24], [35, 18], [37, 12],
-];
-
-// Vista laterale — femmina (curve: seno, vita, glutei, schiena arcuata)
-const sideFemale = [
-  [40, 5], [45, 8], [46, 13], [45, 17], [43, 20],
-  [46, 24], [48, 28], [46, 34], [45, 42], [44, 50],
-  [45, 55], [44, 58], [50, 62], [52, 70], [53, 78],
-  [54, 90], [58, 94], [58, 97], [48, 97], [41, 95],
-  [41, 90], [39, 78], [37, 70], [35, 60], [34, 52],
-  [35, 46], [34, 38], [33, 30], [33, 24], [34, 18],
-  [37, 12],
+// Vista laterale — profilo semplice e neutro (fronte a sinistra).
+// Sagoma essenziale uguale per entrambi i generi: poche ancore pulite
+// che disegnano testa, tronco, gluteo e gamba, lasciando le giunzioni
+// ben leggibili senza dettagli anatomici di disturbo.
+const sideSimple = [
+  // testa (occipite -> fronte)
+  [41, 4], [47, 7], [48, 13], [45, 17],
+  // nuca -> schiena
+  [45, 21], [44, 30], [44, 40], [44, 48],
+  // gluteo
+  [49, 54], [50, 60],
+  // retro gamba
+  [50, 70], [49, 80], [50, 90],
+  // piede (tallone -> punta)
+  [51, 96], [50, 98], [42, 98], [41, 95],
+  // fronte gamba (caviglia -> ginocchio -> coscia)
+  [42, 90], [43, 80], [43, 70],
+  // inguine / basso ventre
+  [40, 60], [39, 54],
+  // ventre -> petto -> spalla
+  [38, 46], [37, 38], [36, 30],
+  // clavicola / collo
+  [36, 24], [38, 20],
+  // mento / viso
+  [37, 15], [38, 9],
 ];
 
 const outlineFor = (view, gender) => {
   const female = gender === "femmina";
-  if (view === "side") return female ? sideFemale : sideMale;
+  if (view === "side") return sideSimple;
   return female ? frontFemale : frontMale;
 };
 
