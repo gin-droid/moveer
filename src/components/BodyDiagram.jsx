@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Activity } from "lucide-react";
+import { Activity, Target } from "lucide-react";
 import { silhouettePath } from "@/lib/bodySilhouette";
+import { analyzeFrontStress } from "@/lib/stressAnalysis";
 
 const stressColor = (s) =>
   s >= 61 ? "#fb7185" : s >= 31 ? "#fbbf24" : "#34d399";
@@ -36,6 +37,10 @@ export default function BodyDiagram({ diagram, gender = "maschio" }) {
     ? Math.max(...allJoints.map((j) => j.stress || 0))
     : 0;
 
+  // Analisi articolazione/arto più sollecitati sulla vista frontale
+  const { joint: topJoint, limb: topLimb } = analyzeFrontStress(diagram);
+  const topJointId = view === "front" && topJoint ? topJoint.id : null;
+
   return (
     <div className="space-y-4">
       {/* Toggle vista — un solo corpo alla volta */}
@@ -64,11 +69,37 @@ export default function BodyDiagram({ diagram, gender = "maschio" }) {
         </button>
       </div>
 
+      {/* Indicazione articolazione / arto più sollecitato (vista frontale) */}
+      {view === "front" && (topJoint || topLimb) && (
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-rose-400" />
+            <h3 className="font-display font-semibold text-white text-sm">Focus stress articolare</h3>
+          </div>
+          {topJoint && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-400">Articolazione più sollecitata</span>
+              <span className="font-medium text-white">
+                {topJoint.label || topJoint.id}
+                <span className="ml-2 text-rose-400">{topJoint.stress}%</span>
+              </span>
+            </div>
+          )}
+          {topLimb && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-400">Arto più sollecitato</span>
+              <span className="font-medium text-white">{topLimb.label}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <DiagramView
         view={activeData}
         title={view === "front" ? "Vista frontale" : "Vista laterale"}
         silhouette={view}
         gender={gender}
+        highlightJointId={topJointId}
       />
 
       {/* Legenda stress */}
@@ -102,7 +133,7 @@ function Legend({ color, label }) {
   );
 }
 
-function DiagramView({ view, title, silhouette, gender }) {
+function DiagramView({ view, title, silhouette, gender, highlightJointId }) {
   if (!view) {
     return (
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
@@ -204,10 +235,32 @@ function DiagramView({ view, title, silhouette, gender }) {
         {/* giunzioni */}
         {joints.map((j, i) => {
           const col = stressColor(j.stress || 0);
+          const isTop = highlightJointId && j.id === highlightJointId;
           return (
             <g key={`j-${i}`}>
+              {isTop && (
+                <>
+                  <circle cx={j.x} cy={j.y} r="3.6" fill="none" stroke="#fb7185" strokeWidth="0.5" opacity="0.9">
+                    <animate attributeName="r" values="3.6;4.6;3.6" dur="1.6s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.9;0.4;0.9" dur="1.6s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx={j.x} cy={j.y} r="2.6" fill="none" stroke="#fb7185" strokeWidth="0.35" opacity="0.6" />
+                </>
+              )}
               <circle cx={j.x} cy={j.y} r="1.6" fill={col} stroke="#0a0a0a" strokeWidth="0.3" />
               <circle cx={j.x} cy={j.y} r="0.6" fill="#0a0a0a" opacity="0.4" />
+              {isTop && (
+                <text
+                  x={j.x}
+                  y={j.y - 4}
+                  fontSize="2.4"
+                  fill="#fb7185"
+                  textAnchor="middle"
+                  style={{ fontWeight: 700 }}
+                >
+                  {j.label || j.id}
+                </text>
+              )}
             </g>
           );
         })}

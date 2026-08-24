@@ -1,6 +1,7 @@
 import { FileDown } from "lucide-react";
 import jsPDF from "jspdf";
 import { silhouettePoints } from "@/lib/bodySilhouette";
+import { analyzeFrontStress } from "@/lib/stressAnalysis";
 
 const sevColors = {
   Lievo: [251, 191, 36],
@@ -55,7 +56,7 @@ export default function ReportPdfExport({ report }) {
       y += 24;
     };
 
-    const drawDiagram = (view, viewName, ox, oy, size, gender) => {
+    const drawDiagram = (view, viewName, ox, oy, size, gender, highlightJointId) => {
       if (!view) return;
       const joints = view.joints || [];
       const segments = view.segments || [];
@@ -131,8 +132,24 @@ export default function ReportPdfExport({ report }) {
       // joints
       joints.forEach((j) => {
         const col = sc(j.stress || 0);
+        const isTop = highlightJointId && j.id === highlightJointId;
+        if (isTop) {
+          // anello di evidenziazione attorno all'articolazione più sollecitata
+          doc.setDrawColor(251, 113, 133);
+          doc.setLineWidth(0.6);
+          doc.circle(mx(j.x), my(j.y), L(3.4), "S");
+          doc.setLineWidth(0.35);
+          doc.circle(mx(j.x), my(j.y), L(2.5), "S");
+        }
         doc.setFillColor(col[0], col[1], col[2]);
         doc.circle(mx(j.x), my(j.y), L(1.6), "F");
+        if (isTop) {
+          // etichetta sopra la giunzione
+          doc.setFontSize(6);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(251, 113, 133);
+          doc.text(j.label || j.id, mx(j.x), my(j.y) - L(4), { align: "center" });
+        }
       });
     };
 
@@ -199,13 +216,16 @@ export default function ReportPdfExport({ report }) {
       const useFront = !!report.body_diagram.front;
       const viewData = useFront ? report.body_diagram.front : report.body_diagram.side;
       const viewName = useFront ? "front" : "side";
+      // Analisi stress sulla vista frontale
+      const { joint: topJoint, limb: topLimb } = analyzeFrontStress(report.body_diagram);
+      const highlightId = useFront && topJoint ? topJoint.id : null;
       const dStartX = margin + (maxW - dSize) / 2;
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(82, 82, 91);
       doc.text(useFront ? "VISTA FRONTALE" : "VISTA LATERALE", dStartX + dSize / 2, y, { align: "center" });
       y += 6;
-      drawDiagram(viewData, viewName, dStartX, y, dSize, g);
+      drawDiagram(viewData, viewName, dStartX, y, dSize, g, highlightId);
       y += dSize + 10;
       // legenda
       const legY = y;
@@ -225,6 +245,37 @@ export default function ReportPdfExport({ report }) {
         lx += doc.getTextWidth(lg.t) + 24;
       });
       y = legY + 16;
+
+      // Indicazione articolazione / arto più sollecitato (vista frontale)
+      if (topJoint || topLimb) {
+        ensureSpace(40);
+        doc.setFillColor(254, 242, 242);
+        doc.roundedRect(margin, y, maxW, 34, 6, 6, "F");
+        doc.setDrawColor(251, 113, 133);
+        doc.setLineWidth(2);
+        doc.line(margin, y, margin, y + 34);
+        doc.setLineWidth(0.5);
+        let infoY = y + 14;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(251, 113, 133);
+        doc.text("FOCUS STRESS ARTICOLARE", margin + 10, infoY);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(63, 63, 70);
+        if (topJoint) {
+          doc.text(
+            `Articolazione più sollecitata: ${topJoint.label || topJoint.id} (${topJoint.stress}%)`,
+            margin + 10,
+            infoY + 14
+          );
+        }
+        if (topLimb) {
+          const limbText = topJoint ? `  •  Arto più sollecitato: ${topLimb.label}` : `Arto più sollecitato: ${topLimb.label}`;
+          doc.text(limbText, margin + 10, infoY + 14);
+        }
+        y += 44;
+      }
     }
 
     // ---- Summary ----
