@@ -35,13 +35,13 @@ export default function Home() {
   return (
     <div className="space-y-10">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-primary/30 bg-card p-8 md:p-12 shadow-[0_0_70px_-20px_hsl(var(--primary))]">
+      <section className="relative overflow-hidden rounded-3xl border border-primary/30 bg-card p-6 sm:p-8 md:p-12 shadow-[0_0_70px_-20px_hsl(var(--primary))]">
         <div className="absolute -right-20 -top-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl" />
         <div className="relative">
           <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
             <Video className="w-3.5 h-3.5" /> Analisi IA
           </span>
-          <h1 className="mt-5 font-display text-3xl md:text-5xl font-semibold tracking-tight text-white max-w-2xl leading-[1.05]">
+          <h1 className="mt-5 font-display text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight text-white max-w-2xl leading-[1.05]">
             Allena meglio.<br />Correggi la postura, una ripetizione alla volta.
           </h1>
           <p className="mt-4 text-muted-foreground max-w-xl text-[15px] leading-relaxed">
@@ -122,7 +122,7 @@ function StatCard({ label, value, icon: Icon }) {
         <Icon className="w-5 h-5 text-primary" />
         <Sparkline />
       </div>
-      <div className="mt-3 text-3xl font-display font-semibold text-white">{value}</div>
+      <div className="mt-3 text-2xl sm:text-3xl font-display font-semibold text-white">{value}</div>
       <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
     </div>
   );
@@ -145,7 +145,7 @@ function ScoreStat({ value }) {
         </div>
       </div>
       <div className="min-w-0">
-        <div className="text-3xl font-display font-semibold text-white leading-none">
+        <div className="text-2xl sm:text-3xl font-display font-semibold text-white leading-none">
           {value === null ? "—" : s}
           <span className="text-sm text-muted-foreground font-body font-normal">/100</span>
         </div>

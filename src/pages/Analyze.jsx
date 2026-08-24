@@ -162,7 +162,7 @@ export default function Analyze() {
       {/* Step 2: upload */}
       <Step number={2} title="Carica il video">
         <label className="block">
-          <div className={`relative rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${file ? "border-emerald-500/50 bg-emerald-400/5" : "border-zinc-700 hover:border-zinc-500 bg-zinc-900/30"}`}>
+          <div className={`relative rounded-2xl border-2 border-dashed p-6 sm:p-8 text-center cursor-pointer transition-colors ${file ? "border-emerald-500/50 bg-emerald-400/5" : "border-zinc-700 hover:border-zinc-500 bg-zinc-900/30"}`}>
             <input type="file" accept="video/*,image/*,.mp4,.mov,.webm,.m4v,.3gp,.mkv,.avi" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
             {file ? (
               <div className="space-y-2">

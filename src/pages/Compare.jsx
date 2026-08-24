@@ -146,18 +146,18 @@ export default function Compare() {
           {reportA && reportB && (
             <div className="space-y-5">
               {/* Delta banner */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 flex items-center justify-between">
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <div className="text-[11px] uppercase tracking-widest text-zinc-500">Variazione punteggio</div>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-display font-semibold text-white">{reportA.score}</span>
+                    <span className="text-xl sm:text-2xl font-display font-semibold text-white">{reportA.score}</span>
                     <span className="text-zinc-600">→</span>
-                    <span className="text-2xl font-display font-semibold text-white">{reportB.score}</span>
+                    <span className="text-xl sm:text-2xl font-display font-semibold text-white">{reportB.score}</span>
                   </div>
                 </div>
                 <div className={`flex items-center gap-1.5 ${deltaColor}`}>
-                  <DeltaIcon className="w-6 h-6" />
-                  <span className="text-xl font-display font-semibold">{delta > 0 ? "+" : ""}{delta} pt</span>
+                  <DeltaIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <span className="text-lg sm:text-xl font-display font-semibold">{delta > 0 ? "+" : ""}{delta} pt</span>
                 </div>
               </div>
 

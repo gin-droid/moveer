@@ -99,7 +99,7 @@ export default function Users() {
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
         <div className="divide-y divide-zinc-800/60">
           {users.map((u) => (
-            <div key={u.id} className="flex items-center gap-4 px-5 py-4">
+            <div key={u.id} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${u.role === "admin" ? "bg-emerald-400/15 text-emerald-300" : "bg-zinc-800 text-zinc-400"}`}>
                 {u.role === "admin" ? <ShieldCheck className="w-5 h-5" /> : <UserIcon className="w-5 h-5" />}
               </div>

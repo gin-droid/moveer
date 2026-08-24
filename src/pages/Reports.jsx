@@ -74,9 +74,9 @@ export default function Reports() {
           {reports.map((r) => (
             <div
               key={r.id}
-              className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 hover:border-emerald-500/40 transition-colors"
+              className="group flex items-center gap-3 sm:gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5 hover:border-emerald-500/40 transition-colors"
             >
-              <Link to={`/report/${r.id}`} className="flex items-center gap-4 flex-1 min-w-0">
+              <Link to={`/report/${r.id}`} className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                 <ScoreRing score={r.score} />
                 <div className="flex-1 min-w-0">
                   <div className="text-[11px] uppercase tracking-widest text-emerald-300/80">{r.macro_category} / {r.subcategory}</div>
