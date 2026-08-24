@@ -76,7 +76,7 @@ export default function Users() {
 
   if (error) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {error}
         </div>
@@ -90,7 +90,7 @@ export default function Users() {
   return (
     <>
     <PullToRefresh onRefresh={loadUsers}>
-    <div className="space-y-7 max-w-3xl">
+    <div className="space-y-7">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Gestione utenti</h1>
         <p className="text-zinc-400 mt-2 text-sm">Elenco degli account registrati. Puoi eliminare gli utenti non amministratori.</p>

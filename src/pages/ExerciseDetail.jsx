@@ -28,7 +28,7 @@ export default function ExerciseDetail() {
   const directVideo = isDirectVideo(ex.demo_video_url);
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <Link to="/esercizi" className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors">
         <ArrowLeft className="w-4 h-4" /> Catalogo
       </Link>
