@@ -3,7 +3,7 @@
 ================================================================
 
 NOME SOFTWARE
-  FormAI — FormPerfect (iOS)
+  moVeer (iOS)
 
 DESCRIZIONE IDENTIFICATIVA
   Applicazione mobile di analisi biomeccanica basata sull'intelligenza
