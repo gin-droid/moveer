@@ -1,4 +1,4 @@
-# FormPerfect — Cronologia dello sviluppo
+# moVeerAI — Cronologia dello sviluppo
 
 Documento riassuntivo di tutti i passaggi compiuti per arrivare alla versione attuale dell'app.
 
@@ -6,7 +6,7 @@ Documento riassuntivo di tutti i passaggi compiuti per arrivare alla versione at
 
 ## 1. Mission e obiettivo
 
-**FormPerfect** è un'app mobile (iOS) di analisi del movimento basata sull'intelligenza artificiale.
+**moVeerAI** (già FormPerfect/FormAI) è un'app mobile (iOS) di analisi del movimento basata sull'intelligenza artificiale.
 Fornisce correzione posturale in tempo reale e feedback mirato sull'esecuzione degli esercizi.
 
 **Obiettivi di progetto**
@@ -160,4 +160,16 @@ Interventi sulla pipeline di analisi per renderla più efficace:
 
 ---
 
-*Documento aggiornato il 23 agosto 2026.*
+## 13. Rebranding e affinamenti UX (25 agosto 2026)
+
+- **Rebranding**: app rinominata da FormPerfect/FormAI a **moVeerAI**; nome aggiornato in sidebar desktop, top-bar mobile e documentazione (`SCHEDA_SOFTWARE.txt`).
+- **Home semplificata**: rimosso lo strip "Esercizi in evidenza" e la CTA del catalogo dalla home; titolo hero aggiornato a "Allenati meglio."
+- **Navigazione**: link "Esercizi" spostato dalla navigazione primaria al menu "Altro" (secondary items) per decluttering.
+- **SettingsDrawer**: aggiunto pulsante indietro (ArrowLeft) nell'header con spaziatura safe-area iOS.
+- **Ottimizzazioni mobile**: padding e gap ridotti per leggibilità su schermi piccoli; hero header, blocchi statistiche e liste report/utenti ottimizzati per rendering mobile-first.
+- **SCHEDA_SOFTWARE.txt**: creato documento identificativo del software con descrizione, linguaggio di programmazione e dati di pubblicazione.
+- **Sicurezza (RLS)**: applicate regole di row-level security alle entità `Exercise` (lettura pubblica, scrittura solo admin) e `AnalysisReport` (lettura/scrittura limitate a proprietario o admin).
+
+---
+
+*Documento aggiornato il 25 agosto 2026.*
