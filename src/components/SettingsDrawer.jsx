@@ -8,7 +8,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import {
-  User as UserIcon, Mail, ShieldCheck, Trash2, Loader2, AlertTriangle,
+  User as UserIcon, Mail, ShieldCheck, Trash2, Loader2, AlertTriangle, ArrowLeft,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 
@@ -72,9 +72,17 @@ export default function SettingsDrawer({ open, onOpenChange }) {
           side="right"
           className="w-full sm:max-w-sm p-0 bg-sidebar border-sidebar-border text-foreground flex flex-col"
         >
-          <SheetHeader className="px-5 pt-safe pt-6 pb-4 border-b border-sidebar-border">
-            <SheetTitle className="font-display text-white">Impostazioni</SheetTitle>
-            <SheetDescription className="text-muted-foreground">
+          <SheetHeader className="px-5 pt-safe pt-6 pb-4 border-b border-sidebar-border relative">
+            <button
+              onClick={() => onOpenChange(false)}
+              aria-label="Indietro"
+              style={{ top: "calc(env(safe-area-inset-top) + 1.25rem)" }}
+              className="absolute left-5 inline-flex items-center justify-center w-9 h-9 rounded-lg border border-sidebar-border bg-sidebar-accent text-foreground active:scale-95 transition-transform select-none"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <SheetTitle className="font-display text-white pl-11">Impostazioni</SheetTitle>
+            <SheetDescription className="text-muted-foreground pl-11">
               Gestisci il tuo account e le preferenze.
             </SheetDescription>
           </SheetHeader>
