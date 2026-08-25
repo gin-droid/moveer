@@ -88,7 +88,7 @@ export default function AppLayout() {
               <Activity className="w-5 h-5 text-primary-foreground" strokeWidth={2.5} />
             </div>
             <div className="leading-tight">
-              <div className="font-display font-semibold tracking-tight text-white">FormAI</div>
+              <div className="font-display font-semibold tracking-tight text-white">moVeerAI</div>
               <div className="text-[11px] text-muted-foreground uppercase tracking-[0.2em]">Postura &amp; Tecnica</div>
             </div>
           </Link>
@@ -140,7 +140,7 @@ export default function AppLayout() {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <Activity className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
               </div>
-              <span className="font-display font-semibold text-white">FormAI</span>
+              <span className="font-display font-semibold text-white">moVeerAI</span>
             </Link>
           )}
           <button
