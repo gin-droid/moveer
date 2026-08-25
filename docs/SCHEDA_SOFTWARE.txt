@@ -1,0 +1,46 @@
+================================================================
+          SCHEDA IDENTIFICATIVA DEL SOFTWARE
+================================================================
+
+NOME SOFTWARE
+  FormAI — FormPerfect (iOS)
+
+DESCRIZIONE IDENTIFICATIVA
+  Applicazione mobile di analisi biomeccanica basata sull'intelligenza
+  artificiale. FormAI analizza video di esecuzione di esercizi fisici,
+  valuta tecnica e postura dell'atleta, individua errori di esecuzione
+  e genera un report dettagliato con punteggio, diagramma corporeo
+  dello stress articolare, correzioni mirate ed esercizi correttivi
+  personalizzati. Il software è rivolto ad atleti, personal trainer
+  e appassionati di fitness che desiderano migliorare la qualità del
+  movimento e prevenire infortuni articolari.
+
+LINGUAGGIO DI PROGRAMMAZIONE
+  Frontend:  JavaScript (React 18 + Vite)
+  Stile:     Tailwind CSS + shadcn/ui (Radix UI)
+  Backend:   Base44 BaaS (Backend-as-a-Service)
+             Funzioni server-side in TypeScript (Node.js/Deno runtime)
+  Database:  Base44 Entities (schema JSON, NoSQL)
+  Integrazioni IA: LLM vision (analisi posturale), biomechanics engine
+  Piattaforma di pubblicazione: Base44 (web + build native iOS/Android)
+
+DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
+  URL di pubblicazione:  https://moveer.base44.app
+  Data prima pubblicazione: Da registrare al primo deploy effettivo
+                            (app pubblicata su dominio Base44)
+  Luogo di sviluppo:      Italia (Europe/Rome timezone)
+  Sviluppatore:           Account proprietario app Base44
+
+VERSIONE CORRENTE
+  Versione: 1.0
+  Data ultimo aggiornamento scheda: 2026-08-25
+
+================================================================
+NOTE TECNICHE
+  - Architettura single-page application (SPA) con routing lato client
+  - Layout responsive mobile-first con safe-area iOS (notch/home indicator)
+  - Autenticazione gestita da Base44 Auth (email/password, Google OAuth, OTP)
+  - Entità dati: Exercise, AnalysisReport, User
+  - Funzioni backend: analyzeExercise (analisi IA), deleteOwnAccount
+  - Export report in PDF (jsPDF) con diagramma corporeo SVG
+================================================================
