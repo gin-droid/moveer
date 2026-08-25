@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Video, Dumbbell, FileText, ArrowRight, AlertTriangle, Activity } from "lucide-react";
 import GenderOnboarding from "@/components/GenderOnboarding";
-import ExerciseStrip from "@/components/ExerciseStrip";
 
 export default function Home() {
   const [reports, setReports] = useState([]);
@@ -49,18 +48,12 @@ export default function Home() {
             Carica un video della tua esecuzione: l'intelligenza artificiale analizza tecnica e postura,
             individua gli errori e ti restituisce un report con esercizi correttivi mirati.
           </p>
-          <div className="mt-7 flex flex-wrap gap-3">
+          <div className="mt-7">
             <Link
               to="/analizza"
               className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm px-5 py-3 rounded-xl transition-colors shadow-lg shadow-primary/20"
             >
               <Video className="w-4 h-4" /> Avvia analisi
-            </Link>
-            <Link
-              to="/esercizi"
-              className="inline-flex items-center gap-2 border border-foreground/20 hover:border-foreground/40 text-foreground font-medium text-sm px-5 py-3 rounded-xl transition-colors"
-            >
-              <Dumbbell className="w-4 h-4" /> Esplora esercizi
             </Link>
           </div>
         </div>
@@ -73,9 +66,6 @@ export default function Home() {
         <StatCard label="Esercizi in catalogo" value={loading ? "—" : exercises.length} icon={Dumbbell} />
         <StatCard label="Macro-categorie" value={loading ? "—" : macros} icon={Activity} />
       </section>
-
-      {/* Exercises strip — mobile-optimized horizontal scroll */}
-      <ExerciseStrip exercises={exercises} />
 
       {/* Recent reports */}
       <section>
@@ -113,6 +103,21 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      {/* Catalog CTA */}
+      <Link
+        to="/esercizi"
+        className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-5 hover:border-primary/40 transition-colors"
+      >
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Dumbbell className="w-6 h-6 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-semibold text-white">Esplora il catalogo</div>
+          <div className="text-sm text-muted-foreground">{loading ? "…" : `${exercises.length} esercizi in ${macros} macro-categorie`}</div>
+        </div>
+        <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+      </Link>
 
       <GenderOnboarding />
     </div>
