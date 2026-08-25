@@ -132,11 +132,12 @@ Interventi sulla pipeline di analisi per renderla più efficace:
 
 ## 10. Calcolo biomeccanico dello stress articolare
 
-- **Modulo** (`base44/functions/analyzeExercise/biomechanics.ts`): calcolo deterministico dello stress articolare a riposo a partire dalla postura osservata, in sostituzione delle stime soggettive del modello LLM.
-- **Posizioni neutre di riferimento**: definite per vista frontale e laterale (es. spalle a y=22, anche a y=52, ginocchia a y=74).
+- **Modulo** (`base44/functions/analyzeExercise/biomechanics.ts`): calcolo deterministico dello stress articolare a partire dalla postura osservata, in sostituzione delle stime soggettive del modello LLM.
+- **Profili biomeccanici per pattern**: il motore classifica l'esercizio in uno dei pattern di movimento (squat, hinge, push, pull, lunge, overhead, core, static) e confronta la postura con l'esecuzione ottima *specifica del pattern*, non più con una generica posizione neutra in piedi.
+- **Angoli ottimi per pattern**: ogni pattern definisce angoli articolari target nella fase critica (es. squat: ginocchio ~100°, anca ~90°; hinge: ginocchio ~150°, anca ~45°; push: gomito ~90°, spalla ~90°) e priorità pesate per ogni giunzione.
 - **Contributi di stress**:
   - Disallineamento segmenti: ogni segmento `misaligned` collegato a una giunzione aggiunge stress.
-  - Scostamento dalla posizione neutra: distanza euclidea pesata.
+  - Scostamento dall'angolo ottimo del pattern: deviazione angolare pesata per priorità.
   - Asimmetria (front): differenza di y tra giunzioni accoppiate (spalle, anche, ginocchia, caviglie).
   - Ginocchio valgo (front): avvicinamento delle ginocchia alla linea mediana.
   - Deviazione laterale colonna (front): head/neck lontani da x=50.
@@ -153,9 +154,9 @@ Interventi sulla pipeline di analisi per renderla più efficace:
 
 - App funzionante con autenticazione, catalogo esercizi esteso, analisi video IA, storico report, confronto e gestione utenti.
 - Catalogo esercizi completo con nomenclatura e descrizioni professionali.
-- Pipeline di analisi ottimizzata con modello tecnico di riferimento e analisi fase-per-fase.
+- Pipeline di analisi ottimizzata con modello tecnico di riferimento, analisi fase-per-fase e profili biomeccanici pattern-specifici.
 - Sagome anatomiche realistiche gender-specific (frontale/laterale, maschile/femminile) con diagramma corporeo interattivo.
-- Calcolo biomeccanico deterministico dello stress articolare a riposo basato sulla postura, integrato nel report e nell'export PDF.
+- Calcolo biomeccanico deterministico dello stress articolare basato su profili di movimento pattern-specifici, integrato nel report e nell'export PDF.
 - Export PDF con mappa posturale a corpo singolo centrato.
 
 ---
@@ -169,6 +170,17 @@ Interventi sulla pipeline di analisi per renderla più efficace:
 - **Ottimizzazioni mobile**: padding e gap ridotti per leggibilità su schermi piccoli; hero header, blocchi statistiche e liste report/utenti ottimizzati per rendering mobile-first.
 - **SCHEDA_SOFTWARE.txt**: creato documento identificativo del software con descrizione, linguaggio di programmazione e dati di pubblicazione.
 - **Sicurezza (RLS)**: applicate regole di row-level security alle entità `Exercise` (lettura pubblica, scrittura solo admin) e `AnalysisReport` (lettura/scrittura limitate a proprietario o admin).
+
+---
+
+## 14. Motore biomeccanico pattern-specifico (25 agosto 2026)
+
+- **Classificazione del pattern**: il motore biomeccanico (`biomechanics.ts`) identifica il pattern di movimento dell'esercizio (squat, hinge, push, pull, lunge, overhead, core, static) a partire dai metadati dell'esercizio (nome, macro-categoria, sottocategoria).
+- **Profili di riferimento**: ogni pattern definisce coordinate articolari ottimali, angoli target e priorità pesate per giunzione nella fase critica del movimento.
+- **Calcolo dello stress pattern-specifico**: lo stress articolare è ora calcolato come deviazione dall'esecuzione ottima del pattern, non più dalla posizione neutra in piedi. Questo elimina la falsa penalizzazione di esecuzioni corrette con grande escursione articolare (es. squat profondo con ginocchia flesse ~100° non viene più considerato un errore).
+- **Checkpoint tecnici nel prompt**: la funzione `analyzeExercise` recupera i checkpoint biomeccanici specifici del pattern e li passa al LLM come blocco di istruzioni, includendo angoli ottimi e checkpoint tecnici da valutare.
+- **Posizionamento giunzioni LLM**: il prompt istruisce il modello di posizionare le giunzioni confrontandole con l'esecuzione ottima del pattern (non la stazione eretta), migliorando la precisione delle coordinate e quindi l'accuratezza del calcolo dello stress.
+- **Calibrazione del punteggio**: il punteggio 0-100 è ora calibrato sui checkpoint del pattern: 90-100 (tutti i checkpoint rispettati, angoli entro ±5°), 75-89 (1-2 checkpoint non perfetti, ±15°), 60-74 (2-3 checkpoint violati, ±25°), <60 (più checkpoint violati, oltre ±25°).
 
 ---
 
