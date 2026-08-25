@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Video, Dumbbell, FileText, ArrowRight, AlertTriangle, Activity } from "lucide-react";
 import GenderOnboarding from "@/components/GenderOnboarding";
+import ExerciseStrip from "@/components/ExerciseStrip";
 
 export default function Home() {
   const [reports, setReports] = useState([]);
@@ -72,6 +73,9 @@ export default function Home() {
         <StatCard label="Esercizi in catalogo" value={loading ? "—" : exercises.length} icon={Dumbbell} />
         <StatCard label="Macro-categorie" value={loading ? "—" : macros} icon={Activity} />
       </section>
+
+      {/* Exercises strip — mobile-optimized horizontal scroll */}
+      <ExerciseStrip exercises={exercises} />
 
       {/* Recent reports */}
       <section>
