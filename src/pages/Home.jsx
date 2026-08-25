@@ -42,7 +42,7 @@ export default function Home() {
             <Video className="w-3.5 h-3.5" /> Analisi IA
           </span>
           <h1 className="mt-5 font-display text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight text-white max-w-2xl leading-[1.05]">
-            Allena meglio.<br />Correggi la postura, una ripetizione alla volta.
+            Allenati meglio.<br />Correggi la postura, una ripetizione alla volta.
           </h1>
           <p className="mt-4 text-muted-foreground max-w-xl text-[15px] leading-relaxed">
             Carica un video della tua esecuzione: l'intelligenza artificiale analizza tecnica e postura,
