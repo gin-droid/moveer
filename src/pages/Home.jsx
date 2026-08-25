@@ -67,21 +67,6 @@ export default function Home() {
         <StatCard label="Macro-categorie" value={loading ? "—" : macros} icon={Activity} />
       </section>
 
-      {/* Catalog CTA */}
-      <Link
-        to="/esercizi"
-        className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-5 hover:border-primary/40 transition-colors"
-      >
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Dumbbell className="w-6 h-6 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-display font-semibold text-white">Esplora il catalogo</div>
-          <div className="text-sm text-muted-foreground">{loading ? "…" : `${exercises.length} esercizi in ${macros} macro-categorie`}</div>
-        </div>
-        <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-      </Link>
-
       {/* Recent reports */}
       <section>
         <div className="flex items-center justify-between mb-4">
