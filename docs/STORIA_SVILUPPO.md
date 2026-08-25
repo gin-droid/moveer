@@ -184,4 +184,13 @@ Interventi sulla pipeline di analisi per renderla più efficace:
 
 ---
 
+## 15. Redesign silhouette laterale (25 agosto 2026)
+
+- **Profilo anatomico naturale**: la sagoma laterale (`bodySilhouette.js`) è stata ridisegnata con curve anatomiche più realistiche e armoniose — cranio arrotondato, collo con inclinazione frontale naturale, spalla deltoidia arrotondata, petto, addome, gluteo prominente, polpaccio definito e piede proporzionato — mantenendo l'approccio gender-neutral.
+- **Più punti di ancoraggio**: il profilo passa da ~28 a ~43 ancore per una definizione più fine del contorno corporeo.
+- **Rendering migliorato**: la silhouette a schermo (`BodyDiagram.jsx`) ora include un sottile riempimento sfumato (gradient verticale) oltre al contorno a linea sottile, per un aspetto più elegante e tridimensionale.
+- **Coerenza PDF**: il rendering della sagoma nell'export PDF (`ReportPdfExport.jsx`) aggiornato con un leggero riempimento solido per coerenza visiva con la versione a schermo.
+
+---
+
 *Documento aggiornato il 25 agosto 2026.*
