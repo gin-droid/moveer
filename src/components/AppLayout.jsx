@@ -13,12 +13,12 @@ import MoreMenuSheet from "@/components/MoreMenuSheet";
 
 const primaryItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/esercizi", label: "Esercizi", icon: Dumbbell },
   { to: "/analizza", label: "Analizza", icon: Video },
   { to: "/report", label: "Report", icon: FileText },
 ];
 
 const secondaryItems = [
+  { to: "/esercizi", label: "Esercizi", icon: Dumbbell },
   { to: "/video", label: "Video", icon: PlayCircle },
   { to: "/confronta", label: "Progressi", icon: TrendingUp },
   { to: "/utenti", label: "Utenti", icon: UsersIcon },
