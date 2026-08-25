@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { computeJointStress } from './biomechanics.ts';
+import { computeJointStress, classifyPattern, getPatternCheckpoints } from './biomechanics.ts';
 
 export default async function(req: Request): Promise<Response> {
   try {
