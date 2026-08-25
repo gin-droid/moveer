@@ -7,7 +7,7 @@ NOME SOFTWARE
 
 DESCRIZIONE IDENTIFICATIVA
   Applicazione mobile di analisi biomeccanica basata sull'intelligenza
-  artificiale. FormAI analizza video di esecuzione di esercizi fisici,
+  artificiale. MoVeer analizza video di esecuzione di esercizi fisici,
   valuta tecnica e postura dell'atleta, individua errori di esecuzione
   e genera un report dettagliato con punteggio, diagramma corporeo
   dello stress articolare, correzioni mirate ed esercizi correttivi
