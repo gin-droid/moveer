@@ -40,6 +40,20 @@ MODELLO TECNICO DI RIFERIMENTO (usa questi criteri per giudicare l'esecuzione):
 - Difficoltà attesa: ${reference.difficulty || 'n/d'}`
       : '';
 
+    // Pattern di movimento e checkpoint biomeccanici specifici dell'esercizio
+    const cp = getPatternCheckpoints(exerciseName, macroCategory, subcategory);
+    const checkpointBlock = `
+PROFILO BIOMECCANICO DELL'ESERCIZIO (pattern: ${cp.pattern.toUpperCase()})
+${cp.description}
+ANGOLI ARTICOLARI OTTIMI nella fase critica (usali come riferimento per posizionare le giunzioni):
+- Flessione ginocchio: ${cp.optimalAngles.kneeFlex}° (180 = esteso)
+- Flessione anca: ${cp.optimalAngles.hipFlex}° (180 = esteso)
+- Inclinazione tronco da verticale: ${cp.optimalAngles.trunkLean}°
+- Flessione gomito: ${cp.optimalAngles.elbowFlex}° (180 = esteso)
+- Flessione spalla: ${cp.optimalAngles.shoulderFlex}° (180 = braccio lungo il corpo)
+CHECKPOINT TECNICI DA VALUTARE:
+${cp.keyCheckpoints.map((c, i) => `${i + 1}. ${c}`).join('\n')}`;
+
     const frameGuidance = hasFrames
       ? `Sono stati estratti ${frameUrls.length} frame dal video, in ordine cronologico (coprono setup → fase eccentrica → punto di massima escursione → fase concentrica → lockout). Analizza OGNI fase separatamente valutando: allineamento articolare (caviglia/ginocchio/anca/colonna/spalla/gomito), angoli di ROM, baricentro e traiettoria del carico, controllo eccentrico, simmetria destra-sinistra, timing e respirazione. Confronta quanto osservi con il modello tecnico di riferimento. Per il body_diagram, POSIZIONA le giunzioni per riflettere la postura osservata NELLA FASE PIÙ CRITICA del movimento (tipicamente il punto di massima escursione o dove si rileva il difetto principale): misura con precisione gli angoli articolari reali (flessione ginocchio, inclinazione tronco, Q-angle, antiversione bacino) e traducili in coordinate normalizzate. Se il ginocchio è valgo, avvicina le knee alla linea mediana; se il tronco si inclina in avanti, sposta shoulder e hip in avanti nella vista laterale; se c'è antiversione del bacino, sposta l'hip in avanti; se c'è forward head, sposta la head in avanti. Più le posizioni sono precise e fedeli alla postura reale, più lo stress articolare calcolato sarà accurato.`
       : 'Nessun materiale fornito: basa l\'analisi sugli errori più comuni e frequenti per questo esercizio. Per il body_diagram, posiziona le giunzioni per riflettere la postura tipica di chi commette gli errori più probabili per questo esercizio.';
@@ -48,16 +62,16 @@ MODELLO TECNICO DI RIFERIMENTO (usa questi criteri per giudicare l'esecuzione):
 
 Genera anche un body_diagram: rappresentazione scheletrica del corpo in DUE viste (front e side) che sintetizza visivamente la postura osservata nella fase più critica del movimento.
 Per ogni vista fornisci:
-- joints: lista di giunzioni articolari. Vista FRONTALE usa id: head, neck, shoulder_l, shoulder_r, elbow_l, elbow_r, wrist_l, wrist_r, hip_l, hip_r, knee_l, knee_r, ankle_l, ankle_r. Vista LATERALE usa id: head, neck, shoulder, elbow, wrist, hip, knee, ankle. Per ognuna: label (nome italiano), x e y (coordinate normalizzate 0-100, dove 0,0 è in alto a sinistra e 100,100 in basso a destra), stress (valore iniziale 0 — lo stress articolare è calcolato deterministicamente dal motore biomeccanico in base alle posizioni reali, non va stimato soggettivamente). POSIZIONA le giunzioni con la MASSIMA PRECISIONE per riflettere la postura reale osservata nella fase critica del movimento: misura gli angoli articolari reali e traducili in coordinate. Esempi: ginocchio valgo → knee_l.x > 46 e knee_r.x < 54 (avvicinate alla linea mediana); tronco inclinato in avanti → shoulder.x e hip.x più vicini nella vista laterale; antiversione bacino → hip.x > 46 nella vista laterale; forward head → head.x > 44; spalle asimmetriche → shoulder_l.y ≠ shoulder_r.y; anche non orizzontali → hip_l.y ≠ hip_r.y; colonna non verticale → head.x e neck.x lontani da 50 nella vista frontale. La precisione delle posizioni determina l'accuratezza dell'analisi biomeccanica.
+- joints: lista di giunzioni articolari. Vista FRONTALE usa id: head, neck, shoulder_l, shoulder_r, elbow_l, elbow_r, wrist_l, wrist_r, hip_l, hip_r, knee_l, knee_r, ankle_l, ankle_r. Vista LATERALE usa id: head, neck, shoulder, elbow, wrist, hip, knee, ankle. Per ognuna: label (nome italiano), x e y (coordinate normalizzate 0-100, dove 0,0 è in alto a sinistra e 100,100 in basso a destra), stress (valore iniziale 0 — lo stress articolare è calcolato deterministicamente dal motore biomeccanico in base alle posizioni reali, non va stimato soggettivamente). POSIZIONA le giunzioni con la MASSIMA PRECISIONE per riflettere la postura reale osservata nella fase critica del movimento. IMPORTANTE: usa come riferimento di esecuzione OTTIMA gli ANGOLI OTTIMI del pattern indicato sopra (non la posizione neutra in piedi). Ad esempio, per uno squat corretto il ginocchio è flesso ~90-110° (non esteso), quindi nella vista laterale knee è molto più in alto rispetto alla anca; questo NON è un errore. Lo stress viene calcolato come deviazione dall'angolo ottimo del pattern, non dalla posizione neutra. Misura gli angoli articolari reali e traducili in coordinate. Esempi: ginocchio valgo → knee_l.x > 46 e knee_r.x < 54 (avvicinate alla linea mediana); tronco inclinato in avanti → shoulder.x e hip.x più vicini nella vista laterale; antiversione bacino → hip.x > 46 nella vista laterale; forward head → head.x > 44; spalle asimmetriche → shoulder_l.y ≠ shoulder_r.y; anche non orizzontali → hip_l.y ≠ hip_r.y; colonna non verticale → head.x e neck.x lontani da 50 nella vista frontale. La precisione delle posizioni determina l'accuratezza dell'analisi biomeccanica.
 - segments: collegamenti tra giunzioni (from id, to id). Imposta misaligned=true per i segmenti che presentano disallineamento rispetto alla posizione neutra (es. linea delle anche non orizzontale, linea delle spalle inclinata, ginocchia non allineati alle anche, colonna non verticale, tronco inclinato). I segmenti del tronco vanno: neck→head, neck→shoulder_l/r, shoulder_l→shoulder_r, shoulder_l/r→elbow_l/r, elbow_l/r→wrist_l/r, shoulder_l/r→hip_l/r, hip_l→hip_r, hip_l/r→knee_l/r, knee_l/r→ankle_l/r. Vista laterale: head→neck, neck→shoulder, shoulder→elbow, elbow→wrist, shoulder→hip, hip→knee, knee→ankle.`;
 
     const prompt = `Sei un coach esperto di biomeccanica, postura e tecnica di allenamento.
 Analizza l'esecuzione dell'esercizio "${exerciseName}" (macro-categoria: ${macroCategory}, sottocategoria: ${subcategory}).
-${frameGuidance}${refBlock}${diagramBlock}
+${frameGuidance}${refBlock}${checkpointBlock}${diagramBlock}
 ${notes ? `\nNote dell'utente: ${notes}` : ''}
 
 Restituisci un report strutturato in italiano con:
-- score: punteggio esecuzione 0-100 (più alto = esecuzione migliore). Calibra: 90-100 esecuzione tecnica esemplare, 75-89 buona con lievi difetti, 60-74 accettabile con difetti moderati, <60 esecuzione carente con difetti gravi.
+- score: punteggio esecuzione 0-100 (più alto = esecuzione migliore). Calibra confrontando l'esecuzione osservata con gli ANGOLI OTTIMI e i CHECKPOINT del pattern indicato sopra: 90-100 esecuzione tecnica esemplare (tutti i checkpoint rispettati, angoli entro ±5° dagli ottimi), 75-89 buona con lievi difetti (1-2 checkpoint non perfetti, angoli entro ±15°), 60-74 accettabile con difetti moderati (2-3 checkpoint violati, angoli entro ±25°), <60 esecuzione carente con difetti gravi (più checkpoint violati, angoli oltre ±25°).
 - summary: sintesi generale (2-3 frasi) che indichi il difetto principale e il punto di forza.
 - issues_detected: lista dei problemi rilevati, ognuno con title, severity (Lievo/Moderato/Grave) e description (specifica la fase del movimento e l'articolazione coinvolta).
 - corrections: per ogni problema, una correzione concreta con issue, correction (cosa fare) e cue (un cue mentale breve per ricordarlo).
@@ -196,7 +210,7 @@ Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili,
       corrections: llmRes.corrections || [],
       corrective_exercises: llmRes.corrective_exercises || [],
       recommendations: llmRes.recommendations || [],
-      body_diagram: computeJointStress(llmRes.body_diagram) || null
+      body_diagram: computeJointStress(llmRes.body_diagram, exerciseName, macroCategory, subcategory) || null
     });
 
     return Response.json({ report });
