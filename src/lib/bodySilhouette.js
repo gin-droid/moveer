@@ -56,31 +56,51 @@ const frontFemale = [
   [44, 8],
 ];
 
-// Vista laterale — profilo semplice e neutro (fronte a sinistra).
-// Sagoma essenziale uguale per entrambi i generi: poche ancore pulite
-// che disegnano testa, tronco, gluteo e gamba, lasciando le giunzioni
-// ben leggibili senza dettagli anatomici di disturbo.
+// Vista laterale — profilo atletico neutro (fronte a sinistra).
+// Sagoma gender-neutral con curve anatomiche naturali: cranio arrotondato,
+// collo flessibile, spalla deltoidia, petto, addome, gluteo prominente,
+// polpaccio definito e piede proporzionato. Le giunzioni restano leggibili.
 const sideSimple = [
-  // testa (occipite -> fronte)
-  [41, 4], [47, 7], [48, 13], [45, 17],
-  // nuca -> schiena
-  [45, 21], [44, 30], [44, 40], [44, 48],
-  // gluteo
-  [49, 54], [50, 60],
-  // retro gamba
-  [50, 70], [49, 80], [50, 90],
-  // piede (tallone -> punta)
-  [51, 96], [50, 98], [42, 98], [41, 95],
-  // fronte gamba (caviglia -> ginocchio -> coscia)
-  [42, 90], [43, 80], [43, 70],
-  // inguine / basso ventre
-  [40, 60], [39, 54],
-  // ventre -> petto -> spalla
-  [38, 46], [37, 38], [36, 30],
-  // clavicola / collo
-  [36, 24], [38, 20],
-  // mento / viso
-  [37, 15], [38, 9],
+  // sommita' del capo -> fronte
+  [45, 3], [43, 5], [42, 8], [41, 11],
+  // naso / labbro / mento
+  [40, 14], [41, 16], [42, 18],
+  // collo (lieve inclinazione frontale naturale)
+  [40, 21], [39, 24],
+  // spalla anteriore (deltoidia arrotondata)
+  [36, 26], [34, 29], [35, 33],
+  // petto / addome (curva morbida)
+  [36, 37], [37, 42], [38, 47],
+  // inguine
+  [40, 52], [41, 56],
+  // coscia anteriore
+  [42, 62], [43, 69],
+  // ginocchio
+  [43, 74], [43, 77],
+  // tibia
+  [43, 83], [42, 89],
+  // caviglia / collo del piede
+  [41, 93], [40, 95],
+  // punta del piede
+  [35, 97], [33, 98],
+  // suola / tallone
+  [33, 96], [36, 95], [38, 93],
+  // achillea / polpaccio (curva definita)
+  [39, 88], [40, 83], [41, 78],
+  // retro ginocchio
+  [42, 74], [43, 70],
+  // bicipite femorale
+  [45, 64], [48, 59],
+  // gluteo (prominenza naturale)
+  [51, 55], [52, 50],
+  // schiena (curva lombare concava naturale)
+  [50, 45], [48, 39],
+  // dorso
+  [47, 33], [46, 28],
+  // nuca
+  [46, 24], [47, 20],
+  // occipite / retro cranio
+  [47, 16], [46, 12], [46, 7],
 ];
 
 const outlineFor = (view, gender) => {

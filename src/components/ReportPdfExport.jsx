@@ -67,15 +67,17 @@ export default function ReportPdfExport({ report }) {
       const L = (v) => (v / 100) * size;
       const sc = (s) => (s >= 61 ? [251, 113, 133] : s >= 31 ? [251, 191, 36] : [16, 185, 129]);
 
-      // sagoma corporea: contorno a linea sottile
+      // sagoma corporea: contorno a linea sottile con riempimento tenue
       const silPts = silhouettePoints(viewName, gender);
-      doc.setDrawColor(161, 161, 170);
+      doc.setFillColor(240, 240, 245);
+      doc.setDrawColor(180, 180, 190);
       doc.setLineWidth(0.5);
       doc.moveTo(mx(silPts[0][0]), my(silPts[0][1]));
       for (let i = 1; i < silPts.length; i++) {
         doc.lineTo(mx(silPts[i][0]), my(silPts[i][1]));
       }
       doc.close();
+      doc.fill();
       doc.stroke();
 
       // linee di riferimento orizzontali (spalle, bacino, ginocchia, caviglie) + asse verticale

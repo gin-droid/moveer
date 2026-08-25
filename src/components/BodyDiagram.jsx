@@ -8,14 +8,23 @@ const stressColor = (s) =>
 
 function Silhouette({ view, gender }) {
   return (
-    <path
-      d={silhouettePath(view, gender)}
-      fill="none"
-      stroke="rgba(161,161,170,0.6)"
-      strokeWidth="0.5"
-      strokeLinejoin="round"
-      strokeLinecap="round"
-    />
+    <>
+      <defs>
+        <linearGradient id="silhouetteFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(161,161,170,0.10)" />
+          <stop offset="60%" stopColor="rgba(161,161,170,0.04)" />
+          <stop offset="100%" stopColor="rgba(161,161,170,0)" />
+        </linearGradient>
+      </defs>
+      <path
+        d={silhouettePath(view, gender)}
+        fill="url(#silhouetteFill)"
+        stroke="rgba(180,180,190,0.5)"
+        strokeWidth="0.45"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </>
   );
 }
 
