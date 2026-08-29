@@ -33,11 +33,11 @@ export default function Home() {
   const macros = [...new Set(exercises.map((e) => e.macro_category))].length;
 
   return (
-    <div className="space-y-5 sm:space-y-10">
+    <div className="space-y-5 sm:space-y-6">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-primary/30 bg-card p-4 sm:p-8 md:p-12 shadow-[0_0_70px_-20px_hsl(var(--primary))]">
-        <div className="absolute -right-16 -top-16 w-48 h-48 sm:w-72 sm:h-72 bg-primary/15 rounded-full blur-3xl" />
-        <div className="relative">
+      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-primary/30 bg-card p-4 sm:p-8 md:p-12 shadow-lg shadow-primary/10">
+        <div className="absolute -right-16 -top-16 w-48 h-48 sm:w-72 sm:h-72 bg-primary/15 rounded-full blur-2xl z-0 pointer-events-none" />
+        <div className="relative z-10">
           <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
             <Video className="w-3.5 h-3.5" /> Analisi IA
           </span>
@@ -60,7 +60,7 @@ export default function Home() {
       </section>
 
       {/* Stats */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <section className="grid grid-cols-2 gap-3 sm:gap-4">
         <StatCard label="Analisi effettuate" value={loading ? "—" : reports.length} icon={FileText} />
         <ScoreStat value={loading || avgScore === null ? null : avgScore} />
         <StatCard label="Esercizi in catalogo" value={loading ? "—" : exercises.length} icon={Dumbbell} />
