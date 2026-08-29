@@ -161,11 +161,11 @@ export default function ReportPdfExport({ report }) {
     doc.setTextColor(52, 211, 153);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("FORMAI", margin, 32);
+    doc.text("moVeerAI", margin, 32);
     doc.setTextColor(161, 161, 170);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("REPORT DI ANALISI", margin + 56, 32);
+    doc.text("REPORT DI ANALISI", margin + 66, 32);
     const date = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
     doc.setTextColor(161, 161, 170);
     doc.setFontSize(9);
@@ -438,7 +438,7 @@ export default function ReportPdfExport({ report }) {
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(161, 161, 170);
-      doc.text(`FormAI — Report di analisi`, margin, pageH - 20);
+      doc.text(`moVeerAI — Report di analisi`, margin, pageH - 20);
       doc.text(`Pagina ${p}/${pageCount}`, pageW - margin, pageH - 20, { align: "right" });
     }
 
