@@ -35,7 +35,7 @@ export default function Home() {
   return (
     <div className="space-y-5 sm:space-y-6">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-primary/30 bg-card p-4 sm:p-8 md:p-12 shadow-lg shadow-primary/10">
+      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-primary/30 bg-card p-4 sm:p-6 md:p-10 shadow-lg shadow-primary/10">
         <div className="absolute -right-16 -top-16 w-48 h-48 sm:w-72 sm:h-72 bg-primary/15 rounded-full blur-2xl z-0 pointer-events-none" />
         <div className="relative z-10">
           <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
@@ -88,7 +88,7 @@ export default function Home() {
               <Link
                 key={r.id}
                 to={`/report/${r.id}`}
-                className="group rounded-2xl border border-border bg-card p-4 sm:p-5 hover:border-primary/40 transition-colors"
+                className="group rounded-2xl border border-border bg-card p-3.5 sm:p-4 hover:border-primary/40 transition-colors"
               >
                 <div className="flex items-start justify-between">
                   <div className="min-w-0">
@@ -111,13 +111,13 @@ export default function Home() {
 
 function StatCard({ label, value, icon: Icon }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-3.5 sm:p-5">
+    <div className="rounded-2xl border border-border bg-card p-3 sm:p-3.5">
       <div className="flex items-center justify-between">
-        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+        <Icon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-primary" />
         <Sparkline />
       </div>
-      <div className="mt-2.5 sm:mt-3 text-xl sm:text-3xl font-display font-semibold text-white">{value}</div>
-      <div className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">{label}</div>
+      <div className="mt-2 sm:mt-2.5 text-lg sm:text-xl font-display font-semibold text-white">{value}</div>
+      <div className="text-[11px] text-muted-foreground mt-0.5">{label}</div>
     </div>
   );
 }
@@ -128,22 +128,22 @@ function ScoreStat({ value }) {
   const circ = 2 * Math.PI * r;
   const offset = circ - (s / 100) * circ;
   return (
-    <div className="rounded-2xl border border-border bg-card p-3.5 sm:p-5 flex items-center gap-3 sm:gap-4">
-      <div className="relative w-12 h-12 sm:w-16 sm:h-16 shrink-0">
-        <svg className="w-12 h-12 sm:w-16 sm:h-16 -rotate-90" viewBox="0 0 64 64">
+    <div className="rounded-2xl border border-border bg-card p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3">
+      <div className="relative w-11 h-11 sm:w-12 sm:h-12 shrink-0">
+        <svg className="w-11 h-11 sm:w-12 sm:h-12 -rotate-90" viewBox="0 0 64 64">
           <circle cx="32" cy="32" r="26" fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
           <circle cx="32" cy="32" r="26" fill="none" stroke="hsl(var(--primary))" strokeWidth="5" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-display font-semibold text-white">
+        <div className="absolute inset-0 flex items-center justify-center text-xs font-display font-semibold text-white">
           {value === null ? "—" : s}
         </div>
       </div>
       <div className="min-w-0">
-        <div className="text-xl sm:text-3xl font-display font-semibold text-white leading-none">
+        <div className="text-lg sm:text-xl font-display font-semibold text-white leading-none">
           {value === null ? "—" : s}
-          <span className="text-xs sm:text-sm text-muted-foreground font-body font-normal">/100</span>
+          <span className="text-xs text-muted-foreground font-body font-normal">/100</span>
         </div>
-        <div className="text-[11px] sm:text-xs text-muted-foreground mt-1">Punteggio medio</div>
+        <div className="text-[11px] text-muted-foreground mt-1">Punteggio medio</div>
       </div>
     </div>
   );
