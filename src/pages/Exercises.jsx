@@ -78,8 +78,8 @@ export default function Exercises() {
         )}
       </div>
 
-      {/* Macro chips — scrollable on mobile */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap pb-1">
+      {/* Macro chips */}
+      <div className="flex flex-wrap gap-2 pb-1">
         {macros.map((m) => (
           <button
             key={m}
@@ -93,8 +93,8 @@ export default function Exercises() {
         ))}
       </div>
 
-      {/* Sub chips — scrollable on mobile */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap -mt-2 pb-1">
+      {/* Sub chips */}
+      <div className="flex flex-wrap gap-2 -mt-2 pb-1">
         {subs.map((s) => (
           <button
             key={s}

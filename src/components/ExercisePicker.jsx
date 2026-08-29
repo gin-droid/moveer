@@ -18,7 +18,9 @@ export default function ExercisePicker({ exercises, selectedId, onSelect }) {
         !q ||
         e.name.toLowerCase().includes(q) ||
         (e.subcategory || "").toLowerCase().includes(q) ||
-        (e.muscle_groups || []).join(" ").toLowerCase().includes(q);
+        (e.muscle_groups || []).join(" ").toLowerCase().includes(q) ||
+        (e.equipment || "").toLowerCase().includes(q) ||
+        (e.description || "").toLowerCase().includes(q);
       return okMacro && okQuery;
     });
   }, [exercises, activeMacro, query]);

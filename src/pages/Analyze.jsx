@@ -21,7 +21,7 @@ export default function Analyze() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await base44.entities.Exercise.list("-created_date", 200);
+        const data = await base44.entities.Exercise.list("-created_date", 500);
         setExercises(data);
         const pre = params.get("exercise");
         if (pre) setSelectedId(pre);
