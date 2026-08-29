@@ -53,7 +53,7 @@ export default function Reports() {
   return (
     <>
     <PullToRefresh onRefresh={loadReports}>
-    <div className="space-y-10">
+    <div className="space-y-6 sm:space-y-10">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">I tuoi report</h1>
         <p className="text-zinc-400 mt-2 text-sm">Cronologia delle analisi e dei punteggi nel tempo.</p>

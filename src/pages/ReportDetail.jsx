@@ -50,7 +50,7 @@ export default function ReportDetail() {
   if (!report) return <div className="text-zinc-500 text-sm">Report non trovato.</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <Link to="/report" className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors">
         <ArrowLeft className="w-4 h-4" /> Tutti i report
       </Link>

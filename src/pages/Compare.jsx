@@ -80,7 +80,7 @@ export default function Compare() {
   if (loading) return <div className="text-zinc-500 text-sm">Caricamento…</div>;
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5 sm:space-y-7">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Progressi nel tempo</h1>
         <p className="text-zinc-400 mt-2 text-sm">Confronta due analisi dello stesso esercizio per visualizzare i miglioramenti di tecnica e postura.</p>

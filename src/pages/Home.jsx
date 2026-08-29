@@ -33,9 +33,9 @@ export default function Home() {
   const macros = [...new Set(exercises.map((e) => e.macro_category))].length;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 sm:space-y-10">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-primary/30 bg-card p-6 sm:p-8 md:p-12 shadow-[0_0_70px_-20px_hsl(var(--primary))]">
+      <section className="relative overflow-hidden rounded-3xl border border-primary/30 bg-card p-5 sm:p-8 md:p-12 shadow-[0_0_70px_-20px_hsl(var(--primary))]">
         <div className="absolute -right-20 -top-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl" />
         <div className="relative">
           <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">

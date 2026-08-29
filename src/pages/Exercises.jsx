@@ -52,7 +52,7 @@ export default function Exercises() {
 
   return (
     <PullToRefresh onRefresh={loadExercises}>
-    <div className="space-y-7">
+    <div className="space-y-5 sm:space-y-7">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Catalogo esercizi</h1>
         <p className="text-zinc-400 mt-2 text-sm">Sfoglia per macro-categoria e sottocategoria, poi analizza la tua esecuzione.</p>

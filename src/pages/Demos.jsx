@@ -48,7 +48,7 @@ export default function Demos() {
 
   return (
     <PullToRefresh onRefresh={loadDemos}>
-    <div className="space-y-7">
+    <div className="space-y-5 sm:space-y-7">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Video dimostrativi</h1>
         <p className="text-zinc-400 mt-2 text-sm">
