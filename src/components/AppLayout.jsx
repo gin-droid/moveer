@@ -79,7 +79,7 @@ export default function AppLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex overflow-x-hidden">
+    <div className="min-h-screen min-h-[100dvh] bg-background text-foreground flex overflow-x-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar fixed inset-y-0 left-0 z-30">
         <div className="px-6 py-7">
@@ -154,7 +154,7 @@ export default function AppLayout() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 md:ml-64 pt-[calc(3rem+env(safe-area-inset-top))] md:pt-0 pb-24 md:pb-0 min-h-screen">
+      <main className="flex-1 md:ml-64 pt-[calc(3rem+env(safe-area-inset-top))] md:pt-0 pb-24 md:pb-0 min-h-screen min-h-[100dvh]">
         <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 md:py-12 overflow-x-hidden">
           {isMobile ? (
             <AnimatePresence mode="wait">

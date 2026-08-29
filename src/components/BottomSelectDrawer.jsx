@@ -31,7 +31,7 @@ export default function BottomSelectDrawer({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="bottom"
-          className="h-auto max-h-[72vh] flex flex-col bg-card border-sidebar-border rounded-t-3xl p-0"
+          className="h-auto max-h-[72vh] max-h-[72dvh] flex flex-col bg-card border-sidebar-border rounded-t-3xl p-0"
         >
           <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
             <SheetTitle className="font-display text-white text-base">
