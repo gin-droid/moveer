@@ -53,7 +53,7 @@ export default function Reports() {
   return (
     <>
     <PullToRefresh onRefresh={loadReports}>
-    <div className="space-y-6 sm:space-y-10">
+    <div className="space-y-4 sm:space-y-5">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">I tuoi report</h1>
         <p className="text-zinc-400 mt-2 text-sm">Cronologia delle analisi e dei punteggi nel tempo.</p>
@@ -70,11 +70,11 @@ export default function Reports() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {reports.map((r) => (
             <div
               key={r.id}
-              className="group flex items-center gap-3 sm:gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5 hover:border-emerald-500/40 transition-colors"
+              className="group flex items-center gap-3 sm:gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5 hover:border-emerald-500/40 transition-colors min-h-[76px]"
             >
               <Link to={`/report/${r.id}`} className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                 <ScoreRing score={r.score} />

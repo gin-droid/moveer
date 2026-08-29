@@ -33,7 +33,7 @@ export default function Home() {
   const macros = [...new Set(exercises.map((e) => e.macro_category))].length;
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-primary/30 bg-card p-4 sm:p-6 md:p-10 shadow-lg shadow-primary/10">
         <div className="absolute -right-16 -top-16 w-48 h-48 sm:w-72 sm:h-72 bg-primary/15 rounded-full blur-2xl z-0 pointer-events-none" />

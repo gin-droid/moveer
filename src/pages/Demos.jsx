@@ -48,7 +48,7 @@ export default function Demos() {
 
   return (
     <PullToRefresh onRefresh={loadDemos}>
-    <div className="space-y-5 sm:space-y-7">
+    <div className="space-y-4 sm:space-y-5">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Video dimostrativi</h1>
         <p className="text-zinc-400 mt-2 text-sm">
@@ -111,7 +111,7 @@ export default function Demos() {
           {filtered.map((e) => {
             const demo = hasDemoVideo(e);
             return (
-              <div key={e.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 flex flex-col">
+              <div key={e.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5 flex flex-col min-h-[150px]">
                 <div className="text-[11px] uppercase tracking-widest text-emerald-300/80">{e.macro_category}</div>
                 <h3 className="mt-1 font-display font-semibold text-white">{e.name}</h3>
                 <div className="text-xs text-zinc-500 mt-0.5">{e.subcategory}</div>

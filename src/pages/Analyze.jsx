@@ -133,7 +133,7 @@ export default function Analyze() {
   };
 
   return (
-    <div className="space-y-6 sm:space-y-10">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Analizza la tua esecuzione</h1>
         <p className="text-zinc-400 mt-2 text-sm">Scegli l'esercizio, carica un video breve (frontale o laterale) e lascia che l'IA valuti tecnica e postura.</p>

@@ -80,7 +80,7 @@ export default function Compare() {
   if (loading) return <div className="text-zinc-500 text-sm">Caricamento…</div>;
 
   return (
-    <div className="space-y-5 sm:space-y-7">
+    <div className="space-y-4 sm:space-y-5">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Progressi nel tempo</h1>
         <p className="text-zinc-400 mt-2 text-sm">Confronta due analisi dello stesso esercizio per visualizzare i miglioramenti di tecnica e postura.</p>
@@ -111,7 +111,7 @@ export default function Compare() {
 
           {/* Trend chart */}
           {chartData.length >= 2 && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
                 <h2 className="font-display font-semibold text-white text-sm">Trend del punteggio</h2>
@@ -146,7 +146,7 @@ export default function Compare() {
           {reportA && reportB && (
             <div className="space-y-5">
               {/* Delta banner */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <div className="text-[11px] uppercase tracking-widest text-zinc-500">Variazione punteggio</div>
                   <div className="mt-1 flex items-baseline gap-2">
@@ -196,7 +196,7 @@ function ReportColumn({ report, tag, highlight }) {
   issues.forEach((i) => { if (sevCounts[i.severity] !== undefined) sevCounts[i.severity]++; });
 
   return (
-    <div className={`rounded-2xl border p-5 ${highlight ? "border-emerald-500/40 bg-emerald-400/5" : "border-zinc-800 bg-zinc-900/40"}`}>
+    <div className={`rounded-2xl border p-4 sm:p-5 ${highlight ? "border-emerald-500/40 bg-emerald-400/5" : "border-zinc-800 bg-zinc-900/40"}`}>
       <div className="flex items-center justify-between">
         <span className={`w-6 h-6 rounded-full text-xs font-semibold flex items-center justify-center ${highlight ? "bg-emerald-400 text-zinc-950" : "bg-zinc-800 text-zinc-300"}`}>{tag}</span>
         <span className="text-2xl font-display font-semibold text-white">{report.score}<span className="text-sm text-zinc-500">/100</span></span>

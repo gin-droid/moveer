@@ -52,7 +52,7 @@ export default function Exercises() {
 
   return (
     <PullToRefresh onRefresh={loadExercises}>
-    <div className="space-y-5 sm:space-y-7">
+    <div className="space-y-4 sm:space-y-5">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Catalogo esercizi</h1>
         <p className="text-zinc-400 mt-2 text-sm">Sfoglia per macro-categoria e sottocategoria, poi analizza la tua esecuzione.</p>
@@ -125,8 +125,8 @@ export default function Exercises() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filtered.map((e) => (
-            <div key={e.id} className="group rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden hover:border-emerald-500/40 transition-colors flex flex-col">
-              <div className="p-4 sm:p-5 flex-1">
+            <div key={e.id} className="group rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden hover:border-emerald-500/40 transition-colors flex flex-col min-h-[170px]">
+              <div className="p-4 flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] uppercase tracking-widest text-emerald-300/80">{e.macro_category}</span>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${diffColor[e.difficulty] || ""}`}>{e.difficulty}</span>
