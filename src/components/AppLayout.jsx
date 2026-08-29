@@ -155,7 +155,7 @@ export default function AppLayout() {
 
       {/* Main */}
       <main className="flex-1 md:ml-64 pt-[calc(3rem+env(safe-area-inset-top))] md:pt-0 pb-24 md:pb-0 min-h-screen min-h-[100dvh]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 overflow-x-hidden">
+        <div className="max-w-md md:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 overflow-x-hidden">
           {isMobile ? (
             <AnimatePresence mode="wait">
               <motion.div
