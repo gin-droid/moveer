@@ -29,7 +29,7 @@ export default function Exercises() {
   const macros = useMemo(() => ["Tutti", ...new Set(exercises.map((e) => e.macro_category))], [exercises]);
   const subs = useMemo(() => {
     const filtered = activeMacro === "Tutti" ? exercises : exercises.filter((e) => e.macro_category === activeMacro);
-    return ["Tutti", ...new Set(filtered.map((e) => e.subcategory).filter(Boolean))];
+    return ["Tutti", ...new Set(filtered.map((e) => e.subcategory))];
   }, [activeMacro, exercises]);
 
   const filtered = useMemo(() => {
