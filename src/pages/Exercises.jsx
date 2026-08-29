@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Search, ChevronRight, Video } from "lucide-react";
+import { Search, ChevronRight, Video, X } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
 
 export default function Exercises() {
@@ -29,14 +29,21 @@ export default function Exercises() {
   const macros = useMemo(() => ["Tutti", ...new Set(exercises.map((e) => e.macro_category))], [exercises]);
   const subs = useMemo(() => {
     const filtered = activeMacro === "Tutti" ? exercises : exercises.filter((e) => e.macro_category === activeMacro);
-    return ["Tutti", ...new Set(filtered.map((e) => e.subcategory))];
+    return ["Tutti", ...new Set(filtered.map((e) => e.subcategory).filter(Boolean))];
   }, [activeMacro, exercises]);
 
   const filtered = useMemo(() => {
+    const q = query.toLowerCase().trim();
     return exercises.filter((e) => {
       const okMacro = activeMacro === "Tutti" || e.macro_category === activeMacro;
       const okSub = activeSub === "Tutti" || e.subcategory === activeSub;
-      const okQuery = !query || e.name.toLowerCase().includes(query.toLowerCase()) || (e.muscle_groups || []).join(" ").toLowerCase().includes(query.toLowerCase());
+      const okQuery = !q || (
+        e.name.toLowerCase().includes(q) ||
+        (e.subcategory || "").toLowerCase().includes(q) ||
+        (e.muscle_groups || []).join(" ").toLowerCase().includes(q) ||
+        (e.equipment || "").toLowerCase().includes(q) ||
+        (e.description || "").toLowerCase().includes(q)
+      );
       return okMacro && okSub && okQuery;
     });
   }, [exercises, activeMacro, activeSub, query]);
@@ -57,18 +64,27 @@ export default function Exercises() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca esercizio o gruppo muscolare…"
-          className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
+          placeholder="Cerca per nome, muscolo, attrezzatura…"
+          className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-11 pr-10 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
         />
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+            aria-label="Cancella ricerca"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
-      {/* Macro chips */}
-      <div className="flex flex-wrap gap-2">
+      {/* Macro chips — scrollable on mobile */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap pb-1">
         {macros.map((m) => (
           <button
             key={m}
             onClick={() => { setActiveMacro(m); setActiveSub("Tutti"); }}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
               activeMacro === m ? "bg-emerald-400 text-zinc-950" : "bg-zinc-900/60 border border-zinc-800 text-zinc-300 hover:border-zinc-600"
             }`}
           >
@@ -77,13 +93,13 @@ export default function Exercises() {
         ))}
       </div>
 
-      {/* Sub chips */}
-      <div className="flex flex-wrap gap-2 -mt-2">
+      {/* Sub chips — scrollable on mobile */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap -mt-2 pb-1">
         {subs.map((s) => (
           <button
             key={s}
             onClick={() => setActiveSub(s)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
               activeSub === s ? "bg-zinc-200 text-zinc-900" : "bg-zinc-900/40 border border-zinc-800 text-zinc-400 hover:text-zinc-200"
             }`}
           >
@@ -91,6 +107,13 @@ export default function Exercises() {
           </button>
         ))}
       </div>
+
+      {/* Result count */}
+      {!loading && (
+        <div className="text-xs text-zinc-500 -mt-2">
+          {filtered.length} {filtered.length === 1 ? "esercizio" : "esercizi"}
+        </div>
+      )}
 
       {/* Grid */}
       {loading ? (
@@ -100,10 +123,10 @@ export default function Exercises() {
           Nessun esercizio trovato.
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filtered.map((e) => (
             <div key={e.id} className="group rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden hover:border-emerald-500/40 transition-colors flex flex-col">
-              <div className="p-5 flex-1">
+              <div className="p-4 sm:p-5 flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] uppercase tracking-widest text-emerald-300/80">{e.macro_category}</span>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${diffColor[e.difficulty] || ""}`}>{e.difficulty}</span>
@@ -117,7 +140,7 @@ export default function Exercises() {
                   ))}
                 </div>
               </div>
-              <div className="px-5 pb-5 flex items-center gap-2">
+              <div className="px-4 sm:px-5 pb-4 sm:pb-5 flex items-center gap-2">
                 <Link
                   to={`/analizza?exercise=${encodeURIComponent(e.id)}`}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 bg-emerald-400/10 hover:bg-emerald-400 text-emerald-300 hover:text-zinc-950 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors border border-emerald-400/20 hover:border-emerald-400"

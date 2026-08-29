@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Play, ExternalLink, Loader2 } from "lucide-react";
+import { Search, Play, ExternalLink, Loader2, X } from "lucide-react";
 import { hasDemoVideo, youtubeSearchUrl } from "@/lib/videoEmbed";
 import DemoModal from "@/components/DemoModal";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -35,10 +35,13 @@ export default function Demos() {
     const q = query.toLowerCase().trim();
     return exercises.filter((e) => {
       const okMacro = activeMacro === "Tutti" || e.macro_category === activeMacro;
-      const okQuery =
-        !q ||
+      const okQuery = !q || (
         e.name.toLowerCase().includes(q) ||
-        (e.subcategory || "").toLowerCase().includes(q);
+        (e.subcategory || "").toLowerCase().includes(q) ||
+        (e.muscle_groups || []).join(" ").toLowerCase().includes(q) ||
+        (e.equipment || "").toLowerCase().includes(q) ||
+        (e.description || "").toLowerCase().includes(q)
+      );
       return okMacro && okQuery;
     });
   }, [exercises, activeMacro, query]);
@@ -59,18 +62,27 @@ export default function Demos() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca esercizio…"
-          className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
+          placeholder="Cerca per nome, muscolo, attrezzatura…"
+          className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-11 pr-10 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
         />
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+            aria-label="Cancella ricerca"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
-      {/* Macro chips */}
-      <div className="flex flex-wrap gap-2">
+      {/* Macro chips — scrollable on mobile */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap pb-1">
         {macros.map((m) => (
           <button
             key={m}
             onClick={() => setActiveMacro(m)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
               activeMacro === m
                 ? "bg-emerald-400 text-zinc-950"
                 : "bg-zinc-900/60 border border-zinc-800 text-zinc-300 hover:border-zinc-600"
@@ -81,6 +93,13 @@ export default function Demos() {
         ))}
       </div>
 
+      {/* Result count */}
+      {!loading && (
+        <div className="text-xs text-zinc-500">
+          {filtered.length} {filtered.length === 1 ? "esercizio" : "esercizi"}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center gap-2 text-zinc-500 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" /> Caricamento…
@@ -88,7 +107,7 @@ export default function Demos() {
       ) : filtered.length === 0 ? (
         <div className="text-zinc-500 text-sm">Nessun esercizio trovato.</div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filtered.map((e) => {
             const demo = hasDemoVideo(e);
             return (
