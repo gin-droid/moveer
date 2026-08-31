@@ -22,6 +22,10 @@ LINGUAGGIO DI PROGRAMMAZIONE
              Funzioni server-side in TypeScript (Node.js/Deno runtime)
   Database:  Base44 Entities (schema JSON, NoSQL)
   Integrazioni IA: LLM vision (analisi posturale), biomechanics engine
+  Native:    Plugin Capacitor (@moVeerAI/depth-scanner) per acquisizione
+             dati di profondita LiDAR/ToF (Swift/ARKit per iOS,
+             Kotlin/ARCore per Android); helper depth3d.ts per il
+             calcolo di angoli articolari 3D reali
   Piattaforma di pubblicazione: Base44 (web + build native iOS/Android)
 
 DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
@@ -32,15 +36,21 @@ DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
   Sviluppatore:           Account proprietario app Base44
 
 VERSIONE CORRENTE
-  Versione: 1.0
-  Data ultimo aggiornamento scheda: 2026-08-25
+  Versione: 1.1
+  Data ultimo aggiornamento scheda: 2026-08-31
 
 ================================================================
 NOTE TECNICHE
   - Architettura single-page application (SPA) con routing lato client
   - Layout responsive mobile-first con safe-area iOS (notch/home indicator)
   - Autenticazione gestita da Base44 Auth (email/password, Google OAuth, OTP)
-  - Entità dati: Exercise, AnalysisReport, User
-  - Funzioni backend: analyzeExercise (analisi IA), deleteOwnAccount
+  - Entita dati: Exercise, AnalysisReport (con depth_metadata), User
+  - Funzioni backend: analyzeExercise (analisi IA con supporto depth 3D),
+    deleteOwnAccount
   - Export report in PDF (jsPDF) con diagramma corporeo SVG
+  - Acquisizione video: CameraRecorder RGB (web) + DepthScanner nativo
+    (LiDAR/ToF via Capacitor) con fallback graduale ai soli frame RGB
+  - Salvataggio video registrati sul dispositivo (download locale)
+  - Calcolo biomeccanico deterministico dello stress articolare basato su
+    profili di movimento pattern-specifici
 ================================================================
