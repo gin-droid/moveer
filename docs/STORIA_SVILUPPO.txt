@@ -197,4 +197,28 @@ Flusso tecnico dell'analisi (src/pages/Analyze.jsx):
 
 ====================================================================================================
 
-Documento aggiornato il 25 agosto 2026.
+16. Integrazione profondita nativa LiDAR/ToF (31 agosto 2026)
+----------------------------------------------------------------------------------------------------
+- Plugin Capacitor @moVeerAI/depth-scanner (src/native/depth-scanner-plugin/): scaffold completo del plugin nativo per acquisire dati di profondita reali dai sensori LiDAR/ToF dei dispositivi mobili.
+  - Definizioni TS (src/definitions.ts): API isAvailable, startRecording, stopRecording, cancelRecording; tipi Joint3D, DepthFrame, DepthData con giunzioni 3D + statistiche di profondita per frame.
+  - Fallback web (src/index.ts): isAvailable restituisce false sul browser; la pagina Analizza ricade sul CameraRecorder RGB.
+  - iOS (ios/DepthScannerPlugin.swift): usa ARKit ARBodyTrackingConfiguration per lo scheletro 3D (91 giunzioni mappate ai nomi del backend) e sceneDepth LiDAR per la mappa di profondita reale (min/max/mediana in mm); richiede iOS 14+ e dispositivo con LiDAR per l'alta precisione.
+  - Android (android/DepthScannerPlugin.kt): usa ARCore Depth API (DepthMode.AUTOMATIC) per la depth map (Depth16, mm per pixel) e fonde ML Kit Pose Detection con la profondita per ricostruire giunzioni 3D; richiede ARCore 1.32+.
+- Helper depth3d.ts (base44/functions/analyzeExercise/depth3d.ts): calcolo di angoli articolari 3D reali (flessione ginocchio, anca, gomito, spalla, inclinazione tronco da verticale, Q-angle, asimmetria L/R) a partire dalle giunzioni 3D misurate, invece di stimarli dal 2D. Restituisce un riepilogo testuale con medie/minimi per ogni angolo.
+- Backend analyzeExercise esteso: la funzione ora accetta un campo opzionale depthData nel payload; quando presente calcola gli angoli 3D reali e li inietta nel prompt dell'LLM come riferimento primario (con istruzione di fidarsi del dato misurato), migliorando la precisione dell'analisi e del posizionamento delle giunzioni nel body_diagram.
+- Entita AnalysisReport estesa: aggiunto il campo depth_metadata (sensor_type lidar/tof, frame_count, accuracy alta/media) per tracciare l'origine e la qualita dei dati di profondita usati in ogni report.
+- Fallback graduale: sui dispositivi senza sensore di profondita l'analisi procede normalmente con i soli frame RGB; i dati di profondita arricchiscono l'analisi solo quando disponibili.
+
+===================================================================================================
+
+17. Salvataggio video registrati sul telefono (31 agosto 2026)
+----------------------------------------------------------------------------------------------------
+- Anteprima post-registrazione: il componente CameraRecorder ora, dopo lo stop della registrazione, mostra un'anteprima del video con tre azioni invece di passare direttamente all'analisi.
+- Salva sul telefono: pulsante che scarica il video nella memoria del dispositivo (download via anchor con attributo download), con nome file moVeerAI-<timestamp>.<ext>.
+- Usa per l'analisi: pulsante che procede con il flusso di analisi come in precedenza (passa il file a onRecorded).
+- Registra di nuovo: pulsante per scartare la registrazione e riprovare.
+- Gestione memoria: revoca degli object URL alla chiusura del componente e al cambio registrazione per evitare leak.
+
+===================================================================================================
+
+Documento aggiornato il 31 agosto 2026.
