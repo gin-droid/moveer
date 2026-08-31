@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { computeJointStress, classifyPattern, getPatternCheckpoints } from './biomechanics.ts';
+import { summarizeDepthAngles, type DepthData } from './depth3d.ts';
 
 export default async function(req: Request): Promise<Response> {
   try {
@@ -13,6 +14,16 @@ export default async function(req: Request): Promise<Response> {
     const subcategory = (body.subcategory || '').trim();
     const frameUrls: string[] = Array.isArray(body.frameUrls) ? body.frameUrls.filter(Boolean) : [];
     const notes = (body.notes || '').trim();
+    const depthData: DepthData | null = body.depthData && Array.isArray(body.depthData.frames) && body.depthData.frames.length > 0
+      ? body.depthData
+      : null;
+
+    // Quando sono disponibili dati di profondità (LiDAR/ToF), calcola angoli
+    // articolari 3D reali per un'analisi più precisa.
+    const depthSummary = depthData ? summarizeDepthAngles(depthData) : '';
+    const depthBlock = depthSummary
+      ? `\n\n${depthSummary}\nUsa questi angoli MISURATI come riferimento primario per giudicare l'esecuzione e per posizionare le giunzioni del body_diagram. Se un angolo misurato differisce da quanto sembri vedere nel frame RGB, fidati del dato misurato (più preciso).`
+      : '';
 
     if (!exerciseName) {
       return Response.json({ error: 'Nome esercizio obbligatorio' }, { status: 400 });
@@ -67,7 +78,7 @@ Per ogni vista fornisci:
 
     const prompt = `Sei un coach esperto di biomeccanica, postura e tecnica di allenamento.
 Analizza l'esecuzione dell'esercizio "${exerciseName}" (macro-categoria: ${macroCategory}, sottocategoria: ${subcategory}).
-${frameGuidance}${refBlock}${checkpointBlock}${diagramBlock}
+${frameGuidance}${refBlock}${checkpointBlock}${diagramBlock}${depthBlock}
 ${notes ? `\nNote dell'utente: ${notes}` : ''}
 
 Restituisci un report strutturato in italiano con:
@@ -210,7 +221,12 @@ Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili,
       corrections: llmRes.corrections || [],
       corrective_exercises: llmRes.corrective_exercises || [],
       recommendations: llmRes.recommendations || [],
-      body_diagram: computeJointStress(llmRes.body_diagram, exerciseName, macroCategory, subcategory) || null
+      body_diagram: computeJointStress(llmRes.body_diagram, exerciseName, macroCategory, subcategory) || null,
+      depth_metadata: depthData ? {
+        sensor_type: depthData.sensorType,
+        frame_count: depthData.frames.length,
+        accuracy: depthData.sensorType === "lidar" ? "alta" : "media",
+      } : null
     });
 
     return Response.json({ report });

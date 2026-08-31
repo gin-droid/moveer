@@ -27,6 +27,29 @@
       "title": "Video",
       "format": "url"
     },
+    "depth_metadata": {
+      "type": "object",
+      "title": "Metadati profondit\u00e0",
+      "properties": {
+        "sensor_type": {
+          "type": "string",
+          "enum": [
+            "lidar",
+            "tof"
+          ]
+        },
+        "frame_count": {
+          "type": "number"
+        },
+        "accuracy": {
+          "type": "string",
+          "enum": [
+            "alta",
+            "media"
+          ]
+        }
+      }
+    },
     "score": {
       "type": "number",
       "title": "Punteggio esecuzione (0-100)"

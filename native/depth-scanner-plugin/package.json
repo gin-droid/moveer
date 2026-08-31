@@ -1,0 +1,28 @@
+{
+  "name": "@moVeerAI/depth-scanner",
+  "version": "0.1.0",
+  "description": "Capacitor plugin for LiDAR/ToF depth-assisted body scanning (moVeerAI)",
+  "main": "dist/plugin.cjs.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "scripts": {
+    "build": "npm run build && tsc",
+    "lint": "eslint . --ext .ts"
+  },
+  "keywords": ["capacitor", "plugin", "lidar", "tof", "depth", "ar", "fitness"],
+  "peerDependencies": {
+    "@capacitor/core": "^5.0.0 || ^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/core": "^6.0.0",
+    "typescript": "^5.0.0"
+  },
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    },
+    "android": {
+      "src": "android"
+    }
+  }
+}
