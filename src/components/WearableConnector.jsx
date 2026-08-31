@@ -1,50 +1,38 @@
 import { useEffect, useRef, useState } from "react";
-import { HeartPulse, Watch, Activity, Bluetooth, BluetoothOff, Smartphone, Loader2, X } from "lucide-react";
+import { HeartPulse, Bluetooth, BluetoothOff, Loader2, X, Watch } from "lucide-react";
 import {
   isWebBluetoothSupported,
-  isDeviceMotionSupported,
-  requestDeviceMotionPermission,
   connectHeartRate,
-  startMotionCapture,
   aggregateWearableData,
 } from "@/lib/wearableSensors";
 
 /**
  * WearableConnector
- * Permette di collegare una fascia cardio (BLE) e/o i sensori di movimento
- * del telefono per arricchire l'analisi biomeccanica con dati reali:
- * frequenza cardiaca, intensità e cadenza del movimento.
+ * Permette di collegare una fascia cardio / smartwatch esterno via Bluetooth LE
+ * per arricchire l'analisi con la frequenza cardiaca reale.
  *
- * Notifica i dati aggregati al parent tramite onWearableData(payload).
+ * Il telefono resta libero di registrare il video: i dati provengono
+ * esclusivamente da dispositivi esterni (wearable BLE).
  */
 export default function WearableConnector({ onWearableData }) {
   const [hrSupported] = useState(isWebBluetoothSupported());
-  const [motionSupported] = useState(isDeviceMotionSupported());
-
   const [hrConnected, setHrConnected] = useState(false);
   const [hrConnecting, setHrConnecting] = useState(false);
   const [hrDevice, setHrDevice] = useState("");
   const [hr, setHr] = useState(0);
 
-  const [motionActive, setMotionActive] = useState(false);
-  const [motionStarting, setMotionStarting] = useState(false);
-  const [liveAccel, setLiveAccel] = useState(0);
-
   const hrConnRef = useRef(null);
-  const stopMotionRef = useRef(null);
   const hrSamplesRef = useRef([]);
-  const motionSamplesRef = useRef([]);
   const startTimeRef = useRef(null);
 
   // Aggrega e notifica il parent ogni secondo
   useEffect(() => {
     const id = setInterval(() => {
-      if (hrSamplesRef.current.length === 0 && motionSamplesRef.current.length === 0) return;
+      if (hrSamplesRef.current.length === 0) return;
       const data = aggregateWearableData({
         hrSamples: hrSamplesRef.current,
-        motionSamples: motionSamplesRef.current,
         durationMs: startTimeRef.current ? Date.now() - startTimeRef.current : 0,
-        deviceName: hrDevice || "phone_imu",
+        deviceName: hrDevice,
       });
       onWearableData?.(data);
     }, 1000);
@@ -55,7 +43,6 @@ export default function WearableConnector({ onWearableData }) {
   useEffect(() => {
     return () => {
       try { hrConnRef.current?.disconnect(); } catch { /* ignore */ }
-      stopMotionRef.current?.();
     };
   }, []);
 
@@ -93,39 +80,11 @@ export default function WearableConnector({ onWearableData }) {
     setHr(0);
   };
 
-  const handleStartMotion = async () => {
-    setMotionStarting(true);
-    try {
-      const granted = await requestDeviceMotionPermission();
-      if (!granted) return;
-      if (!startTimeRef.current) startTimeRef.current = Date.now();
-      stopMotionRef.current = startMotionCapture((sample) => {
-        motionSamplesRef.current.push(sample);
-        setLiveAccel(sample.accelMag);
-      });
-      setMotionActive(true);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setMotionStarting(false);
-    }
-  };
-
-  const stopMotion = () => {
-    stopMotionRef.current?.();
-    stopMotionRef.current = null;
-    setMotionActive(false);
-    setLiveAccel(0);
-  };
-
   const reset = () => {
     hrSamplesRef.current = [];
-    motionSamplesRef.current = [];
     startTimeRef.current = null;
     onWearableData?.(null);
   };
-
-  const hasData = hrSamplesRef.current.length > 0 || motionSamplesRef.current.length > 0;
 
   return (
     <div className="space-y-3">
@@ -137,8 +96,8 @@ export default function WearableConnector({ onWearableData }) {
               <HeartPulse className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-sm font-medium text-white">Fascia cardio</div>
-              <div className="text-[11px] text-zinc-500">{hrConnected ? hrDevice : "Bluetooth LE"}</div>
+              <div className="text-sm font-medium text-white">Fascia cardio / smartwatch</div>
+              <div className="text-[11px] text-zinc-500">{hrConnected ? hrDevice : "Bluetooth LE esterno"}</div>
             </div>
           </div>
           {hrConnected ? (
@@ -161,47 +120,23 @@ export default function WearableConnector({ onWearableData }) {
             <span className="text-[11px] text-zinc-600 flex items-center gap-1"><BluetoothOff className="w-3.5 h-3.5" /> Non supportato</span>
           )}
         </div>
-      </div>
-
-      {/* Phone motion sensors */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${motionActive ? "bg-emerald-500/15 text-emerald-400" : "bg-zinc-800 text-zinc-500"}`}>
-              <Smartphone className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-sm font-medium text-white">Sensori movimento</div>
-              <div className="text-[11px] text-zinc-500">Accelerometro + giroscopio</div>
-            </div>
-          </div>
-          {motionActive ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-display font-semibold text-emerald-400 tabular-nums">{liveAccel.toFixed(1)}<span className="text-xs text-zinc-500 font-body ml-1">m/s²</span></span>
-              <button onClick={stopMotion} className="w-8 h-8 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center" aria-label="Ferma">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : motionSupported ? (
-            <button
-              onClick={handleStartMotion}
-              disabled={motionStarting}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors disabled:opacity-50"
-            >
-              {motionStarting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Activity className="w-3.5 h-3.5" />}
-              {motionStarting ? "Avvio…" : "Attiva"}
-            </button>
-          ) : (
-            <span className="text-[11px] text-zinc-600">Non supportato</span>
-          )}
-        </div>
         <p className="mt-2.5 text-[11px] text-zinc-500 leading-relaxed">
-          Tieni il telefono in tasca o fissato al corpo durante la registrazione per catturare
-          accelerazione e cadenza del movimento reali.
+          Collega una fascia toracica o uno smartwatch compatibile Bluetooth. Il telefono resta libero
+          di registrare il video, mentre il wearable misura la frequenza cardiaca durante l'esecuzione.
         </p>
       </div>
 
-      {hasData && (
+      {!hrSupported && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-amber-300/90 text-xs leading-relaxed">
+          <Watch className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>
+            Il tuo browser non supporta Web Bluetooth. Su iOS usa l'app nativa per collegare
+            fascia cardio e smartwatch esterni.
+          </span>
+        </div>
+      )}
+
+      {hrSamplesRef.current.length > 0 && (
         <button onClick={reset} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">
           Azzera dati raccolti
         </button>

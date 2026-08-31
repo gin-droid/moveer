@@ -1,19 +1,13 @@
 /**
  * wearableSensors.js
- * Integrazione con wearable e sensori del dispositivo per l'analisi biomeccanica.
+ * Integrazione con wearable esterni (fascia cardio / smartwatch) via Web Bluetooth
+ * per arricchire l'analisi biomeccanica con la frequenza cardiaca reale.
  *
- * Fonti dati supportate (web):
- *  1. Web Bluetooth — fascia cardio / smartwatch con GATT Heart Rate Service (0x180D).
- *     Funziona su Chrome/Edge Android e desktop. NON supportato su iOS Safari
- *     (richiede il plugin Capacitor nativo per iOS).
- *  2. DeviceMotion / DeviceOrientation — accelerometro e giroscopio del telefono.
- *     Universale (iOS Safari 13+ richiede permission request). Usato sia come
- *     sensore primario (telefono indossato sul corpo) sia come fallback quando
- *     non è disponibile un wearable BLE.
+ * Il telefono resta dedicato alla registrazione video: i dati provengono
+ * esclusivamente da dispositivi esterni collegati via Bluetooth LE.
  *
- * I dati raccolti (frequenza cardiaca, intensità del movimento, cadenza) vengono
- * aggregati in un riepilogo utilizzabile dalla funzione di analisi backend per
- * arricchire il contesto biomeccanico.
+ * Web Bluetooth funziona su Chrome/Edge Android e desktop. NON è supportato su
+ * iOS Safari (richiede il plugin Capacitor nativo per iOS).
  */
 
 const HR_SERVICE = 0x180d;
@@ -21,23 +15,6 @@ const HR_MEASUREMENT = 0x2a37;
 
 export function isWebBluetoothSupported() {
   return typeof navigator !== "undefined" && !!navigator.bluetooth?.requestDevice;
-}
-
-export function isDeviceMotionSupported() {
-  return typeof window !== "undefined" && "DeviceMotionEvent" in window;
-}
-
-// iOS 13+ richiede una richiesta esplicita di permesso per i sensori movimento.
-export async function requestDeviceMotionPermission() {
-  if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
-    try {
-      const res = await DeviceMotionEvent.requestPermission();
-      return res === "granted";
-    } catch {
-      return false;
-    }
-  }
-  return true;
 }
 
 /**
@@ -96,68 +73,19 @@ function parseHeartRate(dataView) {
 }
 
 /**
- * Avvia la cattura dei sensori di movimento del telefono.
- * @param {(sample: { accelMag: number, rotMag: number, t: number }) => void} onSample
- * @returns {() => void} stop function
+ * Aggrega i campioni di frequenza cardiaca in un riepilogo utilizzabile dal backend.
+ * @param {{ hrSamples: number[], durationMs: number, deviceName?: string }} input
  */
-export function startMotionCapture(onSample) {
-  const handler = (e) => {
-    const a = e.accelerationIncludingGravity || { x: 0, y: 0, z: 0 };
-    const r = e.rotationRate || { alpha: 0, beta: 0, gamma: 0 };
-    // Rimuovi ~g (9.81) dalla componente dominante per approssimare l'accelerazione lineare
-    const ax = a.x ?? 0, ay = a.y ?? 0, az = a.z ?? 0;
-    const linearZ = az > 9 ? az - 9.81 : az < -9 ? az + 9.81 : az;
-    const accelMag = Math.sqrt(ax * ax + ay * ay + linearZ * linearZ);
-    const rotMag = Math.sqrt((r.alpha || 0) ** 2 + (r.beta || 0) ** 2 + (r.gamma || 0) ** 2);
-    onSample({ accelMag, rotMag, t: Date.now() });
-  };
-  window.addEventListener("devicemotion", handler);
-  return () => window.removeEventListener("devicemotion", handler);
-}
-
-const round1 = (n) => Math.round(n * 10) / 10;
-
-/**
- * Aggrega i campioni raccolti in un riepilogo utilizzabile dal backend.
- * @param {{ hrSamples: number[], motionSamples: { accelMag: number, rotMag: number }[], durationMs: number, deviceName?: string }} input
- */
-export function aggregateWearableData({ hrSamples, motionSamples, durationMs, deviceName }) {
-  const out = { device_type: deviceName || "phone_imu", heart_rate: null, motion: null };
-
-  if (hrSamples.length > 0) {
-    const hrs = hrSamples.filter((h) => h > 0);
-    if (hrs.length) {
-      out.heart_rate = {
-        avg: Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length),
-        min: Math.min(...hrs),
-        max: Math.max(...hrs),
-        samples_count: hrs.length,
-      };
-    }
-  }
-
-  if (motionSamples.length > 0) {
-    const mags = motionSamples.map((s) => s.accelMag);
-    const rotMags = motionSamples.map((s) => s.rotMag);
-    const avg = mags.reduce((a, b) => a + b, 0) / mags.length;
-    const peak = Math.max(...mags);
-    // Cadence: conta i picchi di accelerazione sopra una soglia dinamica
-    const threshold = avg + 1.5;
-    let peaks = 0;
-    for (let i = 1; i < mags.length - 1; i++) {
-      if (mags[i] > threshold && mags[i] > mags[i - 1] && mags[i] > mags[i + 1]) peaks++;
-    }
-    const durationS = durationMs / 1000;
-    const cadence = durationS > 0 ? Math.round((peaks / durationS) * 60) : 0;
-    out.motion = {
-      avg_accel: round1(avg),
-      peak_accel: round1(peak),
-      avg_rot: round1(rotMags.reduce((a, b) => a + b, 0) / rotMags.length),
-      cadence,
-      duration_s: Math.round(durationS),
-      samples_count: motionSamples.length,
+export function aggregateWearableData({ hrSamples, durationMs, deviceName }) {
+  const out = { device_type: deviceName || "ble_hrm", heart_rate: null, motion: null };
+  const hrs = hrSamples.filter((h) => h > 0);
+  if (hrs.length) {
+    out.heart_rate = {
+      avg: Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length),
+      min: Math.min(...hrs),
+      max: Math.max(...hrs),
+      samples_count: hrs.length,
     };
   }
-
   return out;
 }
