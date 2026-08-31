@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Video, Upload, Loader2, ChevronRight, Sparkles } from "lucide-react";
+import { Video, Upload, Loader2, ChevronRight, Sparkles, Camera } from "lucide-react";
 import { validateMediaFile, extractVideoFrames, formatFileSize, isVideoFile } from "@/lib/videoFrames";
 import ExercisePicker from "@/components/ExercisePicker";
+import CameraRecorder from "@/components/CameraRecorder";
 
 export default function Analyze() {
   const [params] = useSearchParams();
@@ -17,6 +18,7 @@ export default function Analyze() {
   const [analyzing, setAnalyzing] = useState(false);
   const [progressMsg, setProgressMsg] = useState("");
   const [error, setError] = useState("");
+  const [showCamera, setShowCamera] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -161,6 +163,14 @@ export default function Analyze() {
 
       {/* Step 2: upload */}
       <Step number={2} title="Carica il video">
+        {!file && (
+          <button
+            onClick={() => setShowCamera(true)}
+            className="w-full mb-3 inline-flex items-center justify-center gap-2 bg-emerald-400/10 hover:bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 font-semibold text-sm px-4 py-3 rounded-xl transition-colors"
+          >
+            <Camera className="w-4 h-4" /> Registra con la fotocamera
+          </button>
+        )}
         <label className="block">
           <div className={`relative rounded-2xl border-2 border-dashed p-6 sm:p-8 text-center cursor-pointer transition-colors ${file ? "border-emerald-500/50 bg-emerald-400/5" : "border-zinc-700 hover:border-zinc-500 bg-zinc-900/30"}`}>
             <input type="file" accept="video/*,image/*,.mp4,.mov,.webm,.m4v,.3gp,.mkv,.avi" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
@@ -219,6 +229,13 @@ export default function Analyze() {
         )}
       </button>
       {analyzing && <p className="text-center text-xs text-zinc-500">L'analisi può richiedere 20-40 secondi. Non chiudere la pagina.</p>}
+
+      {showCamera && (
+        <CameraRecorder
+          onRecorded={(f) => { handleFile(f); setShowCamera(false); }}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   );
 }
