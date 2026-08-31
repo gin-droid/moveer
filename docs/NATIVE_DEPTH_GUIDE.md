@@ -1,0 +1,258 @@
+# Percorso nativo: scansione profondità LiDAR/ToF
+
+Questa guida descrive come estendere moVeerAI con un modulo nativo che sfrutta i sensori di profondità (LiDAR su iPhone/iPad Pro, ToF su alcuni Android) per una scansione 3D precisa del corpo durante l'analisi biomeccanica.
+
+## Perché serve il nativo
+
+Il web (`getUserMedia`) fornisce solo il flusso RGB. I sensori di profondità non sono esposti dai browser. Per ottenere:
+- **Mappa di profondità** pixel-per-pixel (LiDAR/ToF)
+- **Pose 3D del corpo** (articolazioni in 3D reale, non 2D proiettato)
+- **Mesh del corpo** (scansione volumetrica)
+
+è necessario un modulo nativo che invii i dati al backend di analisi esistente.
+
+## Architettura proposta
+
+```
+┌─────────────────────────┐     ┌──────────────────────┐
+│  App web (Base44/PWA)   │     │  Modulo nativo       │
+│  - Catalogo esercizi    │     │  (Capacitor plugin)  │
+│  - Report, comparazioni │     │  - ARKit body/depth   │
+│  - UI analisi           │◄────┤  - ARCore depth       │
+│                        │     │  - Registrazione depth│
+└─────────────────────────┘     └──────────┬───────────┘
+                                           │ frame RGB + depth/pose JSON
+                                           ▼
+                                ┌──────────────────────┐
+                                │  analyzeExercise     │
+                                │  (funzione backend)  │
+                                │  + dati profondità   │
+                                └──────────────────────┘
+```
+
+Il modulo nativo è un **plugin Capacitor** (l'app Base44 è già una PWA installabile come app nativa). Il plugin espone un'API JS che la pagina Analizza chiama al posto di `CameraRecorder` quando è disponibile.
+
+## Rilevamento capability
+
+Nella pagina Analizza, si tenta prima il plugin nativo, poi si ricade sul `CameraRecorder` web:
+
+```js
+import { Capacitor } from "@capacitor/core";
+
+const hasNativeDepth = Capacitor.isNativePlatform() &&
+  (await DepthScanner.isAvailable()).available;
+
+if (hasNativeDepth) {
+  // usa scansione nativa con profondità
+} else {
+  // fallback: CameraRecorder web (RGB ad alta risoluzione)
+}
+```
+
+---
+
+## iOS — ARKit (LiDAR + Body Tracking)
+
+### Requisiti
+- iPhone 12 Pro+ o iPad Pro con LiDAR per `sceneDepth`
+- iOS 14+ per `ARBodyTrackingConfiguration` (pose 3D del corpo)
+- Xcode + CocoaPods
+
+### Configurazione ARKit
+
+```swift
+// DepthScannerPlugin.swift
+import ARKit
+import Capacitor
+
+@objc(DepthScannerPlugin)
+class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
+  var session: ARSession?
+  var recording = false
+  var frameBuffer: [[String: Any]] = []
+
+  func startBodyTracking() {
+    guard ARBodyTrackingConfiguration.isSupported else {
+      resolveError("Body tracking non supportato su questo dispositivo")
+      return
+    }
+    let config = ARBodyTrackingConfiguration()
+    config.frameSemantics = [.bodyDetection]
+    if #available(iOS 14.0, *) {
+      // LiDAR: richiede world tracking con sceneDepth
+      config.frameSemantics.insert(.sceneDepth)
+    }
+    session = ARSession()
+    session?.delegate = self
+    session?.run(config)
+  }
+
+  func session(_ session: ARSession, didUpdate frame: ARFrame) {
+    guard recording else { return }
+
+    // 1. Skeleton 3D (2D proiettato + 3D modello)
+    guard let body = frame.bodyAnchor else { return }
+    let joints3D = body.skeleton.modelTransforms  // [simd_float4x4] per ogni giuntura
+
+    // 2. Depth (LiDAR) se disponibile
+    let depthMap = frame.sceneDepth?.depthMap  // CVPixelBuffer mappa profondità
+
+    // 3. RGB frame
+    let capturedImage = frame.capturedImage
+
+    // Salva frame: RGB (JPEG) + joints 3D + depth stats
+    let entry: [String: Any] = [
+      "timestamp": frame.timestamp,
+      "joints": serializeJoints(joints3D),
+      "depthRange": depthStats(depthMap),
+      "rgbUrl": saveJPEG(capturedImage)
+    ]
+    frameBuffer.append(entry)
+  }
+}
+```
+
+### Giuntura dello scheletro (ARKit body)
+ARKit fornisce 91 giuntura 3D. Per l'analisi biomeccanica le più rilevanti:
+- `head`, `neck_1`, `spineShoulder`, `spineChest`, `spineBase`
+- `leftShoulder`, `leftElbow`, `leftWrist`, `leftHand`
+- `rightShoulder`, `rightElbow`, `rightWrist`, `rightHand`
+- `leftHip`, `leftKnee`, `leftAnkle`, `leftFoot`
+- `rightHip`, `rightKnee`, `rightAnkle`, `rightFoot`
+
+Queste mappano direttamente sui `joints` del `body_diagram` nel report (`AnalysisReport.body_diagram`), ma in **3D reale** invece di 2D proiettato — il che permette di calcolare angoli articolari veri (es. flessione ginocchio, inclinazione busto) con precisione centimetrica.
+
+---
+
+## Android — ARCore (Depth API)
+
+### Requisiti
+- Dispositivo con ToF o depth supportato (ARCore `DepthMode.AUTOMATIC`)
+- Android API 24+, ARCore 1.32+
+- Android Studio
+
+### Configurazione ARCore
+
+```kotlin
+// DepthScannerPlugin.kt
+class DepthScannerPlugin : Plugin() {
+  private var session: Session? = null
+  private var recording = false
+
+  fun startDepthTracking() {
+    val config = Config(session)
+    config.depthMode = Config.DepthMode.AUTOMATIC
+    config.updateMode = Config.UpdateMode.LATEST_CAMERA_FRAME
+    session!!.configure(config)
+    session!!.resume()
+  }
+
+  fun onFrame(frame: Frame) {
+    if (!recording) return
+    val depthImage = frame.acquireDepthImage16() // Depth16, mm per pixel
+    val rgbImage = frame.acquireCameraImage()
+
+    // Skeleton 2D via ML Kit Pose Detection (Android non ha body tracking ARKit-level)
+    // ARCore fornisce depth map + RGB → ricostruzione 3D del corpo
+    val depthStats = computeDepthStats(depthImage)
+    val joints = detectPose(rgbImage) // ML Kit Pose
+    saveFrame(rgbImage, depthStats, joints)
+  }
+}
+```
+
+Nota: ARCore non ha un equivalente diretto di `ARBodyTrackingConfiguration`. Si combina:
+- **ARCore Depth API** → mappa di profondità reale
+- **ML Kit Pose Detection** → 2D joints
+- Fusione: proietti i 2D joints sulla depth map per ottenere **3D joints** (x, y, depth → X, Y, Z nel mondo)
+
+---
+
+## Flusso dati verso il backend
+
+Il plugin nativo produce, per ogni frame:
+1. **RGB JPEG** (caricato via `UploadFile`)
+2. **Joints 3D** (array `{ id, x, y, z, confidence }`)
+3. **Depth stats** (range min/max/medio, densità punti)
+
+Il payload inviato a `analyzeExercise` viene esteso:
+
+```json
+{
+  "exerciseName": "Squat",
+  "macroCategory": "Forza",
+  "subcategory": "Lower body",
+  "frameUrls": ["https://..."],
+  "depthData": {
+    "frames": [
+      {
+        "timestamp": 0.0,
+        "joints3D": [
+          { "id": "leftKnee", "x": 0.12, "y": -0.45, "z": 0.8, "confidence": 0.92 }
+        ],
+        "depthRangeMm": { "min": 320, "max": 2100, "median": 980 }
+      }
+    ],
+    "sensorType": "lidar"
+  }
+}
+```
+
+La funzione `analyzeExercise` (vedi `base44/functions/analyzeExercise/`) va estesa per:
+- accettare `depthData` opzionale
+- quando presente, calcolare **angoli articolari 3D reali** invece di stimarli dal 2D
+- arricchire `body_diagram` con coordinate 3D e stress basato su deviazione angolare reale
+- aumentare il punteggio di confidenza del report
+
+---
+
+## Scaffold plugin Capacitor
+
+Struttura del plugin `@moVeerAI/depth-scanner`:
+
+```
+depth-scanner-plugin/
+├── package.json
+├── src/
+│   ├── definitions.ts        # interfacce TS
+│   └── index.ts              # implementazione web (fallback no-op)
+├── ios/
+│   ├── Plugin/
+│   │   ├── DepthScannerPlugin.swift
+│   │   └── DepthScannerPlugin.m
+│   └── Plugin.xcodeproj
+└── android/
+    ├── src/main/java/.../DepthScannerPlugin.kt
+    └── build.gradle
+```
+
+`definitions.ts`:
+
+```typescript
+export interface DepthScannerPlugin {
+  isAvailable(): Promise<{ available: boolean; sensorType: "lidar" | "tof" | "none" }>;
+  startRecording(options: { maxDurationSec?: number }): Promise<void>;
+  stopRecording(): Promise<{ frameUrls: string[]; depthData: DepthData }>;
+  cancelRecording(): Promise<void>;
+}
+```
+
+Implementazione web (fallback): restituisce `available: false`, così la pagina Analizza ricade su `CameraRecorder`.
+
+---
+
+## Task per implementare
+
+1. **Creare il plugin Capacitor** con scaffold sopra (da sviluppare in Xcode/Android Studio)
+2. **iOS**: implementare `ARBodyTrackingConfiguration` + `sceneDepth` in `DepthScannerPlugin.swift`
+3. **Android**: implementare ARCore Depth API + ML Kit Pose in `DepthScannerPlugin.kt`
+4. **Estendere `analyzeExercise`** per consumare `depthData` (angoli 3D, stress reale)
+5. **Pagina Analizza**: rilevare `isAvailable()` e usare il plugin nativo quando presente
+6. **Estendere `AnalysisReport`** con campo opzionale `depth_metadata` (sensorType, jointCount, accuracy)
+
+### Limiti noti
+- Body tracking ARKit richiede iOS 14+ e iPhone Xs o superiore; LiDAR richiede 12 Pro+
+- ARCore Depth API funziona solo su dispositivi con ToF o depth-from-motion (qualità variabile)
+- Nessun supporto su desktop/web — il fallback `CameraRecorder` resta per quei casi
+
+Per procedere serve un ambiente di sviluppo nativo (Xcode per iOS, Android Studio per Android). Posso generare lo scaffold completo del plugin e le modifiche al backend `analyzeExercise` non appena confermi.
