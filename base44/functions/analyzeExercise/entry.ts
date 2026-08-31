@@ -17,12 +17,27 @@ export default async function(req: Request): Promise<Response> {
     const depthData: DepthData | null = body.depthData && Array.isArray(body.depthData.frames) && body.depthData.frames.length > 0
       ? body.depthData
       : null;
+    const wearableData: any = body.wearableData || null;
 
     // Quando sono disponibili dati di profondità (LiDAR/ToF), calcola angoli
     // articolari 3D reali per un'analisi più precisa.
     const depthSummary = depthData ? summarizeDepthAngles(depthData) : '';
     const depthBlock = depthSummary
       ? `\n\n${depthSummary}\nUsa questi angoli MISURATI come riferimento primario per giudicare l'esecuzione e per posizionare le giunzioni del body_diagram. Se un angolo misurato differisce da quanto sembri vedere nel frame RGB, fidati del dato misurato (più preciso).`
+      : '';
+
+    // Riepilogo dati wearable (frequenza cardiaca + movimento) per arricchire
+    // l'analisi con segnali fisiologici e cinematici reali.
+    const wearableBlock = wearableData
+      ? `\n\nDATI WEARABLE MISURATI (dispositivo: ${wearableData.device_type || 'n/d'}):${
+          wearableData.heart_rate
+            ? `\n- Frequenza cardiaca: media ${wearableData.heart_rate.avg} bpm (min ${wearableData.heart_rate.min}, max ${wearableData.heart_rate.max}), ${wearableData.heart_rate.samples_count} campioni.`
+            : ''
+        }${
+          wearableData.motion
+            ? `\n- Movimento: accelerazione media ${wearableData.motion.avg_accel} m/s² (picco ${wearableData.motion.peak_accel} m/s²), rotazione media ${wearableData.motion.avg_rot} °/s, cadenza stimata ${wearableData.motion.cadence} rip/min, durata ${wearableData.motion.duration_s}s.`
+            : ''
+        }\nUsa questi dati per valutare l'intensità dello sforzo, la stabilità del ritmo e la coerenza tra cadenza e controllo tecnico. Una frequenza cardiaca molto alta o un'accelerazione irregolare possono indicare compensazione o affaticamento.`
       : '';
 
     if (!exerciseName) {
@@ -78,8 +93,8 @@ Per ogni vista fornisci:
 
     const prompt = `Sei un coach esperto di biomeccanica, postura e tecnica di allenamento.
 Analizza l'esecuzione dell'esercizio "${exerciseName}" (macro-categoria: ${macroCategory}, sottocategoria: ${subcategory}).
-${frameGuidance}${refBlock}${checkpointBlock}${diagramBlock}${depthBlock}
-${notes ? `\nNote dell'utente: ${notes}` : ''}
+${frameGuidance}${refBlock}${checkpointBlock}${diagramBlock}${depthBlock}${wearableBlock}
+    ${notes ? `\nNote dell'utente: ${notes}` : ''}
 
 Restituisci un report strutturato in italiano con:
 - score: punteggio esecuzione 0-100 (più alto = esecuzione migliore). Calibra confrontando l'esecuzione osservata con gli ANGOLI OTTIMI e i CHECKPOINT del pattern indicato sopra: 90-100 esecuzione tecnica esemplare (tutti i checkpoint rispettati, angoli entro ±5° dagli ottimi), 75-89 buona con lievi difetti (1-2 checkpoint non perfetti, angoli entro ±15°), 60-74 accettabile con difetti moderati (2-3 checkpoint violati, angoli entro ±25°), <60 esecuzione carente con difetti gravi (più checkpoint violati, angoli oltre ±25°).
@@ -226,7 +241,8 @@ Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili,
         sensor_type: depthData.sensorType,
         frame_count: depthData.frames.length,
         accuracy: depthData.sensorType === "lidar" ? "alta" : "media",
-      } : null
+      } : null,
+      wearable_data: wearableData || null
     });
 
     return Response.json({ report });

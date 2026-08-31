@@ -50,6 +50,58 @@
         }
       }
     },
+    "wearable_data": {
+      "type": "object",
+      "title": "Dati wearable",
+      "properties": {
+        "device_type": {
+          "type": "string",
+          "title": "Tipo dispositivo"
+        },
+        "heart_rate": {
+          "type": "object",
+          "title": "Frequenza cardiaca",
+          "properties": {
+            "avg": {
+              "type": "number"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "samples_count": {
+              "type": "number"
+            }
+          }
+        },
+        "motion": {
+          "type": "object",
+          "title": "Movimento",
+          "properties": {
+            "avg_accel": {
+              "type": "number"
+            },
+            "peak_accel": {
+              "type": "number"
+            },
+            "avg_rot": {
+              "type": "number"
+            },
+            "cadence": {
+              "type": "number"
+            },
+            "duration_s": {
+              "type": "number"
+            },
+            "samples_count": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
     "score": {
       "type": "number",
       "title": "Punteggio esecuzione (0-100)"

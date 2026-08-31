@@ -5,6 +5,7 @@ import { Video, Upload, Loader2, ChevronRight, Sparkles, Camera } from "lucide-r
 import { validateMediaFile, extractVideoFrames, formatFileSize, isVideoFile } from "@/lib/videoFrames";
 import ExercisePicker from "@/components/ExercisePicker";
 import CameraRecorder from "@/components/CameraRecorder";
+import WearableConnector from "@/components/WearableConnector";
 
 export default function Analyze() {
   const [params] = useSearchParams();
@@ -19,6 +20,7 @@ export default function Analyze() {
   const [progressMsg, setProgressMsg] = useState("");
   const [error, setError] = useState("");
   const [showCamera, setShowCamera] = useState(false);
+  const [wearableData, setWearableData] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -110,6 +112,7 @@ export default function Analyze() {
         subcategory: selected.subcategory,
         frameUrls,
         notes,
+        wearableData: wearableData || null,
       });
       if (res.data?.error) throw new Error(res.data.error);
       const report = res.data?.report;
@@ -200,8 +203,17 @@ export default function Analyze() {
         )}
       </Step>
 
-      {/* Step 3: notes */}
-      <Step number={3} title="Note (opzionale)">
+      {/* Step 3: wearables */}
+      <Step number={3} title="Sensori wearable (opzionale)">
+        <p className="text-xs text-zinc-500 mb-3 leading-relaxed">
+          Collega una fascia cardio (Bluetooth) e/o attiva i sensori di movimento del telefono
+          per arricchire l'analisi con dati reali: frequenza cardiaca, intensità e cadenza del movimento.
+        </p>
+        <WearableConnector onWearableData={setWearableData} />
+      </Step>
+
+      {/* Step 4: notes */}
+      <Step number={4} title="Note (opzionale)">
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
