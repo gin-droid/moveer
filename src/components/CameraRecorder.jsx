@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Video, VideoOff, RotateCcw, Loader2, Camera, Square, Info } from "lucide-react";
+import { X, Video, VideoOff, RotateCcw, Loader2, Camera, Square, Info, Download, Check, RefreshCw } from "lucide-react";
 
 /**
  * CameraRecorder
@@ -27,6 +27,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(true);
   const [hasMultipleCams, setHasMultipleCams] = useState(false);
+  const [recorded, setRecorded] = useState(null); // { file, url }
 
   const stopStream = () => {
     if (streamRef.current) {
@@ -83,6 +84,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
     return () => {
       stopStream();
       if (timerRef.current) clearInterval(timerRef.current);
+      if (recorded) URL.revokeObjectURL(recorded.url);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -115,8 +117,9 @@ export default function CameraRecorder({ onRecorded, onClose }) {
     rec.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: mime || "video/webm" });
       const ext = (mime || "video/webm").includes("mp4") ? "mp4" : "webm";
-      const file = new File([blob], `registrazione-${Date.now()}.${ext}`, { type: blob.type });
-      onRecorded?.(file);
+      const file = new File([blob], `moVeerAI-${Date.now()}.${ext}`, { type: blob.type });
+      const url = URL.createObjectURL(file);
+      setRecorded({ file, url });
     };
     rec.start();
     recorderRef.current = rec;
@@ -139,6 +142,32 @@ export default function CameraRecorder({ onRecorded, onClose }) {
   };
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  const saveToPhone = () => {
+    if (!recorded) return;
+    const a = document.createElement("a");
+    a.href = recorded.url;
+    a.download = recorded.file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const useForAnalysis = () => {
+    if (!recorded) return;
+    const file = recorded.file;
+    URL.revokeObjectURL(recorded.url);
+    setRecorded(null);
+    onRecorded?.(file);
+  };
+
+  const recordAgain = () => {
+    if (recorded) {
+      URL.revokeObjectURL(recorded.url);
+      setRecorded(null);
+    }
+    setSeconds(0);
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
@@ -205,9 +234,44 @@ export default function CameraRecorder({ onRecorded, onClose }) {
             </button>
           </div>
         )}
+
+        {/* Recorded preview + actions */}
+        {recorded && (
+          <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-5 px-6">
+            <video
+              src={recorded.url}
+              controls
+              playsInline
+              className="max-h-[45vh] max-w-full rounded-xl border border-zinc-800"
+            />
+            <div className="flex flex-col gap-2.5 w-full max-w-xs">
+              <button
+                onClick={saveToPhone}
+                className="w-full inline-flex items-center justify-center gap-2 bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-semibold text-sm px-4 py-3 rounded-xl transition-colors"
+              >
+                <Download className="w-4 h-4" /> Salva sul telefono
+              </button>
+              <button
+                onClick={useForAnalysis}
+                className="w-full inline-flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium text-sm px-4 py-3 rounded-xl transition-colors border border-zinc-700"
+              >
+                <Check className="w-4 h-4" /> Usa per l'analisi
+              </button>
+              <button
+                onClick={recordAgain}
+                className="w-full inline-flex items-center justify-center gap-2 text-zinc-400 hover:text-white font-medium text-sm px-4 py-2.5 rounded-xl transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" /> Registra di nuovo
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Controls */}
+      {recorded ? (
+        <div className="px-4 py-5 pb-safe bg-black" />
+      ) : (
       <div className="px-4 py-5 pb-safe bg-black">
         {/* LiDAR/ToF hint */}
         <div className="flex items-start gap-2 mb-4 text-zinc-400 text-xs leading-relaxed">
@@ -242,6 +306,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
           {recording ? "Tocca per fermare (max 30 secondi)" : "Tocca per iniziare a registrare"}
         </p>
       </div>
+      )}
     </div>
   );
 }
