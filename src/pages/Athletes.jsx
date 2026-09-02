@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
-  UserPlus, Loader2, Trash2, ChevronRight, UserCheck, Calendar, Pencil, X,
+  UserPlus, Loader2, Trash2, ChevronRight, UserCheck, Calendar, Pencil,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,

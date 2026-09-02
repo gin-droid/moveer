@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { computeJointStress, classifyPattern, getPatternCheckpoints } from './biomechanics.ts';
-import { summarizeDepthAngles, type DepthData } from './depth3d.ts';
+import { summarizeDepthAngles } from './depth3d.ts';
 
 export default async function(req: Request): Promise<Response> {
   try {
@@ -14,7 +14,7 @@ export default async function(req: Request): Promise<Response> {
     const subcategory = (body.subcategory || '').trim();
     const frameUrls: string[] = Array.isArray(body.frameUrls) ? body.frameUrls.filter(Boolean) : [];
     const notes = (body.notes || '').trim();
-    const depthData: DepthData | null = body.depthData && Array.isArray(body.depthData.frames) && body.depthData.frames.length > 0
+    const depthData: any = body.depthData && Array.isArray(body.depthData.frames) && body.depthData.frames.length > 0
       ? body.depthData
       : null;
     const wearableData: any = body.wearableData || null;
