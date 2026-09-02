@@ -206,8 +206,8 @@ export default function Analyze() {
       {/* Step 3: wearables */}
       <Step number={3} title="Sensori wearable (opzionale)">
         <p className="text-xs text-zinc-500 mb-3 leading-relaxed">
-          Collega una fascia cardio (Bluetooth) e/o attiva i sensori di movimento del telefono
-          per arricchire l'analisi con dati reali: frequenza cardiaca, intensità e cadenza del movimento.
+          Collega una fascia cardio e/o un sensore di movimento (smartwatch IMU) via Bluetooth
+          per arricchire l'analisi con dati reali: frequenza cardiaca, accelerazione, rotazione e cadenza del movimento.
         </p>
         <WearableConnector onWearableData={setWearableData} />
       </Step>

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { HeartPulse, Bluetooth, BluetoothOff, Loader2, X, Watch } from "lucide-react";
+import { HeartPulse, Bluetooth, BluetoothOff, Loader2, X, Watch, Move } from "lucide-react";
 import {
   isWebBluetoothSupported,
   connectHeartRate,
+  connectIMU,
   aggregateWearableData,
 } from "@/lib/wearableSensors";
 
@@ -20,29 +21,38 @@ export default function WearableConnector({ onWearableData }) {
   const [hrConnecting, setHrConnecting] = useState(false);
   const [hrDevice, setHrDevice] = useState("");
   const [hr, setHr] = useState(0);
+  const [imuConnected, setImuConnected] = useState(false);
+  const [imuConnecting, setImuConnecting] = useState(false);
+  const [imuDevice, setImuDevice] = useState("");
+  const [imuMode, setImuMode] = useState("");
+  const [motionMag, setMotionMag] = useState(0);
 
   const hrConnRef = useRef(null);
   const hrSamplesRef = useRef([]);
+  const imuConnRef = useRef(null);
+  const motionSamplesRef = useRef([]);
   const startTimeRef = useRef(null);
 
   // Aggrega e notifica il parent ogni secondo
   useEffect(() => {
     const id = setInterval(() => {
-      if (hrSamplesRef.current.length === 0) return;
+      if (hrSamplesRef.current.length === 0 && motionSamplesRef.current.length === 0) return;
       const data = aggregateWearableData({
         hrSamples: hrSamplesRef.current,
+        motionSamples: motionSamplesRef.current,
         durationMs: startTimeRef.current ? Date.now() - startTimeRef.current : 0,
-        deviceName: hrDevice,
+        deviceName: imuDevice || hrDevice,
       });
       onWearableData?.(data);
     }, 1000);
     return () => clearInterval(id);
-  }, [onWearableData, hrDevice]);
+  }, [onWearableData, hrDevice, imuDevice]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       try { hrConnRef.current?.disconnect(); } catch { /* ignore */ }
+      try { imuConnRef.current?.disconnect(); } catch { /* ignore */ }
     };
   }, []);
 
@@ -80,8 +90,49 @@ export default function WearableConnector({ onWearableData }) {
     setHr(0);
   };
 
+  const handleConnectIMU = async () => {
+    setImuConnecting(true);
+    try {
+      if (!startTimeRef.current) startTimeRef.current = Date.now();
+      const conn = await connectIMU(
+        (sample) => {
+          motionSamplesRef.current.push(sample);
+          if (sample.accel) {
+            const ax = (sample.accel.x / 1000) * 9.81;
+            const ay = (sample.accel.y / 1000) * 9.81;
+            const az = (sample.accel.z / 1000) * 9.81;
+            setMotionMag(Math.abs(Math.sqrt(ax * ax + ay * ay + az * az) - 9.81));
+          }
+        },
+        () => {
+          setImuConnected(false);
+          setMotionMag(0);
+          imuConnRef.current = null;
+        }
+      );
+      imuConnRef.current = conn;
+      setImuDevice(conn.deviceName);
+      setImuMode(conn.mode);
+      setImuConnected(true);
+    } catch (err) {
+      if (err.name !== "NotFoundError") {
+        console.error(err);
+      }
+    } finally {
+      setImuConnecting(false);
+    }
+  };
+
+  const disconnectIMU = () => {
+    try { imuConnRef.current?.disconnect(); } catch { /* ignore */ }
+    imuConnRef.current = null;
+    setImuConnected(false);
+    setMotionMag(0);
+  };
+
   const reset = () => {
     hrSamplesRef.current = [];
+    motionSamplesRef.current = [];
     startTimeRef.current = null;
     onWearableData?.(null);
   };
@@ -126,6 +177,45 @@ export default function WearableConnector({ onWearableData }) {
         </p>
       </div>
 
+      {/* Motion Sensors (IMU) */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${imuConnected ? "bg-emerald-500/15 text-emerald-400" : "bg-zinc-800 text-zinc-500"}`}>
+              <Move className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-white">Sensori di movimento</div>
+              <div className="text-[11px] text-zinc-500">{imuConnected ? `${imuDevice} · ${imuMode === "imu" ? "IMU" : "cadenza"}` : "Accelerometro + giroscopio BLE"}</div>
+            </div>
+          </div>
+          {imuConnected ? (
+            <div className="flex items-center gap-2">
+              <div className="text-right leading-none">
+                <div className="text-sm font-display font-semibold text-emerald-400 tabular-nums">{motionMag.toFixed(1)}</div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">m/s²</div>
+              </div>
+              <button onClick={disconnectIMU} className="w-8 h-8 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center" aria-label="Disconnetti">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : hrSupported ? (
+            <button
+              onClick={handleConnectIMU}
+              disabled={imuConnecting}
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors disabled:opacity-50"
+            >
+              {imuConnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bluetooth className="w-3.5 h-3.5" />}
+              {imuConnecting ? "Connessione…" : "Collega"}
+            </button>
+          ) : null}
+        </div>
+        <p className="mt-2.5 text-[11px] text-zinc-500 leading-relaxed">
+          Collega uno smartwatch o sensore IMU Bluetooth per registrare accelerazione e rotazione del corpo
+          nello spazio: intensità del movimento, picchi di sforzo, cadenza e stabilità del ritmo.
+        </p>
+      </div>
+
       {!hrSupported && (
         <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-amber-300/90 text-xs leading-relaxed">
           <Watch className="w-4 h-4 mt-0.5 shrink-0" />
@@ -136,7 +226,7 @@ export default function WearableConnector({ onWearableData }) {
         </div>
       )}
 
-      {hrSamplesRef.current.length > 0 && (
+      {(hrSamplesRef.current.length > 0 || motionSamplesRef.current.length > 0) && (
         <button onClick={reset} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">
           Azzera dati raccolti
         </button>
