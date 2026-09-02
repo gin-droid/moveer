@@ -18,6 +18,7 @@ export default async function(req: Request): Promise<Response> {
       ? body.depthData
       : null;
     const wearableData: any = body.wearableData || null;
+    const athleteId: string = (body.athleteId || '').trim();
 
     // Quando sono disponibili dati di profondità (LiDAR/ToF), calcola angoli
     // articolari 3D reali per un'analisi più precisa.
@@ -228,6 +229,7 @@ Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili,
       exercise_name: exerciseName,
       macro_category: macroCategory,
       subcategory: subcategory,
+      athlete_id: athleteId || null,
       video_url: null,
       gender: user.gender || "maschio",
       score: llmRes.score,

@@ -1,0 +1,80 @@
+{
+  "name": "Athlete",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Nome atleta/cliente"
+    },
+    "gender": {
+      "type": "string",
+      "title": "Genere",
+      "enum": [
+        "maschio",
+        "femmina"
+      ]
+    },
+    "birth_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Data di nascita"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Note"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

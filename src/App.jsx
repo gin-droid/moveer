@@ -16,6 +16,8 @@ import Reports from '@/pages/Reports';
 import ReportDetail from '@/pages/ReportDetail';
 import Compare from '@/pages/Compare';
 import Users from '@/pages/Users';
+import Athletes from '@/pages/Athletes';
+import AthleteDetail from '@/pages/AthleteDetail';
 import Mentor from '@/pages/Mentor';
 import About from '@/pages/About';
 import Contact from '@/pages/Contact';
@@ -72,6 +74,8 @@ const AuthenticatedApp = () => {
           <Route path="/report/:id" element={<ReportDetail />} />
           <Route path="/confronta" element={<Compare />} />
           <Route path="/utenti" element={<Users />} />
+          <Route path="/atleti" element={<Athletes />} />
+          <Route path="/atleti/:id" element={<AthleteDetail />} />
           <Route path="/mentore" element={<Mentor />} />
         </Route>
       </Route>

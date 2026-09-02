@@ -21,6 +21,8 @@ export default function Analyze() {
   const [error, setError] = useState("");
   const [showCamera, setShowCamera] = useState(false);
   const [wearableData, setWearableData] = useState(null);
+  const [athletes, setAthletes] = useState([]);
+  const [selectedAthleteId, setSelectedAthleteId] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -29,6 +31,10 @@ export default function Analyze() {
         setExercises(data);
         const pre = params.get("exercise");
         if (pre) setSelectedId(pre);
+        const aths = await base44.entities.Athlete.list("-created_date", 500);
+        setAthletes(aths);
+        const preAth = params.get("athlete");
+        if (preAth) setSelectedAthleteId(preAth);
       } catch (err) {
         console.error(err);
       } finally {
@@ -113,6 +119,7 @@ export default function Analyze() {
         frameUrls,
         notes,
         wearableData: wearableData || null,
+        athleteId: selectedAthleteId || null,
       });
       if (res.data?.error) throw new Error(res.data.error);
       const report = res.data?.report;
@@ -142,6 +149,26 @@ export default function Analyze() {
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Analizza la tua esecuzione</h1>
         <p className="text-zinc-400 mt-2 text-sm">Scegli l'esercizio, carica un video breve (frontale o laterale) e lascia che l'IA valuti tecnica e postura.</p>
+      </div>
+
+      {/* Athlete selector (optional) */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+        <label className="text-xs text-zinc-500 mb-2 block">Atleta / Cliente (opzionale)</label>
+        <select
+          value={selectedAthleteId}
+          onChange={(e) => setSelectedAthleteId(e.target.value)}
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+        >
+          <option value="">— Analisi libera (nessun atleta) —</option>
+          {athletes.map((a) => (
+            <option key={a.id} value={a.id}>{a.name}</option>
+          ))}
+        </select>
+        {athletes.length === 0 && (
+          <p className="text-[11px] text-zinc-600 mt-2">
+            Crea atleti dalla sezione "Atleti" per tenere lo storico delle analisi.
+          </p>
+        )}
       </div>
 
       {/* Step 1: select exercise */}

@@ -2,6 +2,11 @@
   "name": "AnalysisReport",
   "type": "object",
   "properties": {
+    "athlete_id": {
+      "type": "string",
+      "title": "Atleta/Cliente",
+      "format": "uuid"
+    },
     "exercise_name": {
       "type": "string",
       "title": "Esercizio"
