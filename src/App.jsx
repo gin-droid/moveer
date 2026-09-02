@@ -17,6 +17,9 @@ import ReportDetail from '@/pages/ReportDetail';
 import Compare from '@/pages/Compare';
 import Users from '@/pages/Users';
 import Mentor from '@/pages/Mentor';
+import About from '@/pages/About';
+import Contact from '@/pages/Contact';
+import PublicLayout from '@/components/PublicLayout';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -54,6 +57,10 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route element={<PublicLayout />}>
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+      </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Home />} />
