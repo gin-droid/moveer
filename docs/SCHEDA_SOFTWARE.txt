@@ -11,9 +11,12 @@ DESCRIZIONE IDENTIFICATIVA
   valuta tecnica e postura dell'atleta, individua errori di esecuzione
   e genera un report dettagliato con punteggio, diagramma corporeo
   dello stress articolare, correzioni mirate ed esercizi correttivi
-  personalizzati. Il software è rivolto ad atleti, personal trainer
-  e appassionati di fitness che desiderano migliorare la qualità del
-  movimento e prevenire infortuni articolari.
+  personalizzati. Il software integra dati di profondità nativi
+  (LiDAR/ToF) e sensori wearable Bluetooth (frequenza cardiaca) per
+  un'analisi più precisa, e include un agente AI Mentore che guida
+  l'utente prima, durante e dopo ogni esercizio. Il software è rivolto
+  ad atleti, personal trainer e appassionati di fitness che desiderano
+  migliorare la qualità del movimento e prevenire infortuni articolari.
 
 LINGUAGGIO DI PROGRAMMAZIONE
   Frontend:  JavaScript (React 18 + Vite)
@@ -21,11 +24,16 @@ LINGUAGGIO DI PROGRAMMAZIONE
   Backend:   Base44 BaaS (Backend-as-a-Service)
              Funzioni server-side in TypeScript (Node.js/Deno runtime)
   Database:  Base44 Entities (schema JSON, NoSQL)
-  Integrazioni IA: LLM vision (analisi posturale), biomechanics engine
+  Integrazioni IA: LLM vision (analisi posturale), biomechanics engine,
+             agente AI in-app (exercise_mentor) con accesso al catalogo
+             esercizi e ai report dell'utente
   Native:    Plugin Capacitor (@moVeerAI/depth-scanner) per acquisizione
              dati di profondita LiDAR/ToF (Swift/ARKit per iOS,
              Kotlin/ARCore per Android); helper depth3d.ts per il
              calcolo di angoli articolari 3D reali
+  Wearable:  Web Bluetooth API per fascia cardio esterna (GATT service
+             0x180D); libreria wearableSensors.js per parsing e
+             aggregazione dati fisiologici
   Piattaforma di pubblicazione: Base44 (web + build native iOS/Android)
 
 DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
@@ -36,17 +44,23 @@ DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
   Sviluppatore:           Account proprietario app Base44
 
 VERSIONE CORRENTE
-  Versione: 1.1
-  Data ultimo aggiornamento scheda: 2026-08-31
+  Versione: 1.2
+  Data ultimo aggiornamento scheda: 2026-09-02
 
 ================================================================
 NOTE TECNICHE
   - Architettura single-page application (SPA) con routing lato client
   - Layout responsive mobile-first con safe-area iOS (notch/home indicator)
   - Autenticazione gestita da Base44 Auth (email/password, Google OAuth, OTP)
-  - Entita dati: Exercise, AnalysisReport (con depth_metadata), User
-  - Funzioni backend: analyzeExercise (analisi IA con supporto depth 3D),
-    deleteOwnAccount
+  - Entita dati: Exercise, AnalysisReport (con depth_metadata e
+    wearable_data), User
+  - Funzioni backend: analyzeExercise (analisi IA con supporto depth 3D
+    e dati wearable), deleteOwnAccount
+  - Agente AI Mentore (exercise_mentor): chat conversazionale con
+    accesso in lettura a Exercise e AnalysisReport, guida tecnica
+    personalizzata sull'esecuzione degli esercizi
+  - Integrazione sensori wearable: fascia cardio Bluetooth esterna,
+    dati fisiologici (frequenza cardiaca) correlati alla qualità tecnica
   - Export report in PDF (jsPDF) con diagramma corporeo SVG
   - Acquisizione video: CameraRecorder RGB (web) + DepthScanner nativo
     (LiDAR/ToF via Capacitor) con fallback graduale ai soli frame RGB
