@@ -221,4 +221,26 @@ Flusso tecnico dell'analisi (src/pages/Analyze.jsx):
 
 ===================================================================================================
 
-Documento aggiornato il 31 agosto 2026.
+18. Integrazione sensori wearable Bluetooth (2 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Libreria sensori (src/lib/wearableSensors.js): integrazione di fascia cardio esterna via Web Bluetooth (GATT service 0x180D, characteristic 0x2A37) con parsing del payload Heart Rate Measurement (risoluzione 8/16 bit, RR intervals) e aggregazione statistica (avg/min/max/samples_count).
+- Componente connettore (src/components/WearableConnector.jsx): UI per scoprire, connettere e disconnettere dispositivi BLE; visualizzazione live della frequenza cardiaca; stato connessione e compatibilita browser; emissione del pacchetto dati aggregato al parent ogni secondo.
+- Integrazione in Analizza (src/pages/Analyze.jsx): step 3 opzionale "Sensori wearable" che raccoglie i dati durante la sessione di registrazione e li passa alla funzione backend.
+- Entita AnalysisReport estesa: aggiunto il campo wearable_data (device_type, heart_rate {avg/min/max/samples_count}, motion {avg_accel/peak_accel/avg_rot/cadence/duration_s/samples_count}).
+- Backend analyzeExercise esteso: la funzione ora accetta wearableData nel payload e ne sintetizza un riepilogo nel prompt dell'LLM (frequenza cardiaca media/min/max, intensita, cadenza) per correlare lo sforzo cardiaco e il ritmo con la qualita tecnica dell'esecuzione.
+- Solo dispositivi esterni: i sensori di movimento del telefono sono esclusi per mantenere il device libero come camera fissa; solo fascia cardio Bluetooth esterna per i dati fisiologici.
+
+==================================================================================================
+
+19. Agente AI Mentore (2 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Config agente (base44/agents/exercise_mentor.jsonc): agente in-app exercise_mentor con istruzioni di system prompt per guidare l'utente prima (setup), durante (cue tecnici) e dopo (analisi e progressione) ogni esercizio; stile motivante e professionale in italiano, risposte concise e pratiche.
+- Permessi tool: agente con accesso in lettura alle entita Exercise (per basarsi sul catalogo reale) e AnalysisReport (per consultare i report precedenti dell'utente e personalizzare i consigli).
+- Pagina Mentore (src/pages/Mentor.jsx): UI conversazionale con creazione/switch conversazioni via base44.agents SDK, subscription realtime ai messaggi, input con invio su Enter, nuova conversazione.
+- Bolla messaggi (src/components/mentor/MessageBubble.jsx): rendering markdown per le risposte dell'assistente (ReactMarkdown), espansione dei tool call con stato (pending/success/failed) e dettagli parametri/risultati.
+- Indicatore "sta scrivendo": feedback visivo con punti animati quando l'ultimo messaggio e dell'utente o un tool call e in corso.
+- Navigazione: voce "Mentore" aggiunta al menu "Altro" (secondary items) in AppLayout; rotta /mentore registrata in App.jsx.
+
+==================================================================================================
+
+Documento aggiornato il 2 settembre 2026.
