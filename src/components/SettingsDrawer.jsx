@@ -9,8 +9,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   User as UserIcon, Mail, ShieldCheck, Trash2, Loader2, AlertTriangle, ArrowLeft,
+  FileText, ChevronRight,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
+import TermsContent from "@/components/TermsContent";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function SettingsDrawer({ open, onOpenChange }) {
   const [me, setMe] = useState(null);
@@ -20,6 +25,7 @@ export default function SettingsDrawer({ open, onOpenChange }) {
   const [error, setError] = useState("");
   const [gender, setGender] = useState("");
   const [savingGender, setSavingGender] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -144,6 +150,18 @@ export default function SettingsDrawer({ open, onOpenChange }) {
               </div>
             </div>
 
+            {/* Terms of Use */}
+            <button
+              onClick={() => setTermsOpen(true)}
+              className="w-full flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm text-foreground hover:bg-sidebar-accent transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                Termini d'uso
+              </span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+
             {/* Logout (mobile-friendly, since top bar no longer has it) */}
             <LogoutButton className="w-full justify-center rounded-xl border border-border bg-card text-foreground hover:text-white py-3" />
 
@@ -204,6 +222,15 @@ export default function SettingsDrawer({ open, onOpenChange }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={termsOpen} onOpenChange={setTermsOpen}>
+        <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-white">Termini d'uso</DialogTitle>
+          </DialogHeader>
+          <TermsContent />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
