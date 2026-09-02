@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { Mail, Send, Loader2, CheckCircle2 } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 const CONTACT_EMAIL = "info@moveer.ai";
 
 export default function Contact() {
+  useSEO({
+    title: "Contattaci — moVeerAI",
+    description:
+      "Contatta il team di moVeerAI per domande, collaborazioni o supporto tecnico. Rispondiamo entro 48 ore.",
+    path: "/contact",
+  });
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);

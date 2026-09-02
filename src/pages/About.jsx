@@ -1,7 +1,26 @@
 import { Link } from "react-router-dom";
 import { Video, Activity, Dumbbell, Shield } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function About() {
+  useSEO({
+    title: "Chi siamo — moVeerAI | Analisi biomeccanica IA",
+    description:
+      "moVeerAI è la piattaforma IA di analisi biomeccanica del movimento: rileva errori posturali, calcola lo stress articolare e restituisce correzioni mirate ed esercizi correttivi per atleti, trainer e appassionati di fitness.",
+    path: "/about",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: "moVeerAI",
+      url: "https://moveer.base44.app",
+      description:
+        "Analisi biomeccanica del movimento guidata dall'IA per postura e tecnica di allenamento.",
+      applicationCategory: "HealthApplication",
+      operatingSystem: "iOS, Android, Web",
+      inLanguage: "it-IT",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+    },
+  });
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl sm:text-4xl font-semibold text-white tracking-tight">Chi siamo</h1>

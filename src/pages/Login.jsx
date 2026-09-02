@@ -8,8 +8,15 @@ import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Login() {
+  useSEO({
+    title: "Accedi — moVeerAI | Analisi postura e tecnica",
+    description:
+      "Accedi al tuo account moVeerAI per analizzare la tecnica di allenamento, ricevere report biomeccanici personalizzati e confrontare i tuoi progressi nel tempo.",
+    path: "/login",
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
