@@ -133,13 +133,6 @@ export default function AthleteDetail() {
   return (
     <>
       <div className="space-y-5">
-        <button
-          onClick={() => navigate("/atleti")}
-          className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white"
-        >
-          <ArrowLeft className="w-4 h-4" /> Atleti
-        </button>
-
         {/* Athlete header */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
           <div className="flex items-start gap-4">

@@ -6,6 +6,7 @@ import { validateMediaFile, extractVideoFrames, formatFileSize, isVideoFile } fr
 import ExercisePicker from "@/components/ExercisePicker";
 import CameraRecorder from "@/components/CameraRecorder";
 import WearableConnector from "@/components/WearableConnector";
+import BottomSelectDrawer from "@/components/BottomSelectDrawer";
 
 export default function Analyze() {
   const [params] = useSearchParams();
@@ -154,16 +155,16 @@ export default function Analyze() {
       {/* Athlete selector (optional) */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
         <label className="text-xs text-zinc-500 mb-2 block">Atleta / Cliente (opzionale)</label>
-        <select
+        <BottomSelectDrawer
           value={selectedAthleteId}
-          onChange={(e) => setSelectedAthleteId(e.target.value)}
-          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50"
-        >
-          <option value="">— Analisi libera (nessun atleta) —</option>
-          {athletes.map((a) => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
+          onChange={setSelectedAthleteId}
+          title="Seleziona atleta"
+          placeholder="— Analisi libera (nessun atleta) —"
+          options={[
+            { value: "", label: "Analisi libera (nessun atleta)" },
+            ...athletes.map((a) => ({ value: a.id, label: a.name })),
+          ]}
+        />
         {athletes.length === 0 && (
           <p className="text-[11px] text-zinc-600 mt-2">
             Crea atleti dalla sezione "Atleti" per tenere lo storico delle analisi.

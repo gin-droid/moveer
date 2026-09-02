@@ -69,11 +69,14 @@ export default function AppLayout() {
 
   const isExerciseDetail = /^\/esercizi\/[^/]+$/.test(location.pathname);
   const isReportDetail = /^\/report\/[^/]+$/.test(location.pathname);
-  const showBack = isExerciseDetail || isReportDetail;
+  const isAthleteDetail = /^\/atleti\/[^/]+$/.test(location.pathname);
+  const showBack = isExerciseDetail || isReportDetail || isAthleteDetail;
   const detailTitle = isExerciseDetail
     ? "Dettaglio esercizio"
     : isReportDetail
     ? "Report analisi"
+    : isAthleteDetail
+    ? "Dettaglio atleta"
     : "";
 
   const activeSecondary = visibleSecondary.some(
