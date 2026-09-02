@@ -16,6 +16,7 @@ import Reports from '@/pages/Reports';
 import ReportDetail from '@/pages/ReportDetail';
 import Compare from '@/pages/Compare';
 import Users from '@/pages/Users';
+import Mentor from '@/pages/Mentor';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -64,6 +65,7 @@ const AuthenticatedApp = () => {
           <Route path="/report/:id" element={<ReportDetail />} />
           <Route path="/confronta" element={<Compare />} />
           <Route path="/utenti" element={<Users />} />
+          <Route path="/mentore" element={<Mentor />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
