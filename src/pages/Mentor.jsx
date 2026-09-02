@@ -55,6 +55,15 @@ export default function Mentor() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // L'agente sta elaborando se l'ultimo messaggio è dell'utente (in attesa di risposta)
+  // o se c'è un tool call in corso.
+  const isWaiting = messages.length > 0 && (
+    messages[messages.length - 1].role === "user" ||
+    (messages[messages.length - 1].tool_calls || []).some(
+      (tc) => ["pending", "running", "in_progress"].includes(tc.status)
+    )
+  );
+
   const send = async () => {
     const text = input.trim();
     if (!text || !conversation || sending) return;
@@ -118,6 +127,15 @@ export default function Mentor() {
           </div>
         )}
         {messages.map((m, i) => <MessageBubble key={i} message={m} />)}
+        {isWaiting && (
+          <div className="flex justify-start">
+            <div className="bg-zinc-800/80 rounded-2xl px-4 py-3 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-2 h-2 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-2 h-2 rounded-full bg-zinc-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="pt-2">
