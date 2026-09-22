@@ -1,8 +1,31 @@
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 import { Check, X, Users, Video, Sparkles, TrendingUp, Wallet, Download } from "lucide-react";
 import { PLANS, COSTS, TOTAL_BUILDER, TOTAL_PRO, BREAK_EVEN_SCENARIOS } from "@/lib/monetizationData";
 import MonetizationPdfExport from "@/components/MonetizationPdfExport";
 
 export default function Monetization() {
+  const [authState, setAuthState] = useState({ loading: true, isAdmin: false });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const u = await base44.auth.me();
+        setAuthState({ loading: false, isAdmin: u?.role === "admin" });
+      } catch {
+        setAuthState({ loading: false, isAdmin: false });
+      }
+    })();
+  }, []);
+
+  if (authState.loading) {
+    return <div className="text-muted-foreground text-sm">Caricamento…</div>;
+  }
+  if (!authState.isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

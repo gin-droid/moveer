@@ -152,17 +152,19 @@ export default function SettingsDrawer({ open, onOpenChange }) {
               </div>
             </div>
 
-            {/* Monetization */}
-            <button
-              onClick={() => { onOpenChange(false); navigate("/monetizzazione"); }}
-              className="w-full flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm text-foreground hover:bg-sidebar-accent transition-colors"
-            >
-              <span className="flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-primary" />
-                Piano di monetizzazione
-              </span>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
+            {/* Monetization — solo admin */}
+            {me?.role === "admin" && (
+              <button
+                onClick={() => { onOpenChange(false); navigate("/monetizzazione"); }}
+                className="w-full flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm text-foreground hover:bg-sidebar-accent transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-primary" />
+                  Piano di monetizzazione
+                </span>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
 
             {/* Terms of Use */}
             <button
