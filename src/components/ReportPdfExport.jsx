@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { FileDown } from "lucide-react";
 import jsPDF from "jspdf";
-import PdfPreviewModal from "@/components/PdfPreviewModal";
 import { silhouettePoints } from "@/lib/bodySilhouette";
 import { analyzeFrontStress } from "@/lib/stressAnalysis";
 
@@ -12,10 +10,6 @@ const sevColors = {
 };
 
 export default function ReportPdfExport({ report }) {
-  const [previewUrl, setPreviewUrl] = useState("");
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [fileName, setFileName] = useState("");
-
   const generate = () => {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
@@ -450,21 +444,19 @@ export default function ReportPdfExport({ report }) {
 
     const fn = `report_${(report.exercise_name || "esercizio").toLowerCase().replace(/\s+/g, "_")}.pdf`;
     const url = URL.createObjectURL(doc.output("blob"));
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(url);
-    setFileName(fn);
-    setPreviewOpen(true);
+    const newTab = window.open(url, "_blank");
+    if (!newTab) {
+      doc.save(fn);
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
   return (
-    <>
-      <button
-        onClick={generate}
-        className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-sm px-5 py-3 rounded-xl transition-colors border border-zinc-700"
-      >
-        <FileDown className="w-4 h-4" /> Esporta PDF
-      </button>
-      <PdfPreviewModal open={previewOpen} onOpenChange={setPreviewOpen} blobUrl={previewUrl} fileName={fileName} />
-    </>
+    <button
+      onClick={generate}
+      className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-sm px-5 py-3 rounded-xl transition-colors border border-zinc-700"
+    >
+      <FileDown className="w-4 h-4" /> Esporta PDF
+    </button>
   );
 }
