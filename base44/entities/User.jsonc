@@ -15,6 +15,11 @@
         "maschio",
         "femmina"
       ]
+    },
+    "accent_color": {
+      "type": "string",
+      "title": "Colore tema",
+      "description": "Colore accentato scelto dall'utente (canali HSL, es. '76 100% 58%'). Persistito anche in localStorage per uso offline."
     }
   },
   "required": [

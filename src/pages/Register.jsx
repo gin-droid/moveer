@@ -10,6 +10,7 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { ACCENT_COLORS, DEFAULT_ACCENT, applyAccentColor, setStoredAccentColor } from "@/lib/accentColor";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -20,6 +21,7 @@ export default function Register() {
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [gender, setGender] = useState("");
+  const [accentColor, setAccentColor] = useState(DEFAULT_ACCENT);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,9 +48,8 @@ export default function Register() {
       const result = await base44.auth.verifyOtp({ email, otpCode });
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
-        if (gender) {
-          try { await base44.auth.updateMe({ gender }); } catch (e) { /* non-blocking */ }
-        }
+        setStoredAccentColor(accentColor);
+        try { await base44.auth.updateMe({ gender, accent_color: accentColor }); } catch (e) { /* non-blocking */ }
       }
       window.location.href = safeReturnTo();
     } catch (err) {
@@ -232,6 +233,23 @@ export default function Register() {
               >
                 {opt.l}
               </button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Colore tema</Label>
+          <p className="text-xs text-muted-foreground -mt-1">Scegli il colore da abbinare al nero. Lo vedi in tempo reale.</p>
+          <div className="flex flex-wrap gap-2.5 pt-0.5">
+            {ACCENT_COLORS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { setAccentColor(c.hsl); applyAccentColor(c.hsl); }}
+                className={`w-9 h-9 rounded-full border-2 transition-transform ${accentColor === c.hsl ? "border-foreground scale-110" : "border-transparent hover:scale-105"}`}
+                style={{ backgroundColor: `hsl(${c.hsl})` }}
+                aria-label={c.label}
+                title={c.label}
+              />
             ))}
           </div>
         </div>
