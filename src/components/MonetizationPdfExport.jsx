@@ -1,7 +1,12 @@
+import { useState } from "react";
 import jsPDF from "jspdf";
 import { PLANS, COSTS, TOTAL_BUILDER, TOTAL_PRO, BREAK_EVEN_SCENARIOS } from "@/lib/monetizationData";
+import PdfPreviewModal from "@/components/PdfPreviewModal";
 
 export default function MonetizationPdfExport() {
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
+
   const generate = () => {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
@@ -110,18 +115,24 @@ export default function MonetizationPdfExport() {
 
     addText("moVeerAI — Analisi biomeccanica guidata dall'IA", 9, { color: [120, 120, 120], style: "italic" });
 
-    doc.save("moVeerAI-Piano-Monetizzazione.pdf");
+    const url = URL.createObjectURL(doc.output("blob"));
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(url);
+    setPreviewOpen(true);
   };
 
   return (
-    <button
-      onClick={generate}
-      className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm px-5 py-3 rounded-xl transition-colors shadow-lg shadow-primary/20"
-    >
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-      Scarica PDF offline
-    </button>
+    <>
+      <button
+        onClick={generate}
+        className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm px-5 py-3 rounded-xl transition-colors shadow-lg shadow-primary/20"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Scarica PDF offline
+      </button>
+      <PdfPreviewModal open={previewOpen} onOpenChange={setPreviewOpen} blobUrl={previewUrl} fileName="moVeerAI-Piano-Monetizzazione.pdf" />
+    </>
   );
 }

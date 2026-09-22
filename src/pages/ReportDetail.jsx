@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2 } from "lucide-react";
 import ReportPdfExport from "@/components/ReportPdfExport";
+import { cacheReport, getCachedReport } from "@/lib/reportCache";
 import BodyDiagram from "@/components/BodyDiagram";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/ui/use-toast";
@@ -21,9 +22,13 @@ export default function ReportDetail() {
   useEffect(() => {
     (async () => {
       try {
-        setReport(await base44.entities.AnalysisReport.get(id));
+        const r = await base44.entities.AnalysisReport.get(id);
+        setReport(r);
+        cacheReport(r);
       } catch (err) {
-        console.error(err);
+        const cached = getCachedReport(id);
+        if (cached) setReport(cached);
+        else console.error(err);
       } finally {
         setLoading(false);
       }
