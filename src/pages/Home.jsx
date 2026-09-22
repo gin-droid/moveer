@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Video, Dumbbell, FileText, ArrowRight, AlertTriangle, Activity, ShieldCheck } from "lucide-react";
 import GenderOnboarding from "@/components/GenderOnboarding";
+import { cacheReportList, getCachedReportList } from "@/lib/reportCache";
 import TermsContent from "@/components/TermsContent";
 import PrivacyContent from "@/components/PrivacyContent";
 import {
@@ -25,8 +26,11 @@ export default function Home() {
         ]);
         setReports(r);
         setExercises(e);
+        cacheReportList(r);
       } catch (err) {
-        console.error(err);
+        const cached = getCachedReportList().slice(0, 5);
+        if (cached.length > 0) setReports(cached);
+        else console.error(err);
       } finally {
         setLoading(false);
       }

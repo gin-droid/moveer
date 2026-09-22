@@ -5,6 +5,7 @@ import { FileText, ArrowRight, AlertTriangle, Trash2, Loader2 } from "lucide-rea
 import PullToRefresh from "@/components/PullToRefresh";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/ui/use-toast";
+import { cacheReportList, getCachedReportList, removeCachedReport } from "@/lib/reportCache";
 
 export default function Reports() {
   const [reports, setReports] = useState([]);
@@ -15,9 +16,13 @@ export default function Reports() {
 
   const loadReports = async () => {
     try {
-      setReports(await base44.entities.AnalysisReport.list("-created_date", 100));
+      const data = await base44.entities.AnalysisReport.list("-created_date", 100);
+      setReports(data);
+      cacheReportList(data);
     } catch (err) {
-      console.error(err);
+      const cached = getCachedReportList();
+      if (cached.length > 0) setReports(cached);
+      else console.error(err);
     } finally {
       setLoading(false);
     }
@@ -37,6 +42,7 @@ export default function Reports() {
     setReports((prev) => prev.filter((r) => r.id !== id)); // optimistic update
     try {
       await base44.entities.AnalysisReport.delete(id);
+      removeCachedReport(id);
     } catch (err) {
       setReports(previous); // revert on failure
       toast({
