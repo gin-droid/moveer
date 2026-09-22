@@ -443,12 +443,7 @@ export default function ReportPdfExport({ report }) {
     }
 
     const fn = `report_${(report.exercise_name || "esercizio").toLowerCase().replace(/\s+/g, "_")}.pdf`;
-    const url = URL.createObjectURL(doc.output("blob"));
-    const newTab = window.open(url, "_blank");
-    if (!newTab) {
-      doc.save(fn);
-    }
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    doc.save(fn);
   };
 
   return (

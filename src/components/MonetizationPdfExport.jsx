@@ -110,12 +110,7 @@ export default function MonetizationPdfExport() {
 
     addText("moVeerAI — Analisi biomeccanica guidata dall'IA", 9, { color: [120, 120, 120], style: "italic" });
 
-    const url = URL.createObjectURL(doc.output("blob"));
-    const newTab = window.open(url, "_blank");
-    if (!newTab) {
-      doc.save("moVeerAI-Piano-Monetizzazione.pdf");
-    }
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    doc.save("moVeerAI-Piano-Monetizzazione.pdf");
   };
 
   return (
