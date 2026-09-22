@@ -19,6 +19,7 @@ import Users from '@/pages/Users';
 import Athletes from '@/pages/Athletes';
 import AthleteDetail from '@/pages/AthleteDetail';
 import Mentor from '@/pages/Mentor';
+import Monetization from '@/pages/Monetization';
 import About from '@/pages/About';
 import Contact from '@/pages/Contact';
 import PublicLayout from '@/components/PublicLayout';
@@ -77,6 +78,7 @@ const AuthenticatedApp = () => {
           <Route path="/atleti" element={<Athletes />} />
           <Route path="/atleti/:id" element={<AthleteDetail />} />
           <Route path="/mentore" element={<Mentor />} />
+          <Route path="/monetizzazione" element={<Monetization />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

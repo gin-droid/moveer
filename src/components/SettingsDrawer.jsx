@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   User as UserIcon, Mail, ShieldCheck, Trash2, Loader2, AlertTriangle, ArrowLeft,
-  FileText, ChevronRight,
+  FileText, ChevronRight, Wallet,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import TermsContent from "@/components/TermsContent";
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function SettingsDrawer({ open, onOpenChange }) {
+  const navigate = useNavigate();
   const [me, setMe] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [emailConfirm, setEmailConfirm] = useState("");
@@ -149,6 +151,18 @@ export default function SettingsDrawer({ open, onOpenChange }) {
                 })}
               </div>
             </div>
+
+            {/* Monetization */}
+            <button
+              onClick={() => { onOpenChange(false); navigate("/monetizzazione"); }}
+              className="w-full flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm text-foreground hover:bg-sidebar-accent transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-primary" />
+                Piano di monetizzazione
+              </span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
 
             {/* Terms of Use */}
             <button
