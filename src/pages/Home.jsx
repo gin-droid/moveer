@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Video, Dumbbell, FileText, ArrowRight, AlertTriangle, Activity } from "lucide-react";
+import { Video, Dumbbell, FileText, ArrowRight, AlertTriangle, Activity, ShieldCheck } from "lucide-react";
 import GenderOnboarding from "@/components/GenderOnboarding";
+import TermsContent from "@/components/TermsContent";
+import PrivacyContent from "@/components/PrivacyContent";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Home() {
   const [reports, setReports] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -61,10 +68,18 @@ export default function Home() {
 
       {/* Stats */}
       <section className="grid grid-cols-2 gap-3 sm:gap-4">
-        <StatCard label="Analisi effettuate" value={loading ? "—" : reports.length} icon={FileText} />
-        <ScoreStat value={loading || avgScore === null ? null : avgScore} />
-        <StatCard label="Esercizi in catalogo" value={loading ? "—" : exercises.length} icon={Dumbbell} />
-        <StatCard label="Macro-categorie" value={loading ? "—" : macros} icon={Activity} />
+        <Link to="/report" className="block">
+          <StatCard label="Analisi effettuate" value={loading ? "—" : reports.length} icon={FileText} />
+        </Link>
+        <Link to="/report" className="block">
+          <ScoreStat value={loading || avgScore === null ? null : avgScore} />
+        </Link>
+        <Link to="/esercizi" className="block">
+          <StatCard label="Esercizi in catalogo" value={loading ? "—" : exercises.length} icon={Dumbbell} />
+        </Link>
+        <Link to="/esercizi" className="block">
+          <StatCard label="Macro-categorie" value={loading ? "—" : macros} icon={Activity} />
+        </Link>
       </section>
 
       {/* Recent reports */}
@@ -105,13 +120,52 @@ export default function Home() {
       </section>
 
       <GenderOnboarding />
+
+      {/* Legal links */}
+      <footer className="pt-2 pb-1 flex flex-col items-center gap-3">
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          <button
+            onClick={() => setTermsOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5" /> Termini d'uso
+          </button>
+          <button
+            onClick={() => setPrivacyOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" /> Privacy &amp; Policy
+          </button>
+        </div>
+        <p className="text-[10px] text-muted-foreground/70 text-center">
+          © {new Date().getFullYear()} moVeerAI — Analisi biomeccanica guidata dall'IA
+        </p>
+      </footer>
+
+      <Dialog open={termsOpen} onOpenChange={setTermsOpen}>
+        <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-white">Termini d'uso</DialogTitle>
+          </DialogHeader>
+          <TermsContent />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={privacyOpen} onOpenChange={setPrivacyOpen}>
+        <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-white">Privacy &amp; Policy</DialogTitle>
+          </DialogHeader>
+          <PrivacyContent />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function StatCard({ label, value, icon: Icon }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-3 sm:p-3.5">
+    <div className="rounded-2xl border border-border bg-card p-3 sm:p-3.5 h-full transition-colors hover:border-primary/40 hover:bg-sidebar-accent">
       <div className="flex items-center justify-between">
         <Icon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-primary" />
         <Sparkline />
@@ -128,7 +182,7 @@ function ScoreStat({ value }) {
   const circ = 2 * Math.PI * r;
   const offset = circ - (s / 100) * circ;
   return (
-    <div className="rounded-2xl border border-border bg-card p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3">
+    <div className="rounded-2xl border border-border bg-card p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3 h-full transition-colors hover:border-primary/40 hover:bg-sidebar-accent">
       <div className="relative w-11 h-11 sm:w-12 sm:h-12 shrink-0">
         <svg className="w-11 h-11 sm:w-12 sm:h-12 -rotate-90" viewBox="0 0 64 64">
           <circle cx="32" cy="32" r="26" fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
