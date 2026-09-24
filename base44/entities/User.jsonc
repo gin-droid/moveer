@@ -20,6 +20,17 @@
       "type": "string",
       "title": "Colore tema",
       "description": "Colore accentato scelto dall'utente (canali HSL, es. '76 100% 58%'). Persistito anche in localStorage per uso offline."
+    },
+    "plan": {
+      "type": "string",
+      "title": "Piano di abbonamento",
+      "description": "Piano attivo: freemium, pro o coach.",
+      "enum": [
+        "freemium",
+        "pro",
+        "coach"
+      ],
+      "default": "freemium"
     }
   },
   "required": [

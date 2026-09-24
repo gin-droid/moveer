@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link, useLocation, useOutlet, useNavigate } from "reac
 import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard, Dumbbell, Video, FileText, Activity, TrendingUp,
-  Users as UsersIcon, PlayCircle, User as UserIcon, ArrowLeft, Menu, Sparkles, UserCheck,
+  Users as UsersIcon, PlayCircle, User as UserIcon, ArrowLeft, Menu, Sparkles, UserCheck, CreditCard,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/lib/AuthContext";
@@ -23,6 +23,7 @@ const secondaryItems = [
   { to: "/atleti", label: "Atleti", icon: UserCheck },
   { to: "/confronta", label: "Progressi", icon: TrendingUp },
   { to: "/mentore", label: "Mentore", icon: Sparkles },
+  { to: "/abbonamento", label: "Abbonamento", icon: CreditCard },
   { to: "/utenti", label: "Utenti", icon: UsersIcon },
 ];
 
