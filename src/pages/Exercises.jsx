@@ -11,6 +11,7 @@ export default function Exercises() {
   const [activeSub, setActiveSub] = useState("Tutti");
   const [activeDiff, setActiveDiff] = useState("Tutti");
   const [activeMuscle, setActiveMuscle] = useState("Tutti");
+  const [activeEquip, setActiveEquip] = useState("Tutti");
   const [query, setQuery] = useState("");
 
   const loadExercises = async () => {
@@ -39,6 +40,11 @@ export default function Exercises() {
     return ["Tutti", ...new Set(filtered.flatMap((e) => e.muscle_groups || []).filter(Boolean))];
   }, [activeMacro, exercises]);
 
+  const equipments = useMemo(() => {
+    const filtered = activeMacro === "Tutti" ? exercises : exercises.filter((e) => e.macro_category === activeMacro);
+    return ["Tutti", ...new Set(filtered.map((e) => e.equipment).filter(Boolean))];
+  }, [activeMacro, exercises]);
+
   const difficulties = ["Tutti", "Principiante", "Intermedio", "Avanzato"];
 
   const filtered = useMemo(() => {
@@ -48,6 +54,7 @@ export default function Exercises() {
       const okSub = activeSub === "Tutti" || e.subcategory === activeSub;
       const okDiff = activeDiff === "Tutti" || e.difficulty === activeDiff;
       const okMuscle = activeMuscle === "Tutti" || (e.muscle_groups || []).includes(activeMuscle);
+      const okEquip = activeEquip === "Tutti" || (e.equipment || "") === activeEquip;
       const okQuery = !q || (
         e.name.toLowerCase().includes(q) ||
         (e.subcategory || "").toLowerCase().includes(q) ||
@@ -55,17 +62,18 @@ export default function Exercises() {
         (e.equipment || "").toLowerCase().includes(q) ||
         (e.description || "").toLowerCase().includes(q)
       );
-      return okMacro && okSub && okDiff && okMuscle && okQuery;
+      return okMacro && okSub && okDiff && okMuscle && okEquip && okQuery;
     });
-  }, [exercises, activeMacro, activeSub, activeDiff, activeMuscle, query]);
+  }, [exercises, activeMacro, activeSub, activeDiff, activeMuscle, activeEquip, query]);
 
-  const hasActiveFilters = activeMacro !== "Tutti" || activeSub !== "Tutti" || activeDiff !== "Tutti" || activeMuscle !== "Tutti" || query !== "";
+  const hasActiveFilters = activeMacro !== "Tutti" || activeSub !== "Tutti" || activeDiff !== "Tutti" || activeMuscle !== "Tutti" || activeEquip !== "Tutti" || query !== "";
 
   const resetFilters = () => {
     setActiveMacro("Tutti");
     setActiveSub("Tutti");
     setActiveDiff("Tutti");
     setActiveMuscle("Tutti");
+    setActiveEquip("Tutti");
     setQuery("");
   };
 
@@ -156,6 +164,23 @@ export default function Exercises() {
               }`}
             >
               {m}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Equipment chips */}
+      {equipments.length > 1 && (
+        <div className="flex flex-wrap gap-2 -mt-2 pb-1">
+          {equipments.map((eq) => (
+            <button
+              key={eq}
+              onClick={() => setActiveEquip(eq)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                activeEquip === eq ? "bg-zinc-200 text-zinc-900" : "bg-zinc-900/40 border border-zinc-800 text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              {eq}
             </button>
           ))}
         </div>
