@@ -9,6 +9,8 @@ export default function Exercises() {
   const [loading, setLoading] = useState(true);
   const [activeMacro, setActiveMacro] = useState("Tutti");
   const [activeSub, setActiveSub] = useState("Tutti");
+  const [activeDiff, setActiveDiff] = useState("Tutti");
+  const [activeMuscle, setActiveMuscle] = useState("Tutti");
   const [query, setQuery] = useState("");
 
   const loadExercises = async () => {
@@ -32,11 +34,20 @@ export default function Exercises() {
     return ["Tutti", ...new Set(filtered.map((e) => e.subcategory).filter(Boolean))];
   }, [activeMacro, exercises]);
 
+  const muscles = useMemo(() => {
+    const filtered = activeMacro === "Tutti" ? exercises : exercises.filter((e) => e.macro_category === activeMacro);
+    return ["Tutti", ...new Set(filtered.flatMap((e) => e.muscle_groups || []).filter(Boolean))];
+  }, [activeMacro, exercises]);
+
+  const difficulties = ["Tutti", "Principiante", "Intermedio", "Avanzato"];
+
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
     return exercises.filter((e) => {
       const okMacro = activeMacro === "Tutti" || e.macro_category === activeMacro;
       const okSub = activeSub === "Tutti" || e.subcategory === activeSub;
+      const okDiff = activeDiff === "Tutti" || e.difficulty === activeDiff;
+      const okMuscle = activeMuscle === "Tutti" || (e.muscle_groups || []).includes(activeMuscle);
       const okQuery = !q || (
         e.name.toLowerCase().includes(q) ||
         (e.subcategory || "").toLowerCase().includes(q) ||
@@ -44,9 +55,19 @@ export default function Exercises() {
         (e.equipment || "").toLowerCase().includes(q) ||
         (e.description || "").toLowerCase().includes(q)
       );
-      return okMacro && okSub && okQuery;
+      return okMacro && okSub && okDiff && okMuscle && okQuery;
     });
-  }, [exercises, activeMacro, activeSub, query]);
+  }, [exercises, activeMacro, activeSub, activeDiff, activeMuscle, query]);
+
+  const hasActiveFilters = activeMacro !== "Tutti" || activeSub !== "Tutti" || activeDiff !== "Tutti" || activeMuscle !== "Tutti" || query !== "";
+
+  const resetFilters = () => {
+    setActiveMacro("Tutti");
+    setActiveSub("Tutti");
+    setActiveDiff("Tutti");
+    setActiveMuscle("Tutti");
+    setQuery("");
+  };
 
   const diffColor = { Principiante: "text-emerald-300 bg-emerald-400/10", Intermedio: "text-amber-300 bg-amber-400/10", Avanzato: "text-rose-300 bg-rose-400/10" };
 
@@ -108,10 +129,52 @@ export default function Exercises() {
         ))}
       </div>
 
-      {/* Result count */}
+      {/* Difficulty chips */}
+      <div className="flex flex-wrap gap-2 -mt-2 pb-1">
+        {difficulties.map((d) => (
+          <button
+            key={d}
+            onClick={() => setActiveDiff(d)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+              activeDiff === d ? "bg-emerald-400/20 text-emerald-300 border border-emerald-400/40" : "bg-zinc-900/40 border border-zinc-800 text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            {d}
+          </button>
+        ))}
+      </div>
+
+      {/* Muscle group chips */}
+      {muscles.length > 1 && (
+        <div className="flex flex-wrap gap-2 -mt-2 pb-1">
+          {muscles.map((m) => (
+            <button
+              key={m}
+              onClick={() => setActiveMuscle(m)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                activeMuscle === m ? "bg-zinc-200 text-zinc-900" : "bg-zinc-900/40 border border-zinc-800 text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Result count + reset */}
       {!loading && (
-        <div className="text-xs text-zinc-500 -mt-2">
-          {filtered.length} {filtered.length === 1 ? "esercizio" : "esercizi"}
+        <div className="flex items-center justify-between -mt-2">
+          <div className="text-xs text-zinc-500">
+            {filtered.length} {filtered.length === 1 ? "esercizio" : "esercizi"}
+          </div>
+          {hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+            >
+              <X className="w-3 h-3" /> Azzera filtri
+            </button>
+          )}
         </div>
       )}
 
