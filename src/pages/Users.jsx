@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Trash2, Loader2, ShieldCheck, User as UserIcon, ArrowLeft } from "lucide-react";
+import { Trash2, Loader2, ShieldCheck, User as UserIcon, ArrowLeft, Ban } from "lucide-react";
 import { Link } from "react-router-dom";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import InfoDialog from "@/components/InfoDialog";
@@ -10,6 +10,7 @@ export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [blockingId, setBlockingId] = useState(null);
   const [error, setError] = useState("");
   const [confirmState, setConfirmState] = useState({ open: false, user: null });
   const [infoState, setInfoState] = useState({ open: false, title: "", description: "" });
@@ -66,6 +67,23 @@ export default function Users() {
     }
   };
 
+  const handleToggleBlock = async (u) => {
+    if (u.role === "admin") return;
+    setBlockingId(u.id);
+    try {
+      await base44.entities.User.update(u.id, { blocked: !u.blocked });
+      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, blocked: !u.blocked } : x)));
+    } catch (err) {
+      setInfoState({
+        open: true,
+        title: "Operazione fallita",
+        description: err.message || "Errore durante il blocco dell'utente.",
+      });
+    } finally {
+      setBlockingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -93,7 +111,7 @@ export default function Users() {
     <div className="space-y-7">
       <div>
         <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Gestione utenti</h1>
-        <p className="text-zinc-400 mt-2 text-sm">Elenco degli account registrati. Puoi eliminare gli utenti non amministratori.</p>
+        <p className="text-zinc-400 mt-2 text-sm">Elenco degli account registrati. Puoi bloccare o eliminare gli utenti non amministratori.</p>
       </div>
 
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
@@ -110,6 +128,23 @@ export default function Users() {
               <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${u.role === "admin" ? "bg-emerald-400/15 text-emerald-300" : "bg-zinc-800 text-zinc-400"}`}>
                 {u.role === "admin" ? "Admin" : "Utente"}
               </span>
+              {u.blocked && (
+                <span className="text-[11px] px-2.5 py-1 rounded-full font-medium bg-amber-500/15 text-amber-300">
+                  Bloccato
+                </span>
+              )}
+              <button
+                onClick={() => handleToggleBlock(u)}
+                disabled={blockingId === u.id || deletingId === u.id || u.role === "admin"}
+                title={u.role === "admin" ? "Gli amministratori non possono essere bloccati" : u.blocked ? "Sblocca utente" : "Blocca utente"}
+                className={`p-2 rounded-lg transition-colors shrink-0 disabled:opacity-40 disabled:hover:bg-transparent ${
+                  u.blocked
+                    ? "text-amber-400 hover:bg-amber-500/10"
+                    : "text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10"
+                } disabled:hover:text-zinc-600`}
+              >
+                {blockingId === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+              </button>
               <button
                 onClick={() => requestDelete(u)}
                 disabled={deletingId === u.id || u.role === "admin"}

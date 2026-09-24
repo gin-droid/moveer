@@ -47,6 +47,27 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
+    } else if (authError.type === 'user_blocked') {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center bg-background p-6">
+          <div className="max-w-sm text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/15 flex items-center justify-center mx-auto">
+              <span className="text-2xl">⛔</span>
+            </div>
+            <h1 className="font-display text-2xl font-semibold text-white">Account bloccato</h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Il tuo account è stato bloccato da un amministratore.
+              Per assistenza contatta info@moveer.ai
+            </p>
+            <button
+              onClick={() => { window.location.href = '/login'; }}
+              className="inline-flex items-center justify-center bg-primary text-primary-foreground font-semibold text-sm px-5 py-2.5 rounded-xl"
+            >
+              Esci
+            </button>
+          </div>
+        </div>
+      );
     } else if (authError.type === 'auth_required') {
       // Redirect to login automatically
       navigateToLogin();

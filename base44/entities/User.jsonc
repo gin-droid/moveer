@@ -31,6 +31,12 @@
         "coach"
       ],
       "default": "freemium"
+    },
+    "blocked": {
+      "type": "boolean",
+      "title": "Account bloccato",
+      "description": "Se true, l'utente non pu\u00f2 accedere all'app. Impostabile solo dagli amministratori.",
+      "default": false
     }
   },
   "required": [

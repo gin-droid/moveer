@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   User as UserIcon, Mail, ShieldCheck, Trash2, Loader2, AlertTriangle, ArrowLeft,
-  FileText, ChevronRight, Wallet,
+  FileText, ChevronRight, Wallet, MessageSquareWarning,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import TermsContent from "@/components/TermsContent";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -28,6 +29,7 @@ export default function SettingsDrawer({ open, onOpenChange }) {
   const [gender, setGender] = useState("");
   const [savingGender, setSavingGender] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -166,6 +168,18 @@ export default function SettingsDrawer({ open, onOpenChange }) {
               </button>
             )}
 
+            {/* Segnalazioni */}
+            <button
+              onClick={() => setFeedbackOpen(true)}
+              className="w-full flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm text-foreground hover:bg-sidebar-accent transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <MessageSquareWarning className="w-4 h-4 text-primary" />
+                Invia segnalazione
+              </span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+
             {/* Terms of Use */}
             <button
               onClick={() => setTermsOpen(true)}
@@ -238,6 +252,8 @@ export default function SettingsDrawer({ open, onOpenChange }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
 
       <Dialog open={termsOpen} onOpenChange={setTermsOpen}>
         <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[85vh] overflow-y-auto">
