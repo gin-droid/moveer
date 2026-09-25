@@ -92,4 +92,6 @@ NOTE TECNICHE
     dei report a schermo e nei PDF esportati
   - API upload allineata: Analyze.jsx usa UploadPublicFile (API corrente)
     per upload frame e video originale
+  - Ricerca e filtri atleti: Athletes.jsx con ricerca testuale (nome/note)
+    e filtro per genere via useMemo, contatore risultati e reset filtri
 ================================================================

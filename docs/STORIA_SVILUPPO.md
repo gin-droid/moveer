@@ -336,4 +336,15 @@ Interventi sulla pipeline di analisi per renderla più efficace:
 
 ---
 
+## 29. Ricerca e filtri nella gestione atleti (25 settembre 2026)
+
+- **Ricerca testuale** (`src/pages/Athletes.jsx`): aggiunta barra di ricerca con icona Search che filtra gli atleti per nome o note in tempo reale (client-side via `useMemo`).
+- **Filtro per genere**: chip di filtro (Tutti / Maschi / Femmine) con stile coerente al design system (emerald accent per il filtro attivo).
+- **Contatore risultati**: mostra il numero di atleti filtrati con label dinamica singolare/plurale.
+- **Reset filtri**: pulsante "Azzera filtri" visibile solo quando ci sono filtri attivi, ripristina ricerca e genere ai valori predefiniti.
+- **Stato vuoto filtrato**: messaggio dedicato "Nessun atleta trovato con i filtri attivi" distinto dallo stato "nessun atleta creato".
+- **Prestazioni**: filtraggio memoizzato con `useMemo` su `[athletes, query, genderFilter]` per evitare ricalcoli inutili su liste lunghe (limite 500 record caricati).
+
+---
+
 *Documento aggiornato il 25 settembre 2026.*
