@@ -16,7 +16,7 @@ export default function Exercises() {
 
   const loadExercises = async () => {
     try {
-      const data = await base44.entities.Exercise.list("-created_date", 500);
+      const data = await base44.entities.Exercise.list("-created_date", 1000);
       setExercises(data);
     } catch (err) {
       console.error(err);
