@@ -25,7 +25,7 @@ interface View { joints?: Joint[]; segments?: Segment[]; }
 // (es. squat = fondo, deadlift = setup con tronco inclinato, push-up = fondo).
 // Le coordinate sono normalizzate 0-100.
 
-type Pattern = 'squat' | 'hinge' | 'push' | 'pull' | 'lunge' | 'overhead' | 'core' | 'static';
+type Pattern = 'squat' | 'hinge' | 'push' | 'pull' | 'lunge' | 'overhead' | 'core' | 'cycling' | 'static';
 
 interface PatternProfile {
   // Posizioni ottime attese nella fase critica (front + side)
@@ -228,6 +228,28 @@ const PROFILES: Record<Pattern, PatternProfile> = {
     optimalAngles: { kneeFlex: 178, hipFlex: 178, trunkLean: 2, elbowFlex: 178, shoulderFlex: 178 },
     weights: { kneeFlexDev: 0.20, hipFlexDev: 0.20, trunkLeanDev: 0.30, elbowFlexDev: 0.15, shoulderFlexDev: 0.15, positionDev: 2.8 },
   },
+  // Cycling (road, MTB, indoor): pedalata ciclica. Fase critica: punto più basso
+  // del pedale (bottom dead center). Ginocchio leggermente flesso ~150-160°,
+  // anca flessa ~100-110°, tronco inclinato in avanti ~20-35°, core stabile.
+  cycling: {
+    optimalFront: {
+      head: { x: 50, y: 10 }, neck: { x: 50, y: 18 },
+      shoulder_l: { x: 34, y: 28 }, shoulder_r: { x: 66, y: 28 },
+      elbow_l: { x: 32, y: 40 }, elbow_r: { x: 68, y: 40 },
+      wrist_l: { x: 34, y: 48 }, wrist_r: { x: 66, y: 48 },
+      hip_l: { x: 42, y: 52 }, hip_r: { x: 58, y: 52 },
+      knee_l: { x: 43, y: 70 }, knee_r: { x: 57, y: 70 },
+      ankle_l: { x: 44, y: 88 }, ankle_r: { x: 56, y: 88 },
+    },
+    optimalSide: {
+      head: { x: 44, y: 12 }, neck: { x: 46, y: 20 },
+      shoulder: { x: 50, y: 28 }, elbow: { x: 48, y: 40 },
+      wrist: { x: 46, y: 48 },
+      hip: { x: 44, y: 52 }, knee: { x: 42, y: 68 }, ankle: { x: 46, y: 88 },
+    },
+    optimalAngles: { kneeFlex: 155, hipFlex: 105, trunkLean: 25, elbowFlex: 165, shoulderFlex: 120 },
+    weights: { kneeFlexDev: 0.40, hipFlexDev: 0.30, trunkLeanDev: 0.25, elbowFlexDev: 0.08, shoulderFlexDev: 0.10, positionDev: 2.0 },
+  },
 };
 
 // --- Classificazione del pattern a partire da esercizio/categoria ---
@@ -239,6 +261,9 @@ function classifyPattern(name: string, macro: string, sub: string): Pattern {
 
   // Overhead ha priorità alta (contiene "press overhead", "military", "snatch", "overhead")
   if (/overhead|military press|snatch|jerky|press sopra|push press/.test(all)) return 'overhead';
+
+  // Cycling / ciclismo (road, MTB, indoor, sprint, salita)
+  if (/ciclismo|cycling|bike|bici|pedal|road bike|mountain bike|spin|cyclocross|cronometro|time trial/.test(all)) return 'cycling';
 
   // Hinge (deadlift, RDL, good morning, kettlebell swing)
   if (/deadlift|stacco|rdl|good morning|swing|hip thrust|pull through|romanian/.test(all)) return 'hinge';
@@ -550,6 +575,7 @@ export function getPatternCheckpoints(exerciseName: string, macroCategory: strin
     overhead: 'Overhead/press sopra la testa — fase critica: massima altezza. Spalle flesse ~180° (braccia sopra la testa), gomiti estesi o leggermente flessi, tronco verticale, core stabile.',
     core: 'Core/plank o L-sit — fase critica: tenuta isometrica. Corpo allineato o chiuso, tronco neutro o flesso, colonna stabile.',
     static: 'Posturale/statica — posizione neutra in piedi. Colonna verticale, anche e spalle orizzontali, arti estesi.',
+    cycling: 'Ciclismo/pedalata — fase critica: punto più basso del pedale (bottom dead center). Ginocchio leggermente flesso ~150-160°, anca flessa ~100-110°, tronco inclinato in avanti ~20-35° (posizione aerodinamica su bici), core stabile per non dondolare il bacino.',
   };
   const checkpoints: Record<Pattern, string[]> = {
     squat: [
@@ -607,6 +633,13 @@ export function getPatternCheckpoints(exerciseName: string, macroCategory: strin
       'Anche orizzontali',
       'Testa allineata al tronco (non forward head)',
       'Distribuzione del peso simmetrica',
+    ],
+    cycling: [
+      'Ginocchia allineate alle anche durante tutta la pedalata (nessun valgismo)',
+      'Colonna neutra con inclinazione in avanti del tronco (non curvata a C)',
+      'Bacino stabile (nessun dondolio laterale durante la pedalata)',
+      'Caviglia in linea con il pedale (dorsiflessione/plantarflessione controllata)',
+      'Spalle rilassate, gomiti leggermente flessi (non bloccati sulle mani)',
     ],
   };
   return {
