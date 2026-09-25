@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
   UserPlus, Loader2, Trash2, ChevronRight, UserCheck, Calendar, Pencil,
+  Search, X,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
@@ -18,6 +19,8 @@ export default function Athletes() {
   const navigate = useNavigate();
   const [athletes, setAthletes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [genderFilter, setGenderFilter] = useState("Tutti");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -122,6 +125,18 @@ export default function Athletes() {
     }
   };
 
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    return athletes.filter((a) => {
+      const okQuery = !q || (a.name || "").toLowerCase().includes(q) || (a.notes || "").toLowerCase().includes(q);
+      const okGender = genderFilter === "Tutti" || a.gender === genderFilter;
+      return okQuery && okGender;
+    });
+  }, [athletes, query, genderFilter]);
+
+  const hasActiveFilters = query !== "" || genderFilter !== "Tutti";
+  const resetFilters = () => { setQuery(""); setGenderFilter("Tutti"); };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -149,6 +164,56 @@ export default function Athletes() {
             </button>
           </div>
 
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cerca per nome o note…"
+              className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-11 pr-10 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+                aria-label="Cancella ricerca"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Gender filter chips */}
+          <div className="flex flex-wrap gap-2 -mt-1">
+            {["Tutti", "maschio", "femmina"].map((g) => (
+              <button
+                key={g}
+                onClick={() => setGenderFilter(g)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                  genderFilter === g ? "bg-emerald-400/20 text-emerald-300 border border-emerald-400/40" : "bg-zinc-900/40 border border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {g === "Tutti" ? "Tutti" : g === "maschio" ? "Maschi" : "Femmine"}
+              </button>
+            ))}
+          </div>
+
+          {/* Result count + reset */}
+          <div className="flex items-center justify-between -mt-1">
+            <div className="text-xs text-zinc-500">
+              {filtered.length} {filtered.length === 1 ? "atleta" : "atleti"}
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="w-3 h-3" /> Azzera filtri
+              </button>
+            )}
+          </div>
+
           {athletes.length === 0 ? (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
               <UserCheck className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
@@ -157,9 +222,13 @@ export default function Athletes() {
                 Aggiungi il tuo primo atleta o cliente per iniziare a tracciare le analisi.
               </p>
             </div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-zinc-800 p-12 text-center text-zinc-500 text-sm">
+              Nessun atleta trovato con i filtri attivi.
+            </div>
           ) : (
             <div className="space-y-2.5">
-              {athletes.map((a) => {
+              {filtered.map((a) => {
                 const age = getAge(a.birth_date);
                 return (
                   <div
