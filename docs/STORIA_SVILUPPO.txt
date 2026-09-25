@@ -156,12 +156,17 @@ Flusso tecnico dell'analisi (src/pages/Analyze.jsx):
 
 12. Stato attuale
 ----------------------------------------------------------------------------------------------------
-- App funzionante con autenticazione, catalogo esercizi esteso, analisi video IA, storico report, confronto e gestione utenti.
-- Catalogo esercizi completo con nomenclatura e descrizioni professionali.
-- Pipeline di analisi ottimizzata con modello tecnico di riferimento, analisi fase-per-fase e profili biomeccanici pattern-specifici.
+- App funzionante con autenticazione, catalogo esercizi esteso (691 esercizi, 14 macro-categorie), analisi video IA, storico report, confronto, gestione utenti e gestione atleti.
+- Catalogo esercizi completo con nomenclatura e descrizioni professionali; tutti i record con setup ed errori comuni; attrezzatura normalizzata in 11 categorie.
+- Pipeline di analisi ottimizzata con modello tecnico di riferimento, analisi fase-per-fase, profili biomeccanici pattern-specifici (incluso ciclismo), supporto depth 3D LiDAR/ToF e dati wearable Bluetooth.
 - Sagome anatomiche realistiche gender-specific (frontale/laterale, maschile/femminile) con diagramma corporeo interattivo.
 - Calcolo biomeccanico deterministico dello stress articolare basato su profili di movimento pattern-specifici, integrato nel report e nell'export PDF.
-- Export PDF con mappa posturale a corpo singolo centrato.
+- Export PDF con mappa posturale a corpo singolo centrato; export PDF monetizzazione admin-only.
+- Agente AI Mentore conversazionale con accesso a catalogo e report utente.
+- Sistema di monetizzazione con piani di abbonamento e tracciamento piano utente.
+- Sicurezza: RLS su Exercise e AnalysisReport; blocco account admin; segnalazioni utenti via email agli admin.
+- Architettura offline-first per lo storico report con cache locale.
+- Pagine pubbliche (About, Contact) e documenti legali (Termini, Privacy).
 
 ====================================================================================================
 
@@ -243,4 +248,70 @@ Flusso tecnico dell'analisi (src/pages/Analyze.jsx):
 
 ==================================================================================================
 
-Documento aggiornato il 2 settembre 2026.
+20. Gestione atleti e pagine pubbliche (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Entita Athlete: creata entita dedicata agli atleti/clienti (nome, genere, data di nascita, note) con RLS che isola i record per utente (created_by_id) o admin.
+- Pagina Athletes (src/pages/Athletes.jsx): elenco atleti con creazione, modifica ed eliminazione; pull-to-refresh.
+- Pagina AthleteDetail (src/pages/AthleteDetail.jsx): scheda dettaglio atleta con dati anagrafici, note e storico report associati.
+- Integrazione in Analyze: selezione atleta opzionale nella pagina di analisi; l'atleta selezionato viene collegato al report (athlete_id) e il genere dell'atleta prevale sul genere del profilo utente per la sagoma anatomica.
+- Pagine pubbliche: create pagine About (src/pages/About.jsx) e Contact (src/pages/Contact.jsx) accessibili senza autenticazione.
+- PublicLayout (src/components/PublicLayout.jsx): layout per le pagine pubbliche (about, contact) fuori dal ProtectedRoute.
+- Documenti legali: componenti TermsContent (Termini d'uso) e PrivacyContent (Privacy & Policy) esposti in modal dalla home e dal SettingsDrawer; informativa GDPR completa in italiano.
+
+==================================================================================================
+
+21. Monetizzazione e abbonamenti (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Pagina Monetization (src/pages/Monetization.jsx): dashboard admin-only con riepilogo costi annuali, piani di abbonamento, scenari di break-even e note strategiche; accesso riservato al ruolo admin (redirect automatico per gli altri utenti).
+- Pagina Subscription (src/pages/Subscription.jsx): pagina di gestione abbonamento per l'utente, con stato del piano e opzioni di upgrade.
+- User estesa: aggiunto il campo plan per tracciare lo stato di abbonamento dell'utente.
+- Export PDF monetizzazione (src/components/MonetizationPdfExport.jsx): generazione PDF del piano di monetizzazione via jsPDF con tabelle costi, piani e scenari; salvataggio diretto (doc.save) per compatibilita native mobile.
+- Dati monetizzazione (src/lib/monetizationData.js): configurazione centralizzata di costi, piani (Free, Coach, Pro) e limiti (cap 100 analisi/mese e 200 query mentore/mese per il piano Coach).
+- Funzionalita admin-only: la pagina Monetization e l'export PDF sono restritti al ruolo admin tramite controllo ruolo e rendering condizionale.
+
+==================================================================================================
+
+22. Sicurezza, admin e segnalazioni (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- User estesa: aggiunti i campi blocked (boolean) e role per il controllo amministrativo degli account.
+- AuthContext guard: blocco automatico dell'accesso per utenti flaggati (blocked=true) con schermata dedicata "Account bloccato" e istruzione di contattare l'assistenza.
+- Pagina Users (src/pages/Users.jsx): gestione utenti admin-only con elenco registrati, blocco/sblocco account non-admin ed eliminazione; conferme via AlertDialog.
+- FeedbackDialog (src/components/FeedbackDialog.jsx): modal per inviare segnalazioni/feedback degli utenti; collegato a notifiche email agli amministratori.
+- Funzione backend sendUserReport: riceve la segnalazione dall'utente e la inoltra via email agli admin registrati per la presa in carico.
+- SettingsDrawer: aggiunta voce "Invia segnalazione" che apre il FeedbackDialog; aggiunta voce "Piano di monetizzazione" (solo admin).
+
+==================================================================================================
+
+23. Architettura offline-first dei report (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Cache locale report (src/lib/reportCache.js): modulo di caching lato client per lo storico report; funzioni cacheReportList e getCachedReportList per persistere e recuperare i report in localStorage.
+- Reports offline-first: la pagina Reports e la Home caricano prima i dati cached; in caso di errore di rete mostrano i report cached garantendo accessibilita anche offline.
+- Resilienza: fallback graduale — dati live quando disponibili, dati cached come fallback; nessun blocco dell'UI in assenza di connessione.
+
+==================================================================================================
+
+24. Audit e espansione del catalogo esercizi (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Audit completo: verificati 572+ esercizi per campi mancanti, duplicati ed errori di categorizzazione.
+- Deduplicazione: eliminati 36 esercizi duplicati mantenendo i record piu completi.
+- Generazione LLM batch: creazione automatica di setup_instructions e common_mistakes per 151 record incompleti tramite invocazione LLM batch.
+- Espansione categorie: aggiunti 80+ esercizi nelle macro-categorie Ciclismo e Funzionale; espansione generale con 146 nuovi esercizi (totale 682).
+- Standardizzazione attrezzatura: normalizzazione delle stringhe equipment in 11 categorie standardizzate per filtri coerenti.
+- Nuove macro-categorie: aggiunte Riabilitazione e Posturali alla tassonomia.
+- Completezza record: tutti gli esercizi ora contengono descrizione, gruppi muscolari, attrezzatura, istruzioni di setup ed errori comuni.
+- Limiti caricamento: Home.jsx e Exercises.jsx portati a 1000 record per gestire l'intero catalogo.
+- Pattern ciclismo: integrato il pattern di movimento ciclismo nel motore biomeccanico (biomechanics.ts).
+
+==================================================================================================
+
+25. Riorganizzazione della tassonomia macro-categorie (25 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Promozione a macro-categorie top-level: Ciclismo, Camminata e Corsa promosse da sottocategorie di Cardio a macro-categorie indipendenti, posizionate subito dopo Funzionale (vicino a Body Building).
+- Riassegnazione esercizi: 16 esercizi di ciclismo spostati a macro Ciclismo; 7 esercizi di corsa (hill sprint, sprint shuttle, shuttle run, tempo run, corsa lunga, corsa continua) spostati a macro Corsa; 1 esercizio di camminata esistente spostato a macro Camminata.
+- Espansione Camminata: aggiunti 9 nuovi esercizi di camminata (power walking, incline walk, nordic walking, loaded carry, ruck walk, stair walking, sand walk, backward walk, race walk) per popolare la macro-categoria (10 totali).
+- Catalogo finale: 691 esercizi distribuiti su 14 macro-categorie (Forza, Powerlifting, Body Building, Calisthenics, Corpo Libero, Cardio, Mobilita, Funzionale, Ciclismo, Camminata, Corsa, Kettlebell, Posturali, Riabilitazione).
+- Filtri dinamici: la pagina Exercises deriva le macro-categorie dinamicamente dai dati, quindi le nuove categorie compaiono automaticamente nei filtri.
+
+==================================================================================================
+
+Documento aggiornato il 25 settembre 2026.

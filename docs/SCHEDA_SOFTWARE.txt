@@ -44,18 +44,20 @@ DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
   Sviluppatore:           Account proprietario app Base44
 
 VERSIONE CORRENTE
-  Versione: 1.2
-  Data ultimo aggiornamento scheda: 2026-09-02
+  Versione: 1.3
+  Data ultimo aggiornamento scheda: 2026-09-25
 
 ================================================================
 NOTE TECNICHE
   - Architettura single-page application (SPA) con routing lato client
   - Layout responsive mobile-first con safe-area iOS (notch/home indicator)
   - Autenticazione gestita da Base44 Auth (email/password, Google OAuth, OTP)
-  - Entita dati: Exercise, AnalysisReport (con depth_metadata e
-    wearable_data), User
+  - Entita dati: Exercise (catalogo 691 esercizi, 14 macro-categorie),
+    AnalysisReport (con depth_metadata e wearable_data), Athlete
+    (atleti/clienti con RLS per utente), User (con gender, plan, blocked, role)
   - Funzioni backend: analyzeExercise (analisi IA con supporto depth 3D
-    e dati wearable), deleteOwnAccount
+    e dati wearable), deleteOwnAccount, sendUserReport (inoltro
+    segnalazioni utenti via email agli admin)
   - Agente AI Mentore (exercise_mentor): chat conversazionale con
     accesso in lettura a Exercise e AnalysisReport, guida tecnica
     personalizzata sull'esecuzione degli esercizi
@@ -66,5 +68,21 @@ NOTE TECNICHE
     (LiDAR/ToF via Capacitor) con fallback graduale ai soli frame RGB
   - Salvataggio video registrati sul dispositivo (download locale)
   - Calcolo biomeccanico deterministico dello stress articolare basato su
-    profili di movimento pattern-specifici
+    profili di movimento pattern-specifici (incluso pattern ciclismo)
+  - Gestione atleti: entita Athlete con pagine Athletes e AthleteDetail;
+    selezione atleta in Analyze con propagazione genere al report
+  - Sistema di monetizzazione: pagina Monetization (admin-only) con
+    export PDF, pagina Subscription, campo plan su User, piani
+    Free/Coach/Pro con limiti di utilizzo
+  - Sicurezza admin: campi blocked/role su User, AuthContext guard per
+    account bloccati, pagina Users per gestione admin, FeedbackDialog
+    con funzione sendUserReport per segnalazioni via email
+  - Architettura offline-first: cache locale report (reportCache.js)
+    con fallback a dati cached in assenza di connessione
+  - Pagine pubbliche: About e Contact (PublicLayout) accessibili senza
+    autenticazione; documenti legali (Termini d'uso, Privacy & Policy)
+  - Catalogo esercizi: 691 esercizi su 14 macro-categorie (Forza,
+    Powerlifting, Body Building, Calisthenics, Corpo Libero, Cardio,
+    Mobilita, Funzionale, Ciclismo, Camminata, Corsa, Kettlebell,
+    Posturali, Riabilitazione); attrezzatura normalizzata in 11 categorie
 ================================================================
