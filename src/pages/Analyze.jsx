@@ -90,7 +90,7 @@ export default function Analyze() {
       const frameUrls = (
         await Promise.all(
           frameFiles.map((ff) =>
-            base44.integrations.Core.UploadFile({ file: ff }).then((r) => r.file_url).catch(() => null)
+           base44.integrations.Core.UploadPublicFile({ file: ff }).then((r) => r.file_url).catch(() => null)
           )
         )
       ).filter(Boolean);
@@ -106,7 +106,7 @@ export default function Analyze() {
       let videoUploadPromise = Promise.resolve("");
       if (isVideo && file.size <= VIDEO_STORE_CAP) {
         videoUploadPromise = base44.integrations.Core
-          .UploadFile({ file })
+          .UploadPublicFile({ file })
           .then((r) => r.file_url || "")
           .catch(() => "");
       }
