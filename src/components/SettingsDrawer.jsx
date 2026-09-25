@@ -10,11 +10,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   User as UserIcon, Mail, ShieldCheck, Trash2, Loader2, AlertTriangle, ArrowLeft,
-  FileText, ChevronRight, Wallet, MessageSquareWarning,
+  FileText, ChevronRight, Wallet, MessageSquareWarning, ImageIcon,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import TermsContent from "@/components/TermsContent";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import LogoUploader from "@/components/LogoUploader";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -28,6 +29,7 @@ export default function SettingsDrawer({ open, onOpenChange }) {
   const [error, setError] = useState("");
   const [gender, setGender] = useState("");
   const [savingGender, setSavingGender] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("");
   const [termsOpen, setTermsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -38,6 +40,7 @@ export default function SettingsDrawer({ open, onOpenChange }) {
           const u = await base44.auth.me();
           setMe(u);
           setGender(u.gender || "");
+          setLogoUrl(u.logo_url || "");
         } catch (e) {
           /* ignore */
         }
@@ -153,6 +156,20 @@ export default function SettingsDrawer({ open, onOpenChange }) {
                 })}
               </div>
             </div>
+
+            {/* Logo personale — solo Pro/Coach */}
+            {(me?.plan === "pro" || me?.plan === "coach") && (
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <div className="flex items-center gap-2 text-sm text-white mb-1">
+                  <ImageIcon className="w-4 h-4 text-primary" />
+                  Logo personale
+                </div>
+                <p className="text-[11px] text-emerald-300/80 mb-3 font-medium uppercase tracking-wide">
+                  Piano {me.plan === "coach" ? "Coach" : "Pro"}
+                </p>
+                <LogoUploader currentLogo={logoUrl} onSaved={setLogoUrl} />
+              </div>
+            )}
 
             {/* Monetization — solo admin */}
             {me?.role === "admin" && (

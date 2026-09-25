@@ -18,9 +18,14 @@ export default function ReportDetail() {
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     (async () => {
+      try {
+        const u = await base44.auth.me();
+        setUser(u);
+      } catch (e) { /* ignore */ }
       try {
         const r = await base44.entities.AnalysisReport.get(id);
         setReport(r);
@@ -34,6 +39,8 @@ export default function ReportDetail() {
       }
     })();
   }, [id]);
+
+  const canShowLogo = user && (user.plan === "pro" || user.plan === "coach") && !!user.logo_url;
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -62,6 +69,11 @@ export default function ReportDetail() {
 
       {/* Header */}
       <div className="rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-900/40 p-6 md:p-8">
+        {canShowLogo && (
+          <div className="mb-4 flex justify-end">
+            <img src={user.logo_url} alt="Logo" className="max-h-16 max-w-[160px] object-contain opacity-90" />
+          </div>
+        )}
         <div className="flex flex-col md:flex-row md:items-center gap-6">
           <ScoreRing score={report.score} big />
           <div className="flex-1">
@@ -152,7 +164,7 @@ export default function ReportDetail() {
         >
           <Video className="w-4 h-4" /> Nuova analisi
         </Link>
-        <ReportPdfExport report={report} />
+        <ReportPdfExport report={report} logoUrl={canShowLogo ? user.logo_url : null} />
         <button
           onClick={() => setConfirmOpen(true)}
           disabled={deleting}

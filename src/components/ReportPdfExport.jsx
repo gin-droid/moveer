@@ -9,7 +9,7 @@ const sevColors = {
   Grave: [251, 113, 133],
 };
 
-export default function ReportPdfExport({ report }) {
+export default function ReportPdfExport({ report, logoUrl }) {
   const generate = () => {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
@@ -170,6 +170,22 @@ export default function ReportPdfExport({ report }) {
     doc.setTextColor(161, 161, 170);
     doc.setFontSize(9);
     doc.text(`Generato il ${date}`, margin, 52);
+
+    // ---- Logo personale (Pro/Coach) ----
+    if (logoUrl) {
+      try {
+        const logoH = 44;
+        const logoW = 88;
+        const logoX = pageW - margin - logoW;
+        const logoY = 17;
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(logoX - 4, logoY - 4, logoW + 8, logoH + 8, 4, 4, "F");
+        doc.addImage(logoUrl, "PNG", logoX, logoY, logoW, logoH, undefined, "FAST");
+      } catch (e) {
+        // logo non caricabile: ignora
+      }
+    }
+
     y = 110;
 
     // ---- Title ----

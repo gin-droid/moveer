@@ -32,6 +32,12 @@
       ],
       "default": "freemium"
     },
+    "logo_url": {
+      "type": "string",
+      "title": "Logo personale",
+      "format": "url",
+      "description": "URL del logo caricato dall'utente (piano Pro o Coach). Mostrato nei report e nei PDF esportati."
+    },
     "blocked": {
       "type": "boolean",
       "title": "Account bloccato",
