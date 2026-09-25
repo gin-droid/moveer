@@ -314,4 +314,30 @@ Flusso tecnico dell'analisi (src/pages/Analyze.jsx):
 
 ==================================================================================================
 
+26. Dashboard progressi report (25 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Componente ReportsProgressDashboard (src/components/ReportsProgressDashboard.jsx): dashboard analitica integrata in cima alla pagina Reports, con KPI cards (punteggio medio, trend postura, trend potenza, analisi totali) e grafici recharts (AreaChart punteggio nel tempo, LineChart postura, LineChart potenza wearable).
+- Metriche derivate: punteggio postura calcolato da issues_detected (penalizzazione pesata per severita Lievo/Moderato/Grave); potenza derivata dai dati wearable motion (peak_accel/avg_accel); delta tra prima e ultima analisi.
+- Soglia visualizzazione: il dashboard si mostra solo con almeno 2 analisi; sotto soglia mostra messaggio informativo.
+- Gestione dati mancanti: se non ci sono dati wearable, il grafico potenza mostra placeholder con CTA al collegamento dispositivo.
+
+=================================================================================================
+
+27. Branding personalizzato Pro/Coach (25 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- User estesa: aggiunto il campo logo_url (formato url) per memorizzare l'URL del logo personale caricato dagli utenti con piano Pro o Coach.
+- Componente LogoUploader (src/components/LogoUploader.jsx): uploader per caricare/rimuovere un logo personale; validazione formato immagine (PNG/JPG/SVG/WebP) e dimensione (max 2 MB); upload via UploadPublicFile e persistenza via base44.auth.updateMe.
+- SettingsDrawer: aggiunta sezione "Logo personale" visibile solo per utenti con piano Pro o Coach, con anteprima del logo corrente e pulsanti carica/rimuovi.
+- ReportDetail: il logo personale appare nell'intestazione del report a schermo (in alto a destra) per gli utenti Pro/Coach con un logo caricato.
+- ReportPdfExport: il logo viene renderizzato nell'intestazione del PDF esportato (in alto a destra, su sfondo bianco arrotondato) quando presente; gestito con try/catch per ignorare logo non caricabili.
+
+=================================================================================================
+
+28. Correzione API deprecata e audit codice (25 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Analyze.jsx: sostituite entrambe le occorrenze di base44.integrations.Core.UploadFile (API ritirata) con UploadPublicFile (API corrente), sia per l'upload dei frame che per l'upload del video originale in background.
+- Audit completo: verificati tutti i file principali dell'app (pagine, componenti, backend functions, lib) per errori di sintassi, import mancanti e problemi runtime; l'unico problema riscontrato era l'uso dell'API deprecata, ora corretto.
+
+=================================================================================================
+
 Documento aggiornato il 25 settembre 2026.

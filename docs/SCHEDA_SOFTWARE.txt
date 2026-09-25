@@ -44,7 +44,7 @@ DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
   Sviluppatore:           Account proprietario app Base44
 
 VERSIONE CORRENTE
-  Versione: 1.3
+  Versione: 1.4
   Data ultimo aggiornamento scheda: 2026-09-25
 
 ================================================================
@@ -85,4 +85,11 @@ NOTE TECNICHE
     Powerlifting, Body Building, Calisthenics, Corpo Libero, Cardio,
     Mobilita, Funzionale, Ciclismo, Camminata, Corsa, Kettlebell,
     Posturali, Riabilitazione); attrezzatura normalizzata in 11 categorie
+  - Dashboard progressi: ReportsProgressDashboard con KPI cards e grafici
+    recharts (punteggio, postura, potenza) integrato nella pagina Reports
+  - Branding personalizzato: campo logo_url su User, LogoUploader per
+    upload logo personale (piano Pro/Coach), logo renderizzato nell'header
+    dei report a schermo e nei PDF esportati
+  - API upload allineata: Analyze.jsx usa UploadPublicFile (API corrente)
+    per upload frame e video originale
 ================================================================
