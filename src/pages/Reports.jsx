@@ -6,6 +6,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { cacheReportList, getCachedReportList, removeCachedReport } from "@/lib/reportCache";
+import ReportsProgressDashboard from "@/components/ReportsProgressDashboard";
 
 export default function Reports() {
   const [reports, setReports] = useState([]);
@@ -76,6 +77,12 @@ export default function Reports() {
           </Link>
         </div>
       ) : (
+        <>
+        <ReportsProgressDashboard reports={reports} />
+
+        <div className="pt-2">
+          <h2 className="font-display text-lg font-semibold text-white mb-3">Cronologia analisi</h2>
+        </div>
         <div className="space-y-2.5">
           {reports.map((r) => (
             <div
@@ -102,6 +109,7 @@ export default function Reports() {
             </div>
           ))}
         </div>
+        </>
       )}
     </div>
     </PullToRefresh>
