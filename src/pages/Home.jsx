@@ -22,7 +22,7 @@ export default function Home() {
       try {
         const [r, e] = await Promise.all([
           base44.entities.AnalysisReport.list("-created_date", 5),
-          base44.entities.Exercise.list("-created_date", 500),
+          base44.entities.Exercise.list("-created_date", 1000),
         ]);
         setReports(r);
         setExercises(e);
