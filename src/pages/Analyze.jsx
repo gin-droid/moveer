@@ -172,18 +172,16 @@ export default function Analyze() {
 
       {/* Atleta */}
       <Section label="Atleta / Cliente" hint="opzionale">
-        <div className="rounded-2xl border border-border bg-card p-3.5">
-          <BottomSelectDrawer
-            value={selectedAthleteId}
-            onChange={setSelectedAthleteId}
-            title="Seleziona atleta"
-            placeholder="— Analisi libera —"
-            options={[
-              { value: "", label: "Analisi libera (nessun atleta)" },
-              ...athletes.map((a) => ({ value: a.id, label: a.name })),
-            ]}
-          />
-        </div>
+        <BottomSelectDrawer
+          value={selectedAthleteId}
+          onChange={setSelectedAthleteId}
+          title="Seleziona atleta"
+          placeholder="— Analisi libera —"
+          options={[
+            { value: "", label: "Analisi libera (nessun atleta)" },
+            ...athletes.map((a) => ({ value: a.id, label: a.name })),
+          ]}
+        />
       </Section>
 
       {/* Esercizio */}
@@ -271,9 +269,7 @@ export default function Analyze() {
 
       {/* Wearable */}
       <Section label="Sensori wearable" hint="opzionale" step={3}>
-        <div className="rounded-2xl border border-border bg-card p-3.5">
-          <WearableConnector onWearableData={setWearableData} />
-        </div>
+        <WearableConnector onWearableData={setWearableData} />
       </Section>
 
       {/* Note */}

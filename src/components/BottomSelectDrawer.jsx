@@ -22,7 +22,7 @@ export default function BottomSelectDrawer({
         onClick={() => setOpen(true)}
         className={`w-full flex items-center justify-between gap-2 bg-card border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors select-none ${className || ""}`}
       >
-        <span className={selected ? "text-white" : "text-muted-foreground"}>
+        <span className={selected ? "text-foreground" : "text-muted-foreground"}>
           {selected ? selected.label : placeholder || "Seleziona…"}
         </span>
         <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
