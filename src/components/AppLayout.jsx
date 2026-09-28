@@ -12,13 +12,13 @@ import SettingsDrawer from "@/components/SettingsDrawer";
 import MoreMenuSheet from "@/components/MoreMenuSheet";
 
 const primaryItems = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/analizza", label: "Analizza", icon: Video },
+  { to: "/", label: "Home", icon: LayoutDashboard, end: true },
+  { to: "/esercizi", label: "Esercizi", icon: Dumbbell },
+  { to: "/analizza", label: "Analizza", icon: Video, center: true },
   { to: "/report", label: "Report", icon: FileText },
 ];
 
 const secondaryItems = [
-  { to: "/esercizi", label: "Esercizi", icon: Dumbbell },
   { to: "/video", label: "Video", icon: PlayCircle },
   { to: "/atleti", label: "Atleti", icon: UserCheck },
   { to: "/confronta", label: "Progressi", icon: TrendingUp },
@@ -160,7 +160,7 @@ export default function AppLayout() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 md:ml-64 pt-[calc(3rem+env(safe-area-inset-top))] md:pt-0 pb-24 md:pb-0 min-h-screen min-h-[100dvh]">
+      <main className="flex-1 md:ml-64 pt-[calc(3rem+env(safe-area-inset-top))] md:pt-0 pb-28 md:pb-0 min-h-screen min-h-[100dvh]">
         <div className="max-w-md md:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 overflow-x-hidden">
           {isMobile ? (
             <AnimatePresence mode="wait">
@@ -181,10 +181,32 @@ export default function AppLayout() {
       </main>
 
       {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 pb-safe bg-sidebar border-t border-sidebar-border h-[calc(4rem+env(safe-area-inset-bottom))]">
-        <div className="flex items-center justify-around h-16">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 pb-safe bg-sidebar border-t border-sidebar-border h-[calc(4.5rem+env(safe-area-inset-bottom))]">
+        <div className="flex items-end justify-around h-[4.5rem]">
           {primaryItems.map((item) => {
             const Icon = item.icon;
+            if (item.center) {
+              const active = owningTab(location.pathname) === item.to;
+              return (
+                <button
+                  key={item.to}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleTabClick(item);
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 flex-1 min-h-[44px] text-[10px] font-medium transition-colors select-none"
+                >
+                  <span className={`w-12 h-12 -mt-4 rounded-2xl flex items-center justify-center transition-all active:scale-95 ${
+                    active
+                      ? "bg-primary shadow-lg shadow-primary/40"
+                      : "bg-primary/15 shadow-md shadow-black/20"
+                  }`}>
+                    <Icon className={`w-6 h-6 ${active ? "text-primary-foreground" : "text-primary"}`} strokeWidth={2.5} />
+                  </span>
+                  <span className={active ? "text-primary" : "text-muted-foreground"}>{item.label}</span>
+                </button>
+              );
+            }
             return (
               <NavLink
                 key={item.to}
@@ -195,7 +217,7 @@ export default function AppLayout() {
                   handleTabClick(item);
                 }}
                 className={({ isActive }) =>
-                  `flex flex-col items-center justify-center gap-1 flex-1 min-h-[44px] text-[10px] font-medium transition-colors select-none ${
+                  `flex flex-col items-center justify-center gap-1 flex-1 min-h-[44px] pb-1.5 text-[10px] font-medium transition-colors select-none ${
                     isActive ? "text-primary" : "text-muted-foreground"
                   }`
                 }
@@ -207,7 +229,7 @@ export default function AppLayout() {
           })}
           <button
             onClick={() => setMoreOpen(true)}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 min-h-[44px] text-[10px] font-medium transition-colors select-none ${
+            className={`flex flex-col items-center justify-center gap-1 flex-1 min-h-[44px] pb-1.5 text-[10px] font-medium transition-colors select-none ${
               activeSecondary ? "text-primary" : "text-muted-foreground"
             }`}
           >
