@@ -153,35 +153,43 @@ export default function Analyze() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-5">
-      {/* Header centrato */}
-      <div className="text-center w-full">
-        <h1 className="font-display text-2xl sm:text-3xl font-semibold text-white tracking-tight">
-          Analizza la tua esecuzione
-        </h1>
-        <p className="text-zinc-400 mt-1.5 text-xs sm:text-sm leading-relaxed">
-          Scegli l'esercizio, carica un video e lascia che l'IA valuti tecnica e postura.
-        </p>
-      </div>
+    <div className="flex flex-col gap-5">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card p-5 shadow-lg shadow-primary/10">
+        <div className="absolute -right-12 -top-12 w-40 h-40 bg-primary/15 rounded-full blur-2xl z-0 pointer-events-none" />
+        <div className="relative z-10 text-center">
+          <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+            <Video className="w-3.5 h-3.5" /> Analisi IA
+          </span>
+          <h1 className="mt-2.5 font-display text-2xl font-semibold tracking-tight text-foreground leading-tight">
+            Analizza la tua esecuzione
+          </h1>
+          <p className="mt-2 text-muted-foreground text-sm leading-relaxed">
+            Scegli l'esercizio, carica un video e lascia che l'IA valuti tecnica e postura.
+          </p>
+        </div>
+      </section>
 
       {/* Atleta */}
       <Section label="Atleta / Cliente" hint="opzionale">
-        <BottomSelectDrawer
-          value={selectedAthleteId}
-          onChange={setSelectedAthleteId}
-          title="Seleziona atleta"
-          placeholder="— Analisi libera —"
-          options={[
-            { value: "", label: "Analisi libera (nessun atleta)" },
-            ...athletes.map((a) => ({ value: a.id, label: a.name })),
-          ]}
-        />
+        <div className="rounded-2xl border border-border bg-card p-3.5">
+          <BottomSelectDrawer
+            value={selectedAthleteId}
+            onChange={setSelectedAthleteId}
+            title="Seleziona atleta"
+            placeholder="— Analisi libera —"
+            options={[
+              { value: "", label: "Analisi libera (nessun atleta)" },
+              ...athletes.map((a) => ({ value: a.id, label: a.name })),
+            ]}
+          />
+        </div>
       </Section>
 
       {/* Esercizio */}
       <Section label="Esercizio" step={1}>
         {loadingList ? (
-          <div className="text-zinc-500 text-sm text-center py-4">Caricamento catalogo…</div>
+          <div className="text-muted-foreground text-sm text-center py-4">Caricamento catalogo…</div>
         ) : (
           <>
             <ExercisePicker
@@ -192,7 +200,7 @@ export default function Analyze() {
             {selected && (
               <Link
                 to={`/esercizi/${selected.id}`}
-                className="mt-2 text-xs text-emerald-300 hover:text-emerald-200 inline-flex items-center gap-1 justify-center w-full"
+                className="mt-2 text-xs text-primary hover:text-primary/80 inline-flex items-center gap-1 justify-center w-full"
               >
                 Dettagli esercizio <ChevronRight className="w-3 h-3" />
               </Link>
@@ -207,26 +215,26 @@ export default function Analyze() {
           <div className="flex flex-col gap-2.5">
             <button
               onClick={() => setShowCamera(true)}
-              className="w-full inline-flex items-center justify-center gap-2 bg-emerald-400/10 hover:bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 font-semibold text-sm px-4 py-3 rounded-xl transition-colors"
+              className="w-full inline-flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/15 text-primary border border-primary/30 font-semibold text-sm px-4 py-3 rounded-xl transition-colors"
             >
               <Camera className="w-4 h-4" /> Registra con la fotocamera
             </button>
             <label className="block">
-              <div className="relative rounded-xl border-2 border-dashed border-zinc-700 hover:border-zinc-500 bg-zinc-900/30 p-5 text-center cursor-pointer transition-colors">
+              <div className="relative rounded-2xl border-2 border-dashed border-border hover:border-primary/40 bg-card p-5 text-center cursor-pointer transition-colors">
                 <input
                   type="file"
                   accept="video/*,image/*,.mp4,.mov,.webm,.m4v,.3gp,.mkv,.avi"
                   className="absolute inset-0 opacity-0 cursor-pointer"
                   onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])}
                 />
-                <Upload className="w-7 h-7 text-zinc-500 mx-auto mb-1.5" />
-                <div className="text-sm text-zinc-300">Seleziona un video</div>
-                <div className="text-[11px] text-zinc-600 mt-0.5">MP4 · MOV · WEBM — max 100 MB</div>
+                <Upload className="w-7 h-7 text-muted-foreground mx-auto mb-1.5" />
+                <div className="text-sm text-foreground">Seleziona un video</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">MP4 · MOV · WEBM — max 100 MB</div>
               </div>
             </label>
           </div>
         ) : (
-          <div className="rounded-xl border border-emerald-500/40 bg-emerald-400/5 overflow-hidden">
+          <div className="rounded-2xl border border-primary/40 bg-primary/5 overflow-hidden">
             <div className="relative">
               {isVideoFile(file) ? (
                 <video src={previewUrl} controls className="w-full max-h-60 object-contain bg-black" />
@@ -242,12 +250,12 @@ export default function Analyze() {
               </button>
             </div>
             <div className="px-3 py-2 flex items-center gap-2">
-              <Video className="w-4 h-4 text-emerald-400 shrink-0" />
+              <Video className="w-4 h-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-white font-medium truncate">{file.name}</div>
-                <div className="text-[10px] text-zinc-500">{formatFileSize(file.size)}</div>
+                <div className="text-xs text-foreground font-medium truncate">{file.name}</div>
+                <div className="text-[10px] text-muted-foreground">{formatFileSize(file.size)}</div>
               </div>
-              <label className="text-[11px] text-emerald-300 font-medium cursor-pointer shrink-0">
+              <label className="text-[11px] text-primary font-medium cursor-pointer shrink-0">
                 <input
                   type="file"
                   accept="video/*,image/*,.mp4,.mov,.webm,.m4v,.3gp,.mkv,.avi"
@@ -263,7 +271,9 @@ export default function Analyze() {
 
       {/* Wearable */}
       <Section label="Sensori wearable" hint="opzionale" step={3}>
-        <WearableConnector onWearableData={setWearableData} />
+        <div className="rounded-2xl border border-border bg-card p-3.5">
+          <WearableConnector onWearableData={setWearableData} />
+        </div>
       </Section>
 
       {/* Note */}
@@ -273,23 +283,23 @@ export default function Analyze() {
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           placeholder="Es. fastidio al ginocchio destro, fatica a mantenere la schiena dritta…"
-          className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 transition-colors resize-none"
+          className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors resize-none"
         />
       </Section>
 
       {/* Errore */}
       {error && (
-        <div className="w-full rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300 text-center">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
           {error}
         </div>
       )}
 
       {/* CTA */}
-      <div className="w-full flex flex-col items-center gap-2 pt-1">
+      <div className="flex flex-col items-center gap-2 pt-1">
         <button
           onClick={analyze}
           disabled={analyzing}
-          className="w-full inline-flex items-center justify-center gap-2 bg-emerald-400 hover:bg-emerald-300 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 font-semibold text-sm px-5 py-3.5 rounded-xl transition-colors shadow-lg shadow-emerald-500/20 disabled:shadow-none"
+          className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground font-semibold text-sm px-5 py-3.5 rounded-xl transition-colors shadow-lg shadow-primary/20 disabled:shadow-none"
         >
           {analyzing ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> {progressMsg || "Analisi in corso…"}</>
@@ -298,7 +308,7 @@ export default function Analyze() {
           )}
         </button>
         {analyzing && (
-          <p className="text-center text-[11px] text-zinc-500">
+          <p className="text-center text-[11px] text-muted-foreground">
             L'analisi può richiedere 20-40 secondi. Non chiudere la pagina.
           </p>
         )}
@@ -316,16 +326,16 @@ export default function Analyze() {
 
 function Section({ label, hint, step, children }) {
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-center gap-2 mb-2.5">
+    <div>
+      <div className="flex items-center gap-2 mb-2.5">
         {step && (
-          <span className="w-5 h-5 rounded-full bg-emerald-400/15 text-emerald-300 text-[10px] font-semibold flex items-center justify-center">
+          <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold flex items-center justify-center">
             {step}
           </span>
         )}
-        <h2 className="font-display font-semibold text-white text-sm">
+        <h2 className="font-display font-semibold text-foreground text-sm">
           {label}
-          {hint && <span className="text-zinc-500 font-normal ml-1.5 text-xs">({hint})</span>}
+          {hint && <span className="text-muted-foreground font-normal ml-1.5 text-xs">({hint})</span>}
         </h2>
       </div>
       {children}
