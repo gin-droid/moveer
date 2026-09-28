@@ -6,6 +6,12 @@ export default async function(req: Request): Promise<Response> {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Solo i piani a pagamento (Pro / Coach) possono inviare notifiche agli atleti
+    const paidPlans = ['pro', 'coach'];
+    if (!paidPlans.includes(user.plan)) {
+      return Response.json({ skipped: true, reason: 'plan_not_allowed' }, { status: 403 });
+    }
+
     const body = await req.json();
     const athleteId = (body.athleteId || '').trim();
     const reportId = (body.reportId || '').trim();
