@@ -8,6 +8,11 @@ export default async function(req: Request): Promise<Response> {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const plan = user.plan || 'freemium';
+    if (plan !== 'pro' && plan !== 'coach') {
+      return Response.json({ error: 'Funzionalità disponibile solo per i piani Pro e Coach' }, { status: 403 });
+    }
+
     const body = await req.json();
     const reportId = (body.reportId || '').trim();
     if (!reportId) return Response.json({ error: 'reportId obbligatorio' }, { status: 400 });

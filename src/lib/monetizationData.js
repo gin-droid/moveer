@@ -46,6 +46,7 @@ export const PLANS = [
       "Nessun export PDF dei report",
       "Nessuna gestione atleti/clienti",
       "Nessun confronto progressi nel tempo",
+      "Nessun suggerimento esercizi mirati dal catalogo",
     ],
   },
   {
@@ -71,7 +72,7 @@ export const PLANS = [
       "Confronto progressi nel tempo",
       "Storico report illimitato",
       "Diagramma posturale avanzato con stress articolare",
-      "Esercizi correttivi mirati nei report",
+      "Esercizi di correzione mirati dal catalogo",
     ],
     limitations: [
       "Nessun dato profondità LiDAR/ToF",

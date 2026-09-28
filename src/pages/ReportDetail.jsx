@@ -41,7 +41,8 @@ export default function ReportDetail() {
     })();
   }, [id]);
 
-  const canShowLogo = user && (user.plan === "pro" || user.plan === "coach") && !!user.logo_url;
+  const isProOrCoach = user && (user.plan === "pro" || user.plan === "coach");
+  const canShowLogo = isProOrCoach && !!user.logo_url;
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -144,10 +145,27 @@ export default function ReportDetail() {
         </Section>
       )}
 
-      {/* Suggerimenti esercizi di correzione mirati dal catalogo */}
+      {/* Suggerimenti esercizi di correzione mirati dal catalogo (Pro/Coach) */}
       {(report.issues_detected || []).length > 0 && (
         <Section icon={Target} title="Esercizi di correzione mirati">
-          <CorrectiveExerciseSuggestions report={report} />
+          {isProOrCoach ? (
+            <CorrectiveExerciseSuggestions report={report} />
+          ) : (
+            <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 p-5 text-center">
+              <Target className="w-8 h-8 text-emerald-400/70 mx-auto mb-2" />
+              <p className="text-sm text-zinc-300 mb-1">Suggerimenti mirati dal catalogo</p>
+              <p className="text-xs text-zinc-500 mb-3 leading-relaxed max-w-sm mx-auto">
+                L'IA seleziona dal catalogo gli esercizi migliori per correggere i difetti rilevati.
+                Disponibile per i piani <strong className="text-emerald-300">Pro</strong> e <strong className="text-amber-300">Coach</strong>.
+              </p>
+              <Link
+                to="/abbonamento"
+                className="inline-flex items-center gap-2 bg-emerald-400/10 hover:bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors"
+              >
+                <Sparkles className="w-4 h-4" /> Passa a Pro
+              </Link>
+            </div>
+          )}
         </Section>
       )}
 
