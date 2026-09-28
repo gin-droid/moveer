@@ -22,6 +22,7 @@ export default function Register() {
   const [otpCode, setOtpCode] = useState("");
   const [gender, setGender] = useState("");
   const [accentColor, setAccentColor] = useState(DEFAULT_ACCENT);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,10 +49,9 @@ export default function Register() {
       const result = await base44.auth.verifyOtp({ email, otpCode });
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
-        setStoredAccentColor(accentColor);
-        try { await base44.auth.updateMe({ gender, accent_color: accentColor }); } catch (e) { /* non-blocking */ }
+        try { await base44.auth.updateMe({ gender }); } catch (e) { /* non-blocking */ }
+        setShowColorPicker(true);
       }
-      window.location.href = safeReturnTo();
     } catch (err) {
       setError(err.message || "Invalid verification code");
     } finally {
@@ -74,6 +74,13 @@ export default function Register() {
 
   const handleGoogle = () => {
     base44.auth.loginWithProvider("google", safeReturnTo());
+  };
+
+  const handleColorConfirm = async () => {
+    setLoading(true);
+    setStoredAccentColor(accentColor);
+    try { await base44.auth.updateMe({ accent_color: accentColor }); } catch (e) { /* non-blocking */ }
+    window.location.href = safeReturnTo();
   };
 
   if (showOtp) {
@@ -126,6 +133,44 @@ export default function Register() {
             Resend
           </button>
         </p>
+      </AuthLayout>
+    );
+  }
+
+  if (showColorPicker) {
+    return (
+      <AuthLayout
+        icon={UserPlus}
+        title="Scegli il colore tema"
+        subtitle="Personalizza l'aspetto dell'app. Lo vedi in tempo reale."
+      >
+        <div className="flex flex-wrap gap-3 justify-center mb-6">
+          {ACCENT_COLORS.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => { setAccentColor(c.hsl); applyAccentColor(c.hsl); }}
+              className={`w-11 h-11 rounded-full border-2 transition-transform ${accentColor === c.hsl ? "border-foreground scale-110" : "border-transparent hover:scale-105"}`}
+              style={{ backgroundColor: `hsl(${c.hsl})` }}
+              aria-label={c.label}
+              title={c.label}
+            />
+          ))}
+        </div>
+        <Button
+          className="w-full h-12 font-medium"
+          onClick={handleColorConfirm}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Salvataggio...
+            </>
+          ) : (
+            "Salva e continua"
+          )}
+        </Button>
       </AuthLayout>
     );
   }
@@ -233,23 +278,6 @@ export default function Register() {
               >
                 {opt.l}
               </button>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label>Colore tema</Label>
-          <p className="text-xs text-muted-foreground -mt-1">Scegli il colore da abbinare al nero. Lo vedi in tempo reale.</p>
-          <div className="flex flex-wrap gap-2.5 pt-0.5">
-            {ACCENT_COLORS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => { setAccentColor(c.hsl); applyAccentColor(c.hsl); }}
-                className={`w-9 h-9 rounded-full border-2 transition-transform ${accentColor === c.hsl ? "border-foreground scale-110" : "border-transparent hover:scale-105"}`}
-                style={{ backgroundColor: `hsl(${c.hsl})` }}
-                aria-label={c.label}
-                title={c.label}
-              />
             ))}
           </div>
         </div>
