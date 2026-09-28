@@ -71,7 +71,9 @@ export default function AppLayout() {
   const isExerciseDetail = /^\/esercizi\/[^/]+$/.test(location.pathname);
   const isReportDetail = /^\/report\/[^/]+$/.test(location.pathname);
   const isAthleteDetail = /^\/atleti\/[^/]+$/.test(location.pathname);
-  const showBack = isExerciseDetail || isReportDetail || isAthleteDetail;
+  const isDetail = isExerciseDetail || isReportDetail || isAthleteDetail;
+  const isHome = location.pathname === "/";
+  const showBack = !isHome;
   const detailTitle = isExerciseDetail
     ? "Dettaglio esercizio"
     : isReportDetail
@@ -79,6 +81,8 @@ export default function AppLayout() {
     : isAthleteDetail
     ? "Dettaglio atleta"
     : "";
+  const currentTab = allItems.find((i) => i.to === owningTab(location.pathname));
+  const pageTitle = detailTitle || currentTab?.label || "";
 
   const activeSecondary = visibleSecondary.some(
     (i) => i.to === owningTab(location.pathname)
@@ -134,12 +138,12 @@ export default function AppLayout() {
         <div className="flex items-center justify-between px-4 h-12">
           {showBack ? (
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => (isDetail ? navigate(-1) : navigate("/"))}
               aria-label="Indietro"
               className="inline-flex items-center gap-2 text-foreground active:scale-95 transition-transform select-none"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-display font-semibold text-white text-sm">{detailTitle}</span>
+              <span className="font-display font-semibold text-white text-sm">{pageTitle}</span>
             </button>
           ) : (
             <Link to="/" className="flex items-center gap-2">
