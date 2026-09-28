@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Search, ChevronRight, Video, X } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
+import { useAuth } from "@/lib/AuthContext";
+import { loadPreferredExercises } from "@/lib/exercisePreferences";
 
 export default function Exercises() {
+  const { user } = useAuth();
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeMacro, setActiveMacro] = useState("Tutti");
@@ -16,7 +19,7 @@ export default function Exercises() {
 
   const loadExercises = async () => {
     try {
-      const data = await base44.entities.Exercise.list("-created_date", 1000);
+      const data = await loadPreferredExercises(user);
       setExercises(data);
     } catch (err) {
       console.error(err);
@@ -27,7 +30,7 @@ export default function Exercises() {
 
   useEffect(() => {
     loadExercises();
-  }, []);
+  }, [user]);
 
   const macros = useMemo(() => ["Tutti", ...new Set(exercises.map((e) => e.macro_category))], [exercises]);
   const subs = useMemo(() => {

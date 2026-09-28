@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Video, Dumbbell, FileText, ArrowRight, AlertTriangle, Activity, ShieldCheck } from "lucide-react";
 import GenderOnboarding from "@/components/GenderOnboarding";
+import { useAuth } from "@/lib/AuthContext";
+import { loadPreferredExercises } from "@/lib/exercisePreferences";
 import { cacheReportList, getCachedReportList } from "@/lib/reportCache";
 import TermsContent from "@/components/TermsContent";
 import PrivacyContent from "@/components/PrivacyContent";
@@ -11,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function Home() {
+  const { user } = useAuth();
   const [reports, setReports] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +25,7 @@ export default function Home() {
       try {
         const [r, e] = await Promise.all([
           base44.entities.AnalysisReport.list("-created_date", 5),
-          base44.entities.Exercise.list("-created_date", 1000),
+          loadPreferredExercises(user),
         ]);
         setReports(r);
         setExercises(e);
@@ -35,7 +38,7 @@ export default function Home() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [user]);
 
   const avgScore = reports.length
     ? Math.round(reports.reduce((s, r) => s + (r.score || 0), 0) / reports.length)

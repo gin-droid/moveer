@@ -10,7 +10,7 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
-import { ACCENT_COLORS, DEFAULT_ACCENT, applyAccentColor, setStoredAccentColor } from "@/lib/accentColor";
+import OnboardingFlow from "@/components/OnboardingFlow";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -21,8 +21,7 @@ export default function Register() {
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [gender, setGender] = useState("");
-  const [accentColor, setAccentColor] = useState(DEFAULT_ACCENT);
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +49,7 @@ export default function Register() {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
         try { await base44.auth.updateMe({ gender }); } catch (e) { /* non-blocking */ }
-        setShowColorPicker(true);
+        setShowOnboarding(true);
       }
     } catch (err) {
       setError(err.message || "Invalid verification code");
@@ -74,13 +73,6 @@ export default function Register() {
 
   const handleGoogle = () => {
     base44.auth.loginWithProvider("google", safeReturnTo());
-  };
-
-  const handleColorConfirm = async () => {
-    setLoading(true);
-    setStoredAccentColor(accentColor);
-    try { await base44.auth.updateMe({ accent_color: accentColor }); } catch (e) { /* non-blocking */ }
-    window.location.href = safeReturnTo();
   };
 
   if (showOtp) {
@@ -137,42 +129,8 @@ export default function Register() {
     );
   }
 
-  if (showColorPicker) {
-    return (
-      <AuthLayout
-        icon={UserPlus}
-        title="Scegli il colore tema"
-        subtitle="Personalizza l'aspetto dell'app. Lo vedi in tempo reale."
-      >
-        <div className="flex flex-wrap gap-3 justify-center mb-6">
-          {ACCENT_COLORS.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => { setAccentColor(c.hsl); applyAccentColor(c.hsl); }}
-              className={`w-11 h-11 rounded-full border-2 transition-transform ${accentColor === c.hsl ? "border-foreground scale-110" : "border-transparent hover:scale-105"}`}
-              style={{ backgroundColor: `hsl(${c.hsl})` }}
-              aria-label={c.label}
-              title={c.label}
-            />
-          ))}
-        </div>
-        <Button
-          className="w-full h-12 font-medium"
-          onClick={handleColorConfirm}
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Salvataggio...
-            </>
-          ) : (
-            "Salva e continua"
-          )}
-        </Button>
-      </AuthLayout>
-    );
+  if (showOnboarding) {
+    return <OnboardingFlow />;
   }
 
   return (
