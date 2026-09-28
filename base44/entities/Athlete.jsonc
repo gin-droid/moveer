@@ -19,6 +19,12 @@
       "format": "date",
       "title": "Data di nascita"
     },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email",
+      "description": "Email dell'atleta per inviare la notifica automatica quando un nuovo report di analisi \u00e8 pronto."
+    },
     "notes": {
       "type": "string",
       "title": "Note"

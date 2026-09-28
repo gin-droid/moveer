@@ -13,7 +13,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import InfoDialog from "@/components/InfoDialog";
 import { differenceInYears, parseISO } from "date-fns";
 
-const emptyForm = { name: "", gender: "", birth_date: "", notes: "" };
+const emptyForm = { name: "", gender: "", birth_date: "", email: "", notes: "" };
 
 export default function Athletes() {
   const navigate = useNavigate();
@@ -57,6 +57,7 @@ export default function Athletes() {
       name: athlete.name || "",
       gender: athlete.gender || "",
       birth_date: athlete.birth_date || "",
+      email: athlete.email || "",
       notes: athlete.notes || "",
     });
     setEditingId(athlete.id);
@@ -77,6 +78,7 @@ export default function Athletes() {
         name: form.name.trim(),
         gender: form.gender || null,
         birth_date: form.birth_date || null,
+        email: form.email.trim() || null,
         notes: form.notes.trim() || null,
       };
       if (editingId) {
@@ -339,6 +341,16 @@ export default function Athletes() {
                 value={form.birth_date}
                 onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
                 className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400 mb-1.5 block">Email (per notifiche report)</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="atleta@example.com"
+                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50"
               />
             </div>
             <div>

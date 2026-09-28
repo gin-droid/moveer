@@ -136,6 +136,16 @@ export default function Analyze() {
         /* non-blocking: the report is still valid without the video */
       }
 
+      // 6. Notify the athlete (non-blocking) that their report is ready
+      if (selectedAthleteId) {
+        base44.functions.invoke("notifyAthleteReport", {
+          athleteId: selectedAthleteId,
+          exerciseName: selected.name,
+          reportId: report.id,
+          score: report.score,
+        }).catch(() => {});
+      }
+
       navigate(`/report/${report.id}`);
     } catch (err) {
       setError(err.message || "Errore durante l'analisi.");
