@@ -44,8 +44,8 @@ DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
   Sviluppatore:           Account proprietario app Base44
 
 VERSIONE CORRENTE
-  Versione: 1.4
-  Data ultimo aggiornamento scheda: 2026-09-25
+  Versione: 1.5
+  Data ultimo aggiornamento scheda: 2026-09-28
 
 ================================================================
 NOTE TECNICHE
@@ -54,10 +54,15 @@ NOTE TECNICHE
   - Autenticazione gestita da Base44 Auth (email/password, Google OAuth, OTP)
   - Entita dati: Exercise (catalogo 691 esercizi, 14 macro-categorie),
     AnalysisReport (con depth_metadata e wearable_data), Athlete
-    (atleti/clienti con RLS per utente), User (con gender, plan, blocked, role)
-  - Funzioni backend: analyzeExercise (analisi IA con supporto depth 3D
+    (atleti/clienti con RLS per utente, campo email per notifiche),
+    User (con gender, plan, blocked, role)
+    - Funzioni backend: analyzeExercise (analisi IA con supporto depth 3D
     e dati wearable), deleteOwnAccount, sendUserReport (inoltro
-    segnalazioni utenti via email agli admin)
+    segnalazioni utenti via email agli admin), notifyAthleteReport
+    (notifica email automatica all'atleta a nuovo report pronto, solo
+    piani a pagamento Pro/Coach), suggestCorrectiveExercises (suggerisce
+    esercizi di correzione mirati dal catalogo in base ai difetti di
+    postura rilevati nel report)
   - Agente AI Mentore (exercise_mentor): chat conversazionale con
     accesso in lettura a Exercise e AnalysisReport, guida tecnica
     personalizzata sull'esecuzione degli esercizi
@@ -94,4 +99,15 @@ NOTE TECNICHE
     per upload frame e video originale
   - Ricerca e filtri atleti: Athletes.jsx con ricerca testuale (nome/note)
     e filtro per genere via useMemo, contatore risultati e reset filtri
-================================================================
+  - Notifica automatica atleti: campo email su Athlete, funzione backend
+    notifyAthleteReport che invia email all'atleta quando un nuovo report
+    è pronto (punteggio ed esercizio), limitata ai piani a pagamento
+    (Pro/Coach); chiamata non bloccante da Analyze.jsx dopo la creazione
+    del report
+  - Suggerimento esercizi correttivi mirati: funzione backend
+    suggestCorrectiveExercises che analizza i difetti di postura del
+    report e seleziona dal catalogo (categorie Riabilitazione/Mobilità/
+    Posturali/Corpo Libero/Funzionale) fino a 5 esercizi pertinenti via
+    LLM; componente CorrectiveExerciseSuggestions integrato in
+    ReportDetail con card cliccabili che linkano al dettaglio esercizio
+  ================================================================

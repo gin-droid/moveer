@@ -347,4 +347,22 @@ Interventi sulla pipeline di analisi per renderla più efficace:
 
 ---
 
-*Documento aggiornato il 25 settembre 2026.*
+## 30. Notifica automatica atleti a nuovo report pronto (28 settembre 2026)
+
+- **Entità `Athlete` estesa**: aggiunto il campo `email` (formato email, opzionale) per memorizzare l'indirizzo di contatto dell'atleta e inviare notifiche automatiche.
+- **Form atleti**: aggiunto input email nel form di creazione/modifica atleta in `Athletes.jsx` ("Email per notifiche report").
+- **Funzione backend `notifyAthleteReport`** (`base44/functions/notifyAthleteReport/entry.ts`): riceve `athleteId`, `reportId`, `exerciseName` e `score`; recupera l'atleta (user-scoped, RLS proprietario), verifica la presenza dell'email e invia una notifica via `SendEmail` con il nome dell'esercizio e il punteggio di esecuzione.
+- **Restrizione ai piani a pagamento**: la funzione verifica `user.plan` e invia la notifica solo per i piani `pro` e `coach`; il piano Free riceve `403 plan_not_allowed`.
+- **Integrazione in Analyze**: dopo la creazione del report, se è stato selezionato un atleta, `Analyze.jsx` invoca `notifyAthleteReport` in modo non bloccante (fire-and-forget con catch) prima del redirect al dettaglio report.
+
+## 31. Suggerimento esercizi di correzione mirati (28 settembre 2026)
+
+- **Funzione backend `suggestCorrectiveExercises`** (`base44/functions/suggestCorrectiveExercises/entry.ts`): riceve `reportId`, recupera il report e i suoi `issues_detected`, carica dal catalogo gli esercizi delle categorie correttive (Riabilitazione, Mobilità, Posturali, Corpo Libero, Funzionale, fino a 150 candidati) e invoca `InvokeLLM` con `response_json_schema` per selezionare fino a 5 esercizi realmente pertinenti ai difetti rilevati.
+- **Output strutturato**: per ogni suggerimento restituisce `exercise_id`, `exercise_name`, `target_issue` (difetto targetizzato), `why` (motivazione biomeccanica) e `sets_reps` (proposta serie/ripetizioni).
+- **Validazione**: la funzione filtra i suggerimenti dell'LLM mantenendo solo quelli con `exercise_id` presente nel catalogo reale, evitando riferimenti a esercizi inesistenti.
+- **Componente `CorrectiveExerciseSuggestions`** (`src/components/CorrectiveExerciseSuggestions.jsx`): sezione a caricamento lazy (pulsante "Genera suggerimenti") che invoca la funzione backend e mostra i risultati come card cliccabili che linkano al dettaglio esercizio (`/esercizi/:id`), con target, serie/ripetizioni e motivazione.
+- **Integrazione in ReportDetail**: nuova sezione "Esercizi di correzione mirati" (icona Target) posizionata dopo gli esercizi correttivi generici e prima delle raccomandazioni, visibile solo quando il report ha difetti rilevati (`issues_detected` non vuoto).
+
+---
+
+*Documento aggiornato il 28 settembre 2026.*
