@@ -59,7 +59,7 @@ export default function ExercisePicker({ exercises, selectedId, onSelect }) {
       </div>
 
       {/* Results */}
-      <div className="max-h-64 overflow-y-auto">
+      <div className="max-h-[45vh] min-h-[120px] overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
         {filtered.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-zinc-500">
             Nessun esercizio trovato.
@@ -72,16 +72,16 @@ export default function ExercisePicker({ exercises, selectedId, onSelect }) {
                 <button
                   key={e.id}
                   onClick={() => onSelect(e.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                    isActive ? "bg-emerald-400/10" : "hover:bg-zinc-800/40"
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors ${
+                    isActive ? "bg-emerald-400/10" : "hover:bg-zinc-800/40 active:bg-zinc-800/60"
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isActive ? "bg-emerald-400 text-zinc-950" : "bg-zinc-800 text-zinc-400"}`}>
-                    <Dumbbell className="w-4 h-4" />
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isActive ? "bg-emerald-400 text-zinc-950" : "bg-zinc-800 text-zinc-400"}`}>
+                    <Dumbbell className="w-3.5 h-3.5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-white truncate">{e.name}</div>
-                    <div className="text-[11px] text-zinc-500 truncate">
+                    <div className="text-[13px] font-medium text-white truncate">{e.name}</div>
+                    <div className="text-[10px] text-zinc-500 truncate">
                       {e.macro_category} / {e.subcategory}
                     </div>
                   </div>
