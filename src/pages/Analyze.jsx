@@ -323,13 +323,13 @@ export default function Analyze() {
 function Section({ label, hint, step, children }) {
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2.5">
+      <div className="flex items-center justify-center gap-2 mb-2.5">
         {step && (
           <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold flex items-center justify-center">
             {step}
           </span>
         )}
-        <h2 className="font-display font-semibold text-foreground text-sm">
+        <h2 className="font-display font-semibold text-foreground text-sm text-center">
           {label}
           {hint && <span className="text-muted-foreground font-normal ml-1.5 text-xs">({hint})</span>}
         </h2>

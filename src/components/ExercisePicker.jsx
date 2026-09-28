@@ -41,7 +41,7 @@ export default function ExercisePicker({ exercises, selectedId, onSelect }) {
           />
         </div>
         {/* Macro chips */}
-        <div className="flex flex-wrap gap-1.5 mt-2.5">
+        <div className="flex flex-wrap justify-center gap-1.5 mt-2.5">
           {macros.map((m) => (
             <button
               key={m}
