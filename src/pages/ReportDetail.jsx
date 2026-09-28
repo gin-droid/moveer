@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2, Target } from "lucide-react";
 import ReportPdfExport from "@/components/ReportPdfExport";
+import CorrectiveExerciseSuggestions from "@/components/CorrectiveExerciseSuggestions";
 import { cacheReport, getCachedReport } from "@/lib/reportCache";
 import BodyDiagram from "@/components/BodyDiagram";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -140,6 +141,13 @@ export default function ReportDetail() {
               </div>
             ))}
           </div>
+        </Section>
+      )}
+
+      {/* Suggerimenti esercizi di correzione mirati dal catalogo */}
+      {(report.issues_detected || []).length > 0 && (
+        <Section icon={Target} title="Esercizi di correzione mirati">
+          <CorrectiveExerciseSuggestions report={report} />
         </Section>
       )}
 
