@@ -26,6 +26,11 @@ export default function Subscription() {
   const currentPlanId = me?.plan || "freemium";
   const currentPlan = PLANS.find((p) => p.id === currentPlanId) || PLANS[0];
 
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const mentorUsed = (me?.mentor_query_month === monthKey ? me?.mentor_query_count : 0) || 0;
+  const mentorLimit = currentPlan.limits.mentorQueriesPerMonth;
+
   const handleSwitch = async (planId) => {
     if (planId === currentPlanId) return;
     setSwitchingTo(planId);
@@ -96,8 +101,8 @@ export default function Subscription() {
           </div>
           <div className="rounded-xl bg-background/50 border border-border p-3 text-center">
             <Sparkles className="w-4 h-4 text-primary mx-auto mb-1" />
-            <div className="text-lg font-display font-bold text-white">{currentPlan.limits.mentorQueriesPerMonth}</div>
-            <div className="text-[11px] text-muted-foreground">query Mentore/mese</div>
+            <div className="text-lg font-display font-bold text-white">{mentorUsed}<span className="text-muted-foreground">/{mentorLimit}</span></div>
+            <div className="text-[11px] text-muted-foreground">query Mentore usate</div>
           </div>
         </div>
       </div>

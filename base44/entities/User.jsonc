@@ -59,6 +59,17 @@
       "title": "Account bloccato",
       "description": "Se true, l'utente non pu\u00f2 accedere all'app. Impostabile solo dagli amministratori.",
       "default": false
+    },
+    "mentor_query_count": {
+      "type": "number",
+      "title": "Query Mentore (conteggio)",
+      "description": "Numero di interrogazioni al mentore inviate nel mese corrente. Azzerato automaticamente al cambio mese.",
+      "default": 0
+    },
+    "mentor_query_month": {
+      "type": "string",
+      "title": "Mese di riferimento conteggio Mentore",
+      "description": "Chiave mese (formato YYYY-MM) a cui si riferisce mentor_query_count."
     }
   },
   "required": [

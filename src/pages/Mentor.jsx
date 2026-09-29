@@ -1,18 +1,48 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Send, Sparkles, MessageCircle, Plus } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+import { PLANS } from "@/lib/monetizationData";
+import { Send, Sparkles, MessageCircle, Plus, Lock } from "lucide-react";
 import MessageBubble from "@/components/mentor/MessageBubble";
 
 const AGENT_NAME = "exercise_mentor";
 
+const monthKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
+
 export default function Mentor() {
+  const { user } = useAuth();
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [conversations, setConversations] = useState([]);
+  const [queryCount, setQueryCount] = useState(0);
   const scrollRef = useRef(null);
+
+  const planId = user?.plan || "freemium";
+  const plan = PLANS.find((p) => p.id === planId) || PLANS[0];
+  const queryLimit = plan.limits.mentorQueriesPerMonth;
+  const limitReached = queryCount >= queryLimit;
+
+  // Sincronizza il contatore mensile dal profilo utente (reset al cambio mese)
+  useEffect(() => {
+    const month = monthKey();
+    const storedMonth = user?.mentor_query_month;
+    const storedCount = user?.mentor_query_count || 0;
+    if (storedMonth !== month) {
+      setQueryCount(0);
+      if (storedCount !== 0) {
+        base44.auth.updateMe({ mentor_query_count: 0, mentor_query_month: month }).catch(() => {});
+      }
+    } else {
+      setQueryCount(storedCount);
+    }
+  }, [user]);
 
   const loadConversation = useCallback(async (conv) => {
     setConversation(conv);
@@ -66,11 +96,14 @@ export default function Mentor() {
 
   const send = async () => {
     const text = input.trim();
-    if (!text || !conversation || sending) return;
+    if (!text || !conversation || sending || limitReached) return;
     setInput("");
     setSending(true);
     try {
       await base44.agents.addMessage(conversation, { role: "user", content: text });
+      const newCount = queryCount + 1;
+      setQueryCount(newCount);
+      base44.auth.updateMe({ mentor_query_count: newCount, mentor_query_month: monthKey() }).catch(() => {});
     } catch (err) {
       console.error(err);
     } finally {
@@ -110,7 +143,12 @@ export default function Mentor() {
           </div>
           <div>
             <h1 className="font-display text-lg font-semibold text-white leading-tight">Mentore</h1>
-            <p className="text-[11px] text-zinc-500">Ti guida attraverso ogni esercizio</p>
+            <p className="text-[11px] text-zinc-500">
+              Ti guida attraverso ogni esercizio
+              <span className={`ml-1.5 font-medium ${limitReached ? "text-rose-400" : "text-emerald-400"}`}>
+                {queryCount}/{queryLimit} query
+              </span>
+            </p>
           </div>
         </div>
         <button onClick={newChat} className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors">
@@ -139,23 +177,36 @@ export default function Mentor() {
       </div>
 
       <div className="pt-2">
-        <div className="flex items-end gap-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            rows={1}
-            placeholder="Scrivi al mentore…"
-            className="flex-1 resize-none bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 transition-colors max-h-32"
-          />
-          <button
-            onClick={send}
-            disabled={!input.trim() || sending}
-            className="w-11 h-11 shrink-0 rounded-xl bg-emerald-400 hover:bg-emerald-300 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 flex items-center justify-center transition-colors"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
+        {limitReached ? (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-center">
+            <Lock className="w-4 h-4 text-amber-400 mx-auto mb-1.5" />
+            <p className="text-sm text-amber-200 font-medium mb-1">Limite mensile raggiunto</p>
+            <p className="text-xs text-muted-foreground mb-2.5">
+              Hai usato tutte le {queryLimit} query del piano {plan.name} per questo mese.
+            </p>
+            <Link to="/abbonamento" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80">
+              Passa a un piano superiore →
+            </Link>
+          </div>
+        ) : (
+          <div className="flex items-end gap-2">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+              rows={1}
+              placeholder="Scrivi al mentore…"
+              className="flex-1 resize-none bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500/50 transition-colors max-h-32"
+            />
+            <button
+              onClick={send}
+              disabled={!input.trim() || sending}
+              className="w-11 h-11 shrink-0 rounded-xl bg-emerald-400 hover:bg-emerald-300 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 flex items-center justify-center transition-colors"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
