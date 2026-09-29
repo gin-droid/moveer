@@ -182,6 +182,21 @@ export default function AppLayout() {
 
       {/* Main */}
       <main className="flex-1 md:ml-64 pt-[calc(3rem+env(safe-area-inset-top))] md:pt-0 pb-28 md:pb-0 min-h-screen min-h-[100dvh]">
+        <header className="hidden md:flex sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border">
+          <div className="max-w-5xl w-full mx-auto px-6 lg:px-8 h-14 flex items-center">
+            {showBack ? (
+              <button
+                onClick={() => (isDetail ? navigate(-1) : navigate("/"))}
+                className="inline-flex items-center gap-2 text-foreground hover:text-primary transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-display font-semibold text-white text-base">{pageTitle}</span>
+              </button>
+            ) : (
+              <span className="font-display font-semibold text-white text-base">{pageTitle || "moVeerAI"}</span>
+            )}
+          </div>
+        </header>
         <div className="max-w-md md:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 overflow-x-hidden">
           {isMobile ? (
             <AnimatePresence mode="wait">
