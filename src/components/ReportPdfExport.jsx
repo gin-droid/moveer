@@ -9,7 +9,7 @@ const sevColors = {
   Grave: [251, 113, 133],
 };
 
-export default function ReportPdfExport({ report, logoUrl }) {
+export default function ReportPdfExport({ report, logoUrl, correctiveExercises }) {
   const generate = () => {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
@@ -408,9 +408,12 @@ export default function ReportPdfExport({ report, logoUrl }) {
     }
 
     // ---- Corrective exercises ----
-    if ((report.corrective_exercises || []).length > 0) {
+    const corrective = (correctiveExercises && correctiveExercises.length > 0)
+      ? correctiveExercises
+      : (report.corrective_exercises || []);
+    if (corrective.length > 0) {
       addSectionTitle("Esercizi correttivi");
-      report.corrective_exercises.forEach((ex, i) => {
+      corrective.forEach((ex, i) => {
         addText(
           `${i + 1}. ${ex.name}${ex.target ? " — " + ex.target : ""}${ex.sets_reps ? " (" + ex.sets_reps + ")" : ""}`,
           11,

@@ -177,6 +177,30 @@
         }
       }
     },
+    "selected_corrective_exercises": {
+      "type": "array",
+      "title": "Esercizi correttivi selezionati (Pro/Coach)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "exercise_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "sets_reps": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "recommendations": {
       "type": "array",
       "items": {

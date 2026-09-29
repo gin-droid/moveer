@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2, Target } from "lucide-react";
+import { AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2 } from "lucide-react";
 import ReportPdfExport from "@/components/ReportPdfExport";
-import CorrectiveExerciseSuggestions from "@/components/CorrectiveExerciseSuggestions";
+import CorrectiveExercisePicker from "@/components/CorrectiveExercisePicker";
 import { cacheReport, getCachedReport } from "@/lib/reportCache";
 import BodyDiagram from "@/components/BodyDiagram";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -20,17 +20,25 @@ export default function ReportDetail() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [user, setUser] = useState(null);
+  const [selectedCorrective, setSelectedCorrective] = useState([]);
 
   useEffect(() => {
     (async () => {
+      let u = null;
       try {
-        const u = await base44.auth.me();
+        u = await base44.auth.me();
         setUser(u);
       } catch (e) { /* ignore */ }
       try {
         const r = await base44.entities.AnalysisReport.get(id);
         setReport(r);
         cacheReport(r);
+        const isPro = u && (u.plan === "pro" || u.plan === "coach");
+        setSelectedCorrective(
+          isPro && (r.selected_corrective_exercises || []).length > 0
+            ? r.selected_corrective_exercises
+            : r.corrective_exercises || []
+        );
       } catch (err) {
         const cached = getCachedReport(id);
         if (cached) setReport(cached);
@@ -126,40 +134,23 @@ export default function ReportDetail() {
       )}
 
       {/* Corrective exercises */}
-      {(report.corrective_exercises || []).length > 0 && (
+      {(isProOrCoach || (report.corrective_exercises || []).length > 0) && (
         <Section icon={Dumbbell} title="Esercizi correttivi">
-          <div className="grid sm:grid-cols-2 gap-3">
-            {report.corrective_exercises.map((ex, i) => (
-              <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-                <h3 className="font-medium text-white text-sm">{ex.name}</h3>
-                <div className="mt-1.5 text-xs text-emerald-300/80">{ex.target}</div>
-                <div className="mt-1 text-xs text-zinc-500">{ex.sets_reps}</div>
-                <p className="mt-2 text-xs text-zinc-400 leading-relaxed">{ex.why}</p>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Suggerimenti esercizi di correzione mirati dal catalogo (Pro/Coach) */}
-      {(report.issues_detected || []).length > 0 && (
-        <Section icon={Target} title="Esercizi di correzione mirati">
           {isProOrCoach ? (
-            <CorrectiveExerciseSuggestions report={report} />
+            <CorrectiveExercisePicker
+              report={report}
+              onSelectionChange={setSelectedCorrective}
+            />
           ) : (
-            <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 p-5 text-center">
-              <Target className="w-8 h-8 text-emerald-400/70 mx-auto mb-2" />
-              <p className="text-sm text-zinc-300 mb-1">Suggerimenti mirati dal catalogo</p>
-              <p className="text-xs text-zinc-500 mb-3 leading-relaxed max-w-sm mx-auto">
-                L'IA seleziona dal catalogo gli esercizi migliori per correggere i difetti rilevati.
-                Disponibile per i piani <strong className="text-emerald-300">Pro</strong> e <strong className="text-amber-300">Coach</strong>.
-              </p>
-              <Link
-                to="/abbonamento"
-                className="inline-flex items-center gap-2 bg-emerald-400/10 hover:bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors"
-              >
-                <Sparkles className="w-4 h-4" /> Passa a Pro
-              </Link>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {(report.corrective_exercises || []).map((ex, i) => (
+                <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                  <h3 className="font-medium text-white text-sm">{ex.name}</h3>
+                  <div className="mt-1.5 text-xs text-emerald-300/80">{ex.target}</div>
+                  <div className="mt-1 text-xs text-zinc-500">{ex.sets_reps}</div>
+                  <p className="mt-2 text-xs text-zinc-400 leading-relaxed">{ex.why}</p>
+                </div>
+              ))}
             </div>
           )}
         </Section>
@@ -186,7 +177,11 @@ export default function ReportDetail() {
         >
           <Video className="w-4 h-4" /> Nuova analisi
         </Link>
-        <ReportPdfExport report={report} logoUrl={canShowLogo ? user.logo_url : null} />
+        <ReportPdfExport
+          report={report}
+          logoUrl={canShowLogo ? user.logo_url : null}
+          correctiveExercises={selectedCorrective}
+        />
         <button
           onClick={() => setConfirmOpen(true)}
           disabled={deleting}
