@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { PLANS } from "@/lib/monetizationData";
 import { Check, X, CreditCard, Users, Video, Sparkles, Loader2, ShieldCheck } from "lucide-react";
@@ -23,6 +24,24 @@ export default function Subscription() {
     })();
   }, []);
 
+  const [params] = useSearchParams();
+
+  useEffect(() => {
+    const status = params.get("status");
+    if (status === "success") {
+      toast({
+        title: "Pagamento completato",
+        description: "Il tuo piano Pro è attivo. Benvenuto!",
+      });
+      base44.auth.me().then(setMe).catch(() => {});
+    } else if (status === "cancel") {
+      toast({
+        title: "Pagamento annullato",
+        description: "Nessun addebito è stato effettuato.",
+      });
+    }
+  }, [params]);
+
   const currentPlanId = me?.plan || "freemium";
   const currentPlan = PLANS.find((p) => p.id === currentPlanId) || PLANS[0];
 
@@ -31,13 +50,53 @@ export default function Subscription() {
   const mentorUsed = (me?.mentor_query_month === monthKey ? me?.mentor_query_count : 0) || 0;
   const mentorLimit = currentPlan.limits.mentorQueriesPerMonth;
 
-  const handleSwitch = async (planId) => {
-    if (planId === currentPlanId) return;
+  const handleCheckout = async (planId) => {
     setSwitchingTo(planId);
     try {
-      // Plan changes flow through a backend function that verifies a real
-      // purchase before granting pro/coach. The UserEntitlement entity is the
-      // trusted source of truth — user.plan is only a display cache.
+      const isFramed = window.self !== window.top;
+      const checkoutTab = isFramed ? window.open("", "_blank") : null;
+      if (isFramed && !checkoutTab) throw new Error("Consenti i popup per continuare al checkout.");
+      if (checkoutTab) checkoutTab.opener = null;
+
+      try {
+        const res = await base44.functions.invoke("createCheckoutSession", {
+          planId,
+          userId: me?.id,
+          userEmail: me?.email,
+        });
+        if (res.data?.error) throw new Error(res.data.error);
+        const url = res.data?.url;
+        if (!url) throw new Error("URL di checkout non disponibile.");
+
+        if (checkoutTab) {
+          checkoutTab.location.replace(url);
+        } else {
+          window.location.assign(url);
+        }
+      } catch (error) {
+        checkoutTab?.close();
+        throw error;
+      }
+    } catch (err) {
+      toast({
+        title: "Errore",
+        description: err.message || "Impossibile avviare il checkout. Riprova.",
+        variant: "destructive",
+      });
+    } finally {
+      setSwitchingTo(null);
+    }
+  };
+
+  const handleSwitch = async (planId) => {
+    if (planId === currentPlanId) return;
+    if (planId === "pro") {
+      return handleCheckout(planId);
+    }
+    setSwitchingTo(planId);
+    try {
+      // Free downgrades and admin changes use changePlan directly.
+      // Paid upgrades (pro) go through Stripe Checkout via handleCheckout.
       const res = await base44.functions.invoke("changePlan", { planId });
       if (res.data?.error) throw new Error(res.data.error);
       const newPlan = res.data?.plan || planId;
@@ -131,8 +190,8 @@ export default function Subscription() {
       </div>
 
       <p className="text-xs text-muted-foreground text-center leading-relaxed">
-        Il cambio piano è immediato. Gli abbonamenti a pagamento verranno gestiti
-        tramite Google Play e App Store al momento della pubblicazione.
+        Gli abbonamenti a pagamento sono gestiti tramite Stripe.
+        Puoi annullare in qualsiasi momento dal tuo account Stripe.
       </p>
     </div>
   );
