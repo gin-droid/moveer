@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2, Target } from "lucide-react";
+import { AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2, Target } from "lucide-react";
 import ReportPdfExport from "@/components/ReportPdfExport";
 import CorrectiveExerciseSuggestions from "@/components/CorrectiveExerciseSuggestions";
 import { cacheReport, getCachedReport } from "@/lib/reportCache";
@@ -65,10 +65,6 @@ export default function ReportDetail() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <Link to="/report" className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Tutti i report
-      </Link>
-
       {/* Header */}
       <div className="rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-900/40 p-6 md:p-8">
         {canShowLogo && (

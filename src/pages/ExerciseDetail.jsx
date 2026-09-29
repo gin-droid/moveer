@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Video, AlertTriangle, Dumbbell, Target, ExternalLink } from "lucide-react";
+import { Video, AlertTriangle, Dumbbell, Target, ExternalLink } from "lucide-react";
 import { getYouTubeId, isDirectVideo, youtubeSearchUrl } from "@/lib/videoEmbed";
 
 export default function ExerciseDetail() {
@@ -29,10 +29,6 @@ export default function ExerciseDetail() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <Link to="/esercizi" className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Catalogo
-      </Link>
-
       <div>
         <div className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-emerald-300/80">
           <span>{ex.macro_category}</span><span className="text-zinc-600">/</span><span>{ex.subcategory}</span>

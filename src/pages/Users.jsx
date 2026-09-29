@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Trash2, Loader2, ShieldCheck, User as UserIcon, ArrowLeft, Ban } from "lucide-react";
+import { Trash2, Loader2, ShieldCheck, User as UserIcon, Ban } from "lucide-react";
 import { Link } from "react-router-dom";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import InfoDialog from "@/components/InfoDialog";
@@ -98,9 +98,6 @@ export default function Users() {
         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {error}
         </div>
-        <Link to="/" className="mt-4 inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white">
-          <ArrowLeft className="w-4 h-4" /> Torna alla dashboard
-        </Link>
       </div>
     );
   }

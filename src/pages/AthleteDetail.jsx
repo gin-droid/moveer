@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
-  ArrowLeft, Loader2, Trash2, Pencil, UserCheck, Calendar, Sparkles, FileText,
+  Loader2, Trash2, Pencil, UserCheck, Calendar, Sparkles, FileText,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
@@ -121,9 +121,6 @@ export default function AthleteDetail() {
         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
           {error || "Atleta non trovato."}
         </div>
-        <Link to="/atleti" className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white">
-          <ArrowLeft className="w-4 h-4" /> Torna agli atleti
-        </Link>
       </div>
     );
   }
