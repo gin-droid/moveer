@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Mail, Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Mail, Send, Loader2, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -38,8 +39,16 @@ export default function Contact() {
     }
   };
 
+  const navigate = useNavigate();
   return (
     <div className="space-y-6">
+      <button
+        onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
+        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-medium transition-colors -ml-1"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Indietro
+      </button>
       <h1 className="font-display text-3xl sm:text-4xl font-semibold text-white tracking-tight">Contattaci</h1>
 
       <p className="text-muted-foreground text-[15px] leading-relaxed">

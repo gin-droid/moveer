@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { Video, Activity, Dumbbell, Shield, Sparkles, Target, Users } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Video, Activity, Dumbbell, Shield, Sparkles, Target, Users, ArrowLeft } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 
 export default function About() {
@@ -21,8 +21,16 @@ export default function About() {
       offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
     },
   });
+  const navigate = useNavigate();
   return (
     <div className="space-y-8">
+      <button
+        onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
+        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-medium transition-colors -ml-1"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Indietro
+      </button>
       <div>
         <h1 className="font-display text-3xl sm:text-4xl font-semibold text-white tracking-tight">Chi siamo</h1>
         <p className="mt-2 text-primary text-sm font-medium uppercase tracking-[0.15em]">moVeerAI</p>
