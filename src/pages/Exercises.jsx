@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 import { Search, ChevronRight, Video, X } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
 import { useAuth } from "@/lib/AuthContext";

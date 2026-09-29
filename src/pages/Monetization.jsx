@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Check, X, Users, Video, Sparkles, TrendingUp, Wallet, Download } from "lucide-react";
+import { Check, X, Users, Video, Sparkles, TrendingUp, Wallet } from "lucide-react";
 import { PLANS, COSTS, TOTAL_BUILDER, TOTAL_PRO, BREAK_EVEN_SCENARIOS } from "@/lib/monetizationData";
 import MonetizationPdfExport from "@/components/MonetizationPdfExport";
 

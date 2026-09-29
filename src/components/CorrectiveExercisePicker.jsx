@@ -26,7 +26,7 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
         selected_corrective_exercises: arr,
       });
       onSelectionChange?.(arr);
-    } catch (e) {
+    } catch {
       /* ignore */
     } finally {
       setSaving(false);

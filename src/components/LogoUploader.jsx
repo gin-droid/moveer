@@ -22,7 +22,7 @@ export default function LogoUploader({ currentLogo, onSaved }) {
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
-      const updated = await base44.auth.updateMe({ logo_url: file_url });
+      await base44.auth.updateMe({ logo_url: file_url });
       onSaved?.(file_url);
       toast({ title: "Logo aggiornato", description: "Il tuo logo comparirà nei report e nei PDF." });
       if (inputRef.current) inputRef.current.value = "";

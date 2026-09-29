@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Trash2, Loader2, ShieldCheck, User as UserIcon, Ban } from "lucide-react";
-import { Link } from "react-router-dom";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import InfoDialog from "@/components/InfoDialog";
 import PullToRefresh from "@/components/PullToRefresh";

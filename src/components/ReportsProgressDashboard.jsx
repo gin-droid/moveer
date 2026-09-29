@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import {
   ResponsiveContainer, AreaChart, Area, LineChart, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend,
+  CartesianGrid, Tooltip,
 } from "recharts";
 import { TrendingUp, Activity, Zap, Gauge } from "lucide-react";
 
