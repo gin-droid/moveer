@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Mail, Send, Loader2, CheckCircle2 } from "lucide-react";
+import { Mail, Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { useSEO } from "@/hooks/useSEO";
 
-const CONTACT_EMAIL = "info@moveer.ai";
+const CONTACT_EMAIL = "gianlusis91@gmail.com";
 
 export default function Contact() {
   useSEO({
@@ -11,21 +12,30 @@ export default function Contact() {
       "Contatta il team di moVeerAI per domande, collaborazioni o supporto tecnico. Rispondiamo entro 48 ore.",
     path: "/contact",
   });
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.message) return;
+    if (!form.name || !form.email || !form.subject || !form.message) return;
     setSending(true);
-    const subject = encodeURIComponent(`Contatto da ${form.name}`);
-    const body = encodeURIComponent(`${form.message}\n\n— ${form.name} (${form.email})`);
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
-    setTimeout(() => {
-      setSending(false);
+    setError("");
+    try {
+      const res = await base44.functions.invoke("sendContactForm", {
+        name: form.name,
+        email: form.email,
+        subject: form.subject,
+        message: form.message,
+      });
+      if (res.data?.error) throw new Error(res.data.error);
       setSent(true);
-    }, 600);
+    } catch (err) {
+      setError(err.message || "Errore nell'invio. Riprova.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -45,11 +55,11 @@ export default function Contact() {
       </a>
 
       {sent ? (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-6 text-center">
-          <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-          <p className="text-sm text-emerald-300 font-medium">Messaggio pronto</p>
+        <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-6 text-center">
+          <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-2" />
+          <p className="text-sm text-foreground font-medium">Messaggio inviato</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Abbiamo aperto il tuo client di posta. Se non si è aperto, scrivi direttamente a {CONTACT_EMAIL}.
+            Grazie per la tua segnalazione. Ti risponderemo al più presto.
           </p>
         </div>
       ) : (
@@ -59,9 +69,10 @@ export default function Contact() {
             <input
               type="text"
               required
+              maxLength={100}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
               placeholder="Il tuo nome"
             />
           </div>
@@ -70,23 +81,45 @@ export default function Contact() {
             <input
               type="email"
               required
+              maxLength={200}
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
               placeholder="nome@email.com"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Oggetto</label>
+            <input
+              type="text"
+              required
+              maxLength={200}
+              value={form.subject}
+              onChange={(e) => setForm({ ...form, subject: e.target.value })}
+              className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+              placeholder="Di cosa si tratta?"
             />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Messaggio</label>
             <textarea
               required
+              maxLength={5000}
               rows={4}
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
-              className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 transition-colors resize-none"
+              className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors resize-none"
               placeholder="Come possiamo aiutarti?"
             />
           </div>
+
+          {error && (
+            <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={sending}
