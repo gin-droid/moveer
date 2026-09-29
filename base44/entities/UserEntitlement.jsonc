@@ -1,0 +1,78 @@
+{
+  "name": "UserEntitlement",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Utente",
+      "description": "ID dell'utente a cui appartiene questo entitlement (source of truth lato server per piano, blocked e contatori)."
+    },
+    "plan": {
+      "type": "string",
+      "title": "Piano",
+      "enum": [
+        "freemium",
+        "pro",
+        "coach"
+      ],
+      "default": "freemium"
+    },
+    "blocked": {
+      "type": "boolean",
+      "title": "Account bloccato",
+      "description": "Se true, l'utente non pu\u00f2 accedere all'app. Scrivibile solo da admin (o service role nelle funzioni backend).",
+      "default": false
+    },
+    "mentor_query_count": {
+      "type": "number",
+      "title": "Query Mentore (conteggio)",
+      "default": 0
+    },
+    "mentor_query_month": {
+      "type": "string",
+      "title": "Mese riferimento Mentore"
+    },
+    "analysis_count": {
+      "type": "number",
+      "title": "Analisi (conteggio)",
+      "default": 0
+    },
+    "analysis_month": {
+      "type": "string",
+      "title": "Mese riferimento Analisi"
+    }
+  },
+  "required": [
+    "user_id"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

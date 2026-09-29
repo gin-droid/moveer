@@ -29,8 +29,13 @@
     },
     "video_url": {
       "type": "string",
-      "title": "Video",
+      "title": "Video (URL pubblico \u2014 deprecato)",
       "format": "url"
+    },
+    "video_uri": {
+      "type": "string",
+      "title": "Video (URI privato)",
+      "description": "URI del video caricato nello storage privato. Usare CreateFileSignedUrl per ottenere un URL temporaneo."
     },
     "depth_metadata": {
       "type": "object",

@@ -90,10 +90,22 @@ export default function Analyze() {
       }
 
       setProgressMsg("Caricamento dei frame…");
-      const frameUrls = (
+      // Upload frames to PRIVATE storage, then create short-lived signed URLs
+      // for the LLM vision call (expire in 10 min — long enough for the analysis).
+      const frameUris = (
         await Promise.all(
           frameFiles.map((ff) =>
-           base44.integrations.Core.UploadPublicFile({ file: ff }).then((r) => r.file_url).catch(() => null)
+           base44.integrations.Core.UploadPrivateFile({ file: ff }).then((r) => r.file_uri).catch(() => null)
+          )
+        )
+      ).filter(Boolean);
+      if (frameUris.length === 0) {
+        throw new Error("Errore nel caricamento dei frame. Riprova.");
+      }
+      const frameUrls = (
+        await Promise.all(
+          frameUris.map((uri) =>
+            base44.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 600 }).then((r) => r.signed_url).catch(() => null)
           )
         )
       ).filter(Boolean);
@@ -103,12 +115,12 @@ export default function Analyze() {
 
       const isVideo = isVideoFile(file);
       const VIDEO_STORE_CAP = 50 * 1024 * 1024;
-      let videoUploadPromise = Promise.resolve("");
+      let videoUploadPromise = Promise.resolve(null);
       if (isVideo && file.size <= VIDEO_STORE_CAP) {
         videoUploadPromise = base44.integrations.Core
-          .UploadPublicFile({ file })
-          .then((r) => r.file_url || "")
-          .catch(() => "");
+          .UploadPrivateFile({ file })
+          .then((r) => r.file_uri || null)
+          .catch(() => null);
       }
 
       setProgressMsg("Analisi biomeccanica in corso…");
@@ -126,11 +138,11 @@ export default function Analyze() {
       if (!report?.id) throw new Error("Risposta non valida dalla funzione di analisi.");
 
       try {
-        const videoUrl = await videoUploadPromise;
-        if (videoUrl) {
-          await base44.entities.AnalysisReport.update(report.id, { video_url: videoUrl });
+        const videoUri = await videoUploadPromise;
+        if (videoUri) {
+          await base44.entities.AnalysisReport.update(report.id, { video_uri: videoUri });
         }
-      } catch (e) {
+      } catch {
         /* non-blocking */
       }
 

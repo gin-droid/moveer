@@ -23,7 +23,11 @@ export default function Users() {
         return;
       }
       const data = await base44.entities.User.list("-created_date", 200);
-      setUsers(data);
+      // Fetch entitlement records to get the authoritative blocked status
+      const entitlements = await base44.entities.UserEntitlement.list("-created_date", 500);
+      const entMap = {};
+      for (const e of entitlements) { entMap[e.user_id] = e; }
+      setUsers(data.map((u) => ({ ...u, _entitlement: entMap[u.id] || null })));
     } catch (err) {
       setError(err.message || "Errore nel caricamento degli utenti.");
     } finally {
@@ -70,8 +74,26 @@ export default function Users() {
     if (u.role === "admin") return;
     setBlockingId(u.id);
     try {
-      await base44.entities.User.update(u.id, { blocked: !u.blocked });
-      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, blocked: !u.blocked } : x)));
+      // Write blocked to the trusted UserEntitlement entity (admin-only writes).
+      // The user.blocked field on User is client-writable via updateMe and cannot be trusted.
+      let ent = u._entitlement;
+      if (!ent) {
+        ent = await base44.entities.UserEntitlement.create({
+          user_id: u.id,
+          plan: "freemium",
+          blocked: false,
+          mentor_query_count: 0,
+          mentor_query_month: "",
+          analysis_count: 0,
+          analysis_month: "",
+        });
+      }
+      await base44.entities.UserEntitlement.update(ent.id, { blocked: !ent.blocked });
+      setUsers((prev) =>
+        prev.map((x) =>
+          x.id === u.id ? { ...x, _entitlement: { ...ent, blocked: !ent.blocked } } : x
+        )
+      );
     } catch (err) {
       setInfoState({
         open: true,
@@ -124,7 +146,7 @@ export default function Users() {
               <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${u.role === "admin" ? "bg-emerald-400/15 text-emerald-300" : "bg-zinc-800 text-zinc-400"}`}>
                 {u.role === "admin" ? "Admin" : "Utente"}
               </span>
-              {u.blocked && (
+              {u._entitlement?.blocked && (
                 <span className="text-[11px] px-2.5 py-1 rounded-full font-medium bg-amber-500/15 text-amber-300">
                   Bloccato
                 </span>
@@ -132,9 +154,9 @@ export default function Users() {
               <button
                 onClick={() => handleToggleBlock(u)}
                 disabled={blockingId === u.id || deletingId === u.id || u.role === "admin"}
-                title={u.role === "admin" ? "Gli amministratori non possono essere bloccati" : u.blocked ? "Sblocca utente" : "Blocca utente"}
+                title={u.role === "admin" ? "Gli amministratori non possono essere bloccati" : u._entitlement?.blocked ? "Sblocca utente" : "Blocca utente"}
                 className={`p-2 rounded-lg transition-colors shrink-0 disabled:opacity-40 disabled:hover:bg-transparent ${
-                  u.blocked
+                  u._entitlement?.blocked
                     ? "text-amber-400 hover:bg-amber-500/10"
                     : "text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10"
                 } disabled:hover:text-zinc-600`}

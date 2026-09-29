@@ -29,16 +29,13 @@ export default function Mentor() {
   const queryLimit = plan.limits.mentorQueriesPerMonth;
   const limitReached = queryCount >= queryLimit;
 
-  // Sincronizza il contatore mensile dal profilo utente (reset al cambio mese)
+  // Sincronizza il contatore mensile dal profilo utente (display cache sincronizzata dal backend)
   useEffect(() => {
     const month = monthKey();
     const storedMonth = user?.mentor_query_month;
     const storedCount = user?.mentor_query_count || 0;
     if (storedMonth !== month) {
       setQueryCount(0);
-      if (storedCount !== 0) {
-        base44.auth.updateMe({ mentor_query_count: 0, mentor_query_month: month }).catch(() => {});
-      }
     } else {
       setQueryCount(storedCount);
     }
@@ -100,10 +97,15 @@ export default function Mentor() {
     setInput("");
     setSending(true);
     try {
+      // Server-side quota check + increment (trusted source: UserEntitlement entity)
+      const quotaRes = await base44.functions.invoke("consumeMentorQuery", {});
+      if (quotaRes.data?.error) throw new Error(quotaRes.data.error);
+      if (!quotaRes.data?.allowed) {
+        setQueryCount(quotaRes.data?.used ?? queryLimit);
+        return;
+      }
+      setQueryCount(quotaRes.data.used);
       await base44.agents.addMessage(conversation, { role: "user", content: text });
-      const newCount = queryCount + 1;
-      setQueryCount(newCount);
-      base44.auth.updateMe({ mentor_query_count: newCount, mentor_query_month: monthKey() }).catch(() => {});
     } catch (err) {
       console.error(err);
     } finally {

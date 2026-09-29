@@ -1,4 +1,5 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { getOrCreateEntitlement } from '../../shared/entitlements.ts';
 
 const CORRECTIVE_CATEGORIES = ['Riabilitazione', 'Mobilità', 'Posturali', 'Corpo Libero', 'Funzionale'];
 
@@ -8,7 +9,12 @@ export default async function(req: Request): Promise<Response> {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const plan = user.plan || 'freemium';
+    // Server-side plan check (trusted source: UserEntitlement entity, not client-writable user.plan)
+    const entitlement = await getOrCreateEntitlement(base44, user.id);
+    if (entitlement.blocked) {
+      return Response.json({ error: 'Account bloccato' }, { status: 403 });
+    }
+    const plan = entitlement.plan || 'freemium';
     if (plan !== 'pro' && plan !== 'coach') {
       return Response.json({ error: 'Funzionalità disponibile solo per i piani Pro e Coach' }, { status: 403 });
     }

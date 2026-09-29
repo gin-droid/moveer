@@ -94,7 +94,19 @@ export const AuthProvider = ({ children }) => {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
-      if (currentUser?.blocked) {
+      // Check blocked status from the trusted UserEntitlement entity (admin-only writes).
+      // The user.blocked field on User is client-writable via updateMe and cannot be trusted.
+      let isBlocked = false;
+      try {
+        const entitlements = await base44.entities.UserEntitlement.filter(
+          { user_id: currentUser.id }, '-created_date', 1
+        );
+        isBlocked = entitlements && entitlements.length > 0 ? !!entitlements[0].blocked : false;
+      } catch {
+        // If the entitlement can't be fetched, fall back to user.blocked
+        isBlocked = !!currentUser.blocked;
+      }
+      if (isBlocked) {
         setAuthError({
           type: 'user_blocked',
           message: 'Il tuo account è stato bloccato da un amministratore.'

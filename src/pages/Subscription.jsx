@@ -35,9 +35,14 @@ export default function Subscription() {
     if (planId === currentPlanId) return;
     setSwitchingTo(planId);
     try {
-      const updated = await base44.auth.updateMe({ plan: planId });
-      setMe(updated || { ...me, plan: planId });
-      const plan = PLANS.find((p) => p.id === planId);
+      // Plan changes flow through a backend function that verifies a real
+      // purchase before granting pro/coach. The UserEntitlement entity is the
+      // trusted source of truth — user.plan is only a display cache.
+      const res = await base44.functions.invoke("changePlan", { planId });
+      if (res.data?.error) throw new Error(res.data.error);
+      const newPlan = res.data?.plan || planId;
+      setMe({ ...me, plan: newPlan });
+      const plan = PLANS.find((p) => p.id === newPlan);
       toast({
         title: "Piano aggiornato",
         description: `Ora sei sul piano ${plan.name}.`,

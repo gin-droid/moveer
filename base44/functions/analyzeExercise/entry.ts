@@ -1,12 +1,28 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { computeJointStress, classifyPattern, getPatternCheckpoints } from './biomechanics.ts';
 import { summarizeDepthAngles } from './depth3d.ts';
+import { getOrCreateEntitlement, checkAnalysisQuota, incrementAnalysisCount } from '../../shared/entitlements.ts';
 
 export default async function(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Server-side plan + quota enforcement (trusted source: UserEntitlement entity)
+    const entitlement = await getOrCreateEntitlement(base44, user.id);
+    if (entitlement.blocked) {
+      return Response.json({ error: 'Account bloccato' }, { status: 403 });
+    }
+    const analysisQuota = checkAnalysisQuota(entitlement);
+    if (!analysisQuota.allowed) {
+      return Response.json({
+        error: `Limite mensile di analisi raggiunto (${analysisQuota.used}/${analysisQuota.limit}) per il piano ${analysisQuota.plan}.`,
+        code: 'quota_exceeded',
+        used: analysisQuota.used,
+        limit: analysisQuota.limit,
+      }, { status: 429 });
+    }
 
     const body = await req.json();
     const exerciseName = (body.exerciseName || '').trim();
@@ -246,6 +262,9 @@ Sii preciso, pratico e basato sull'evidenza. Se i frame non sono interpretabili,
       } : null,
       wearable_data: wearableData || null
     });
+
+    // Increment the monthly analysis counter (trusted source)
+    await incrementAnalysisCount(base44, entitlement);
 
     return Response.json({ report });
   } catch (error) {
