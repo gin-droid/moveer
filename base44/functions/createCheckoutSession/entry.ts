@@ -1,3 +1,4 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { secrets } from 'base44:runtime';
 
 // Stripe Price ID for the moVeerAI Pro monthly subscription (€9.99/mo).
@@ -6,20 +7,24 @@ const APP_ORIGIN = 'https://moveer.base44.app';
 
 export default async function(req: Request): Promise<Response> {
   try {
+    // Authenticate the caller — user identity is derived from the verified
+    // session, not from the request body, so only the signed-in user can
+    // start a checkout attributed to themselves.
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await req.json();
     const planId = (body.planId || '').trim();
-    const userId = (body.userId || '').trim();
-    const userEmail = (body.userEmail || '').trim();
 
     if (planId !== 'pro') {
       return Response.json({ error: 'Solo il piano Pro è disponibile tramite checkout Stripe' }, { status: 400 });
     }
-    if (!userId || !userEmail) {
-      return Response.json({ error: 'userId e userEmail sono obbligatori' }, { status: 400 });
-    }
-    // Basic email format check
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
-      return Response.json({ error: 'Email non valida' }, { status: 400 });
+
+    const userId = user.id;
+    const userEmail = user.email;
+    if (!userEmail) {
+      return Response.json({ error: 'Account senza email' }, { status: 400 });
     }
 
     const stripeKey = secrets.get('STRIPE_SECRET_KEY');

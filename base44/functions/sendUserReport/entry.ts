@@ -7,9 +7,11 @@ export default async function(req: Request): Promise<Response> {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const subject = (body.subject || '').trim();
-    const message = (body.message || '').trim();
-    const category = (body.category || 'segnalazione').trim();
+    // Sanitize: strip control chars and newlines to prevent header injection
+    const sanitize = (s: string, maxLen = 500) => String(s || '').replace(/[\r\n\t<>]/g, ' ').trim().slice(0, maxLen);
+    const subject = sanitize(body.subject || '', 200);
+    const message = String(body.message || '').trim().slice(0, 5000);
+    const category = sanitize(body.category || 'segnalazione', 100);
 
     if (!subject || !message) {
       return Response.json({ error: 'Oggetto e messaggio sono obbligatori' }, { status: 400 });
@@ -38,10 +40,12 @@ export default async function(req: Request): Promise<Response> {
 
     // Invia a tutti gli amministratori registrati
     for (const admin of admins) {
+      // Use plain-text body (text) instead of HTML (body) so user-controlled
+      // content is never rendered as markup by the admin's mail client.
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: admin.email,
         subject: `[moVeerAI] ${category}: ${subject}`,
-        body: emailBody,
+        text: emailBody,
       });
     }
 

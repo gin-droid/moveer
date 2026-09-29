@@ -97,15 +97,19 @@ export default function Mentor() {
     setInput("");
     setSending(true);
     try {
-      // Server-side quota check + increment (trusted source: UserEntitlement entity)
-      const quotaRes = await base44.functions.invoke("consumeMentorQuery", {});
-      if (quotaRes.data?.error) throw new Error(quotaRes.data.error);
-      if (!quotaRes.data?.allowed) {
-        setQueryCount(quotaRes.data?.used ?? queryLimit);
+      // Server-side quota check + message submission in one atomic call.
+      // The backend function verifies the quota AND adds the message, so the
+      // client cannot bypass the quota by calling addMessage directly.
+      const res = await base44.functions.invoke("sendMentorMessage", {
+        conversationId: conversation.id,
+        text,
+      });
+      if (res.data?.error) throw new Error(res.data.error);
+      if (!res.data?.allowed) {
+        setQueryCount(res.data?.used ?? queryLimit);
         return;
       }
-      setQueryCount(quotaRes.data.used);
-      await base44.agents.addMessage(conversation, { role: "user", content: text });
+      setQueryCount(res.data.used);
     } catch (err) {
       console.error(err);
     } finally {
