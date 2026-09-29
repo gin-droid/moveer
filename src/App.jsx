@@ -22,7 +22,6 @@ import Mentor from '@/pages/Mentor';
 import Monetization from '@/pages/Monetization';
 import Subscription from '@/pages/Subscription';
 import About from '@/pages/About';
-import Contact from '@/pages/Contact';
 import PublicLayout from '@/components/PublicLayout';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -84,7 +83,6 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<PublicLayout />}>
         <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>

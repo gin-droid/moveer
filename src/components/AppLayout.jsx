@@ -4,13 +4,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard, Dumbbell, Video, FileText, Activity, TrendingUp,
   Users as UsersIcon, PlayCircle, User as UserIcon, ArrowLeft, Menu, Sparkles, UserCheck, CreditCard,
-  Info, Mail,
+  Info, MessageSquareWarning,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/lib/AuthContext";
 import LogoutButton from "@/components/LogoutButton";
 import SettingsDrawer from "@/components/SettingsDrawer";
 import MoreMenuSheet from "@/components/MoreMenuSheet";
+import FeedbackDialog from "@/components/FeedbackDialog";
 
 const primaryItems = [
   { to: "/", label: "Home", icon: LayoutDashboard, end: true },
@@ -27,12 +28,13 @@ const secondaryItems = [
   { to: "/abbonamento", label: "Abbonamento", icon: CreditCard },
   { to: "/utenti", label: "Utenti", icon: UsersIcon },
   { to: "/about", label: "Chi siamo", icon: Info },
-  { to: "/contact", label: "Contatti", icon: Mail },
+  { action: "feedback", label: "Inviaci una segnalazione", icon: MessageSquareWarning },
 ];
 
 export default function AppLayout() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const location = useLocation();
   const outlet = useOutlet();
   const isMobile = useIsMobile();
@@ -109,6 +111,18 @@ export default function AppLayout() {
         <nav className="flex-1 px-3 space-y-1">
           {allItems.map((item) => {
             const Icon = item.icon;
+            if (item.action === "feedback") {
+              return (
+                <button
+                  key="feedback"
+                  onClick={() => setFeedbackOpen(true)}
+                  className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                >
+                  <Icon className="w-[18px] h-[18px]" strokeWidth={2} />
+                  {item.label}
+                </button>
+              );
+            }
             return (
               <NavLink
                 key={item.to}
@@ -254,9 +268,15 @@ export default function AppLayout() {
         activeTo={owningTab(location.pathname)}
         onSelect={(item) => {
           setMoreOpen(false);
-          handleTabClick(item);
+          if (item.action === "feedback") {
+            setFeedbackOpen(true);
+          } else {
+            handleTabClick(item);
+          }
         }}
       />
+
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
 
       <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>

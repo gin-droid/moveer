@@ -17,7 +17,7 @@ export default function MoreMenuSheet({ items, open, onOpenChange, activeTo, onS
             const active = item.to === activeTo;
             return (
               <button
-                key={item.to}
+                key={item.to || item.action}
                 onClick={() => onSelect(item)}
                 className={`w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors select-none min-h-[48px] ${
                   active ? "bg-primary/10 text-primary" : "text-foreground hover:bg-sidebar-accent"
