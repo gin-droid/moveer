@@ -1,10 +1,11 @@
 const CACHE_NAME = "moveerai-shell-v1";
+const APP_BASE_PATH = new URL("./", self.location.href).pathname;
 const APP_SHELL = [
-  "/",
-  "/manifest.json",
-  "/favicon.svg",
-  "/moveerai-icon-192.png",
-  "/moveerai-icon-512.png",
+  APP_BASE_PATH,
+  `${APP_BASE_PATH}manifest.json`,
+  `${APP_BASE_PATH}favicon.svg`,
+  `${APP_BASE_PATH}moveerai-icon-192.png`,
+  `${APP_BASE_PATH}moveerai-icon-512.png`,
 ];
 
 self.addEventListener("install", (event) => {
@@ -33,7 +34,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(() => caches.match("/")));
+    event.respondWith(fetch(request).catch(() => caches.match(APP_BASE_PATH)));
     return;
   }
 

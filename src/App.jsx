@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -30,6 +30,9 @@ const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Navigate } from 'react-router-dom';
+import { appPath } from '@/lib/appPath';
+
+const Router = import.meta.env.BASE_URL === '/' ? BrowserRouter : HashRouter;
 
 const AppLoading = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -62,7 +65,7 @@ const AuthenticatedApp = () => {
               Per assistenza contatta info@moveer.ai
             </p>
             <button
-              onClick={() => { window.location.href = '/login'; }}
+              onClick={() => { window.location.href = appPath('/login'); }}
               className="inline-flex items-center justify-center bg-primary text-primary-foreground font-semibold text-sm px-5 py-2.5 rounded-xl"
             >
               Esci
@@ -118,7 +121,7 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
+        <Router basename={Router === BrowserRouter ? import.meta.env.BASE_URL : undefined}>
           <ScrollToTop />
           <AuthenticatedApp />
         </Router>

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
+import { appPath } from "@/lib/appPath";
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
@@ -22,7 +23,7 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       await appApi.auth.resetPassword({ newPassword });
-      window.location.href = "/login";
+      window.location.href = appPath("/login");
     } catch (err) {
       setError(err.message || "Impossibile reimpostare la password");
     } finally {

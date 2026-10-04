@@ -1,12 +1,13 @@
 import { requireSupabase, supabase } from '@/api/supabaseClient';
+import { appPath } from '@/lib/appPath';
 
 const authRedirectUrl = (path) => {
   const hostname = window.location.hostname;
   const isMoveerDomain = hostname === 'moveer.eu' || hostname.endsWith('.moveer.eu');
   const origin = !import.meta.env.DEV && isMoveerDomain
-    ? 'https://www.moveer.eu'
+    ? 'https://app.moveer.eu'
     : window.location.origin;
-  return `${origin}${path}`;
+  return `${origin}${appPath(path)}`;
 };
 
 const entityTables = {
@@ -159,11 +160,12 @@ const auth = {
   async logout(redirectTo) {
     if (supabase) await supabase.auth.signOut();
     if (typeof redirectTo === 'string' && redirectTo !== window.location.href) {
-      window.location.assign(redirectTo);
+      const target = redirectTo.startsWith('/') ? appPath(redirectTo) : redirectTo;
+      window.location.assign(target);
     }
   },
   redirectToLogin(returnTo = '/') {
-    window.location.assign(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+    window.location.assign(`${appPath('/login')}?returnTo=${encodeURIComponent(returnTo)}`);
   },
   async loginWithProvider(provider, returnTo = '/') {
     const { error } = await requireSupabase().auth.signInWithOAuth({

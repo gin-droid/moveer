@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { appApi } from "@/api/appApi";
+import { appPath } from "@/lib/appPath";
 
 export default function LogoutButton({ className = "" }) {
   const [loading, setLoading] = useState(false);
@@ -8,9 +9,9 @@ export default function LogoutButton({ className = "" }) {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await appApi.auth.logout("/login");
+      await appApi.auth.logout(appPath("/login"));
     } catch (e) {
-      window.location.href = "/login";
+      window.location.href = appPath("/login");
     }
   };
 

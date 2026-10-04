@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { appPath } from "@/lib/appPath";
 
 const getSiteUrl = () => import.meta.env.VITE_SITE_URL || window.location.origin;
 
@@ -46,7 +47,7 @@ export function useSEO({ title, description, path, image, type = "website", json
   useEffect(() => {
     if (title) document.title = title;
     const siteUrl = getSiteUrl();
-    const url = path ? `${siteUrl}${path}` : siteUrl;
+    const url = `${siteUrl}${appPath(path || "/")}`;
 
     upsertMeta('meta[name="description"]', "name", "description", description);
     upsertMeta('meta[property="og:title"]', "property", "og:title", title);
