@@ -1,0 +1,6 @@
+import{c as y,r as n,j as e,L as w}from"./index-BPvnDwV4.js";/**
+ * @license lucide-react v0.475.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const j=[["path",{d:"M12 5v14",key:"s699le"}],["path",{d:"m19 12-7 7-7-7",key:"1idqje"}]],v=y("ArrowDown",j),i=70,L=120;function T({onRefresh:c,children:d}){const l=n.useRef(0),t=n.useRef(!1),[r,s]=n.useState(0),[o,u]=n.useState(!1),m=a=>{o||(window.scrollY<=0?(l.current=a.touches[0].clientY,t.current=!0):t.current=!1)},h=a=>{if(!t.current||o)return;const f=a.touches[0].clientY-l.current;f>0&&s(Math.min(L,f*.5))},x=async()=>{if(t.current)if(t.current=!1,r>=i){u(!0),s(i);try{await(c==null?void 0:c())}finally{u(!1),s(0)}}else s(0)},p=r>=i;return e.jsx("div",{onTouchStart:m,onTouchMove:h,onTouchEnd:x,children:e.jsxs("div",{style:{transform:`translateY(${r}px)`,transition:t.current?"none":"transform 0.2s ease"},children:[e.jsx("div",{className:"flex items-center justify-center overflow-hidden text-muted-foreground",style:{height:r},children:o?e.jsx(w,{className:"w-5 h-5 animate-spin text-primary"}):e.jsx(v,{className:`w-5 h-5 transition-transform ${p?"rotate-180 text-primary":""}`})}),d]})})}export{T as P};

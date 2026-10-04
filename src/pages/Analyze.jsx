@@ -138,47 +138,50 @@ export default function Analyze() {
   const analyze = async () => {
     setError("");
     if (!selected) { setError("Seleziona un esercizio da analizzare."); return; }
-    if (!file) { setError("Carica un video o un'immagine della tua esecuzione."); return; }
+    if (!file && !depthData) {
+      setError("Carica un video o un'immagine, oppure completa una scansione LiDAR/ToF.");
+      return;
+    }
 
     setAnalyzing(true);
-    setProgressMsg("Preparazione dei frame…");
+    setProgressMsg(file ? "Preparazione dei frame…" : "Preparazione dei dati LiDAR/ToF…");
     try {
       let frameFiles = [];
-      if (isVideoFile(file)) {
+      if (file && isVideoFile(file)) {
         setProgressMsg("Estrazione dei frame dal video…");
         frameFiles = await extractVideoFrames(file, 6);
         if (frameFiles.length === 0) {
           throw new Error("Impossibile estrarre frame dal video. Prova con un formato MP4/H.264 più leggero.");
         }
-      } else {
+      } else if (file) {
         frameFiles = [file];
       }
 
-      setProgressMsg("Caricamento dei frame…");
+      if (frameFiles.length > 0) setProgressMsg("Caricamento dei frame…");
       // Upload frames to PRIVATE storage, then create short-lived signed URLs
       // for the LLM vision call (expire in 10 min — long enough for the analysis).
-      const frameUris = (
+      const frameUris = frameFiles.length ? (
         await Promise.all(
           frameFiles.map((ff) =>
            appApi.integrations.Core.UploadPrivateFile({ file: ff }).then((r) => r.file_uri).catch(() => null)
           )
         )
-      ).filter(Boolean);
-      if (frameUris.length === 0) {
+      ).filter(Boolean) : [];
+      if (frameFiles.length > 0 && frameUris.length === 0) {
         throw new Error("Errore nel caricamento dei frame. Riprova.");
       }
-      const frameUrls = (
+      const frameUrls = frameUris.length ? (
         await Promise.all(
           frameUris.map((uri) =>
             appApi.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 600 }).then((r) => r.signed_url).catch(() => null)
           )
         )
-      ).filter(Boolean);
-      if (frameUrls.length === 0) {
+      ).filter(Boolean) : [];
+      if (frameUris.length > 0 && frameUrls.length === 0) {
         throw new Error("Errore nel caricamento dei frame. Riprova.");
       }
 
-      const isVideo = isVideoFile(file);
+      const isVideo = Boolean(file && isVideoFile(file));
       const VIDEO_STORE_CAP = 50 * 1024 * 1024;
       let videoUploadPromise = Promise.resolve(null);
       if (isVideo && file.size <= VIDEO_STORE_CAP) {
@@ -346,6 +349,11 @@ export default function Analyze() {
       </Section>
 
       <Section label="Scansione LiDAR / ToF" hint="opzionale">
+        {depthAvailability?.available && (
+          <p className="mb-3 text-xs text-muted-foreground">
+            La scansione 3D può essere analizzata da sola. Il video RGB aggiunge osservazioni visive.
+          </p>
+        )}
         {depthData ? (
           <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
             <Activity className="h-5 w-5 shrink-0 text-primary" />
