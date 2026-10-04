@@ -138,13 +138,10 @@ export default function Analyze() {
   const analyze = async () => {
     setError("");
     if (!selected) { setError("Seleziona un esercizio da analizzare."); return; }
-    if (!file && !depthData) {
-      setError("Carica un video o un'immagine, oppure completa una scansione LiDAR/ToF.");
-      return;
-    }
+    if (!file) { setError("Carica un video o un'immagine della tua esecuzione."); return; }
 
     setAnalyzing(true);
-    setProgressMsg(file ? "Preparazione dei frame…" : "Preparazione dei dati LiDAR/ToF…");
+    setProgressMsg("Preparazione dei frame…");
     try {
       let frameFiles = [];
       if (file && isVideoFile(file)) {
@@ -351,7 +348,7 @@ export default function Analyze() {
       <Section label="Scansione LiDAR / ToF" hint="opzionale">
         {depthAvailability?.available && (
           <p className="mb-3 text-xs text-muted-foreground">
-            La scansione 3D può essere analizzata da sola. Il video RGB aggiunge osservazioni visive.
+            Il video o l'immagine RGB resta necessario per l'analisi visiva. La scansione LiDAR/ToF aggiunge misure 3D.
           </p>
         )}
         {depthData ? (
