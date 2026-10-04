@@ -2,33 +2,24 @@
 
 ## Project Context
 
-This is a Base44 app repository. Treat it as user-owned application code, keep changes focused on the user's request, and preserve existing project conventions.
+moVeerAI is a user-owned React/Vite application using Supabase Auth, PostgreSQL, Storage, and Edge Functions. Keep changes focused and preserve existing project conventions.
 
-Start with `README.md` for local setup, environment variables, and publish workflow.
-
-## Base44 References
-
-- CLI overview: https://docs.base44.com/developers/references/cli/get-started/overview.md
-- Agent skills: https://docs.base44.com/developers/backend/overview/skills.md
-
-If your agent supports Agent Skills, install or update Base44 skills before Base44-specific work:
-
-```bash
-npx skills add base44/skills
-```
+Start with `README.md` for local setup, environment variables, Supabase migrations, and deployment.
 
 ## Key Files
 
 - `src/`: frontend application source.
-- `src/api/base44Client.js`: frontend Base44 SDK client.
-- `vite.config.js`: Vite config and Base44 Vite plugin setup.
-- `.env.local`: local-only environment values; never commit secrets.
+- `src/api/supabaseClient.js`: Supabase browser client.
+- `src/api/appApi.js`: application API facade backed by Supabase.
+- `supabase/migrations/`: active database schema and RLS policies.
+- `supabase/functions/`: active backend functions; secrets stay server-side.
+- `base44/`: legacy source/schema reference only; do not add runtime dependencies on it.
+- `.env.local`: local-only public Supabase settings; never commit secrets.
 
 ## Working Notes
 
-- Use `base44 dev` as the default local development command when you need the local Base44 backend. It can run the backend and frontend together.
-- When docs or code mention the frontend being started automatically, that usually means the Base44 project config includes `site.serveCommand`, for example `"serveCommand": "npm run dev"` in `base44/config.jsonc`.
-- Use `npm run dev` only for frontend-only work against the hosted Base44 backend.
-- Prefer the existing Base44 CLI workflow over adding new npm scripts for Base44-specific tasks.
-- Reuse the existing SDK client and Vite plugin patterns before adding new Base44 integration paths.
+- Use `npm run dev` for the frontend and `npx supabase` for local database/function workflows.
+- Keep ownership and authorization in RLS or Edge Functions; never trust client-supplied user IDs, plan, or blocked status.
+- `VITE_*` variables are public. Keep service-role, Gemini, email, and Stripe keys in Supabase secrets.
+- The exercise catalog data is not present in this repository; do not invent or fabricate imported records.
 - Run the relevant checks from `package.json` before finishing code changes.

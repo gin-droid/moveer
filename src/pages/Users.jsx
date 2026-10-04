@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Trash2, Loader2, ShieldCheck, User as UserIcon, Ban } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import InfoDialog from "@/components/InfoDialog";
@@ -16,15 +16,15 @@ export default function Users() {
 
   const loadUsers = async () => {
     try {
-      const me = await base44.auth.me();
+      const me = await appApi.auth.me();
       if (me?.role !== "admin") {
         setError("Accesso riservato agli amministratori.");
         setLoading(false);
         return;
       }
-      const data = await base44.entities.User.list("-created_date", 200);
+      const data = await appApi.entities.User.list("-created_date", 200);
       // Fetch entitlement records to get the authoritative blocked status
-      const entitlements = await base44.entities.UserEntitlement.list("-created_date", 500);
+      const entitlements = await appApi.entities.UserEntitlement.list("-created_date", 500);
       const entMap = {};
       for (const e of entitlements) { entMap[e.user_id] = e; }
       setUsers(data.map((u) => ({ ...u, _entitlement: entMap[u.id] || null })));
@@ -56,7 +56,7 @@ export default function Users() {
     if (!u) return;
     setDeletingId(u.id);
     try {
-      await base44.entities.User.delete(u.id);
+      await appApi.entities.User.delete(u.id);
       setUsers((prev) => prev.filter((x) => x.id !== u.id));
     } catch (err) {
       setInfoState({
@@ -78,7 +78,7 @@ export default function Users() {
       // The user.blocked field on User is client-writable via updateMe and cannot be trusted.
       let ent = u._entitlement;
       if (!ent) {
-        ent = await base44.entities.UserEntitlement.create({
+        ent = await appApi.entities.UserEntitlement.create({
           user_id: u.id,
           plan: "freemium",
           blocked: false,
@@ -88,7 +88,7 @@ export default function Users() {
           analysis_month: "",
         });
       }
-      await base44.entities.UserEntitlement.update(ent.id, { blocked: !ent.blocked });
+      await appApi.entities.UserEntitlement.update(ent.id, { blocked: !ent.blocked });
       setUsers((prev) =>
         prev.map((x) =>
           x.id === u.id ? { ...x, _entitlement: { ...ent, blocked: !ent.blocked } } : x

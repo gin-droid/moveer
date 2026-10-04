@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -16,7 +16,7 @@ export default function FeedbackDialog({ open, onOpenChange }) {
     if (!subject.trim() || !message.trim()) return;
     setSending(true);
     try {
-      await base44.functions.invoke("sendUserReport", {
+      await appApi.functions.invoke("sendUserReport", {
         category,
         subject: subject.trim(),
         message: message.trim(),

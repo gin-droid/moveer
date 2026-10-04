@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2 } from "lucide-react";
 import ReportPdfExport from "@/components/ReportPdfExport";
 import CorrectiveExercisePicker from "@/components/CorrectiveExercisePicker";
 import { cacheReport, getCachedReport } from "@/lib/reportCache";
 import BodyDiagram from "@/components/BodyDiagram";
+import DepthAnalysisPanel from "@/components/DepthAnalysisPanel";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -26,11 +27,11 @@ export default function ReportDetail() {
     (async () => {
       let u = null;
       try {
-        u = await base44.auth.me();
+        u = await appApi.auth.me();
         setUser(u);
       } catch (e) { /* ignore */ }
       try {
-        const r = await base44.entities.AnalysisReport.get(id);
+        const r = await appApi.entities.AnalysisReport.get(id);
         setReport(r);
         cacheReport(r);
         const isPro = u && (u.plan === "pro" || u.plan === "coach");
@@ -55,7 +56,7 @@ export default function ReportDetail() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await base44.entities.AnalysisReport.delete(id);
+      await appApi.entities.AnalysisReport.delete(id);
       navigate("/report");
     } catch (err) {
       toast({
@@ -94,6 +95,12 @@ export default function ReportDetail() {
       {report.body_diagram && (
         <Section icon={Activity} title="Mappa posturale & stress articolare">
           <BodyDiagram diagram={report.body_diagram} gender={report.gender || "maschio"} />
+        </Section>
+      )}
+
+      {report.depth_analysis && (
+        <Section icon={Activity} title="Misure cinematiche 3D">
+          <DepthAnalysisPanel analysis={report.depth_analysis} />
         </Section>
       )}
 

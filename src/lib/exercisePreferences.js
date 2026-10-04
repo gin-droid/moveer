@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 
 /**
  * Costruisce una query MongoDB-style per filtrare gli esercizi in base
@@ -21,6 +21,6 @@ export function buildExerciseQuery(user) {
 export async function loadPreferredExercises(user, sort = "-created_date", limit = 1000) {
   const query = buildExerciseQuery(user);
   return query
-    ? base44.entities.Exercise.filter(query, sort, limit)
-    : base44.entities.Exercise.list(sort, limit);
+    ? appApi.entities.Exercise.filter(query, sort, limit)
+    : appApi.entities.Exercise.list(sort, limit);
 }

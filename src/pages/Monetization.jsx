@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Check, X, Users, Video, Sparkles, TrendingUp, Wallet } from "lucide-react";
 import { PLANS, COSTS, TOTAL_BUILDER, TOTAL_PRO, BREAK_EVEN_SCENARIOS } from "@/lib/monetizationData";
 import MonetizationPdfExport from "@/components/MonetizationPdfExport";
@@ -11,7 +11,7 @@ export default function Monetization() {
   useEffect(() => {
     (async () => {
       try {
-        const u = await base44.auth.me();
+        const u = await appApi.auth.me();
         setAuthState({ loading: false, isAdmin: u?.role === "admin" });
       } catch {
         setAuthState({ loading: false, isAdmin: false });
@@ -33,8 +33,8 @@ export default function Monetization() {
         <div>
           <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Piano di Monetizzazione</h1>
           <p className="text-muted-foreground mt-2 text-sm max-w-xl">
-            Strategia a 3 livelli per pubblicare moVeerAI su Google Play e App Store,
-            coprire i costi della piattaforma e degli store, e rinnovare l'abbonamento anno per anno.
+            Modello finanziario legacy basato sui costi Base44. I costi correnti Supabase, AI, email,
+            dominio e commissioni di pagamento vanno aggiornati dopo la configurazione dei provider.
           </p>
         </div>
         <MonetizationPdfExport />
@@ -43,7 +43,7 @@ export default function Monetization() {
       {/* Cost summary */}
       <section className="rounded-2xl border border-border bg-card p-5">
         <h2 className="font-display text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Wallet className="w-5 h-5 text-primary" /> Costi annuali da coprire
+          <Wallet className="w-5 h-5 text-primary" /> Stime storiche dei costi
         </h2>
         <div className="space-y-2.5">
           {Object.values(COSTS).map((c) => (
@@ -57,11 +57,11 @@ export default function Monetization() {
           ))}
           <div className="pt-3 mt-3 border-t border-border space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-emerald-400 font-medium">Totale minimo (Builder + Store)</span>
+              <span className="text-emerald-400 font-medium">Scenario storico minimo (Builder + Store)</span>
               <span className="text-emerald-400 font-display font-bold text-lg tabular-nums">€{TOTAL_BUILDER}<span className="text-xs text-muted-foreground font-body font-normal">/anno</span></span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-amber-400 font-medium">Totale massimo (Pro + Store)</span>
+              <span className="text-amber-400 font-medium">Scenario storico massimo (Pro + Store)</span>
               <span className="text-amber-400 font-display font-bold text-lg tabular-nums">€{TOTAL_PRO}<span className="text-xs text-muted-foreground font-body font-normal">/anno</span></span>
             </div>
           </div>
@@ -118,9 +118,9 @@ export default function Monetization() {
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex gap-2"><span className="text-primary">•</span> Il piano <strong className="text-foreground">Freemium</strong> serve come funnel: attira utenti senza costi e li converte verso Pro/Coach.</li>
           <li className="flex gap-2"><span className="text-primary">•</span> Il piano <strong className="text-foreground">Pro</strong> è il punto di equilibrio: prezzo accessibile che copre i costi con pochi abbonati.</li>
-          <li className="flex gap-2"><span className="text-primary">•</span> Il piano <strong className="text-foreground">Coach</strong> è il margine: ogni abbonato Coach copre quasi interamente il costo annuale Builder.</li>
-          <li className="flex gap-2"><span className="text-primary">•</span> Con soli <strong className="text-foreground">7 abbonati Pro</strong> (oppure 4 Coach) si coprono i costi del piano Builder + store.</li>
-          <li className="flex gap-2"><span className="text-primary">•</span> Con <strong className="text-foreground">11 abbonati Pro</strong> (oppure 6 Coach) si passa al piano Pro di Base44 con margine.</li>
+          <li className="flex gap-2"><span className="text-primary">•</span> Il piano <strong className="text-foreground">Coach</strong> è il margine nel modello di prezzo attuale.</li>
+          <li className="flex gap-2"><span className="text-primary">•</span> Le soglie di pareggio mostrate si riferiscono ai costi storici Base44 e agli store.</li>
+          <li className="flex gap-2"><span className="text-primary">•</span> Aggiorna le stime dopo aver scelto i tier Supabase e i provider AI/email.</li>
           <li className="flex gap-2"><span className="text-primary">•</span> I prezzi possono essere registrati su Google Play Console e App Store Connect come abbonamenti in-app.</li>
         </ul>
       </section>

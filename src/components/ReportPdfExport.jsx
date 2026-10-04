@@ -448,7 +448,7 @@ export default function ReportPdfExport({ report, logoUrl, correctiveExercises }
     }
 
     // ---- Footer page numbers ----
-    const pageCount = doc.internal.getNumberOfPages();
+    const pageCount = doc.getNumberOfPages();
     for (let p = 1; p <= pageCount; p++) {
       doc.setPage(p);
       doc.setDrawColor(228, 228, 231);

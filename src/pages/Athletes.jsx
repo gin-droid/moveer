@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import {
   UserPlus, Loader2, Trash2, ChevronRight, UserCheck, Calendar, Pencil,
   Search, X,
@@ -32,7 +32,7 @@ export default function Athletes() {
 
   const loadAthletes = async () => {
     try {
-      const data = await base44.entities.Athlete.list("-created_date", 500);
+      const data = await appApi.entities.Athlete.list("-created_date", 500);
       setAthletes(data);
     } catch (err) {
       setError(err.message || "Errore nel caricamento degli atleti.");
@@ -82,9 +82,9 @@ export default function Athletes() {
         notes: form.notes.trim() || null,
       };
       if (editingId) {
-        await base44.entities.Athlete.update(editingId, payload);
+        await appApi.entities.Athlete.update(editingId, payload);
       } else {
-        await base44.entities.Athlete.create(payload);
+        await appApi.entities.Athlete.create(payload);
       }
       setDialogOpen(false);
       await loadAthletes();
@@ -104,7 +104,7 @@ export default function Athletes() {
     if (!a) return;
     setDeletingId(a.id);
     try {
-      await base44.entities.Athlete.delete(a.id);
+      await appApi.entities.Athlete.delete(a.id);
       setAthletes((prev) => prev.filter((x) => x.id !== a.id));
     } catch (err) {
       setInfoState({

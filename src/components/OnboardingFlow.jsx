@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, Palette, Layers, Dumbbell, ArrowRight, ArrowLeft } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
@@ -27,7 +27,7 @@ export default function OnboardingFlow() {
     setSaving(true);
     setStoredAccentColor(accentColor);
     try {
-      await base44.auth.updateMe({
+      await appApi.auth.updateMe({
         accent_color: accentColor,
         preferred_macro_categories: selectedMacros,
         preferred_equipment: selectedEquip,

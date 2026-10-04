@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { LogOut } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 
 export default function LogoutButton({ className = "" }) {
   const [loading, setLoading] = useState(false);
@@ -8,7 +8,7 @@ export default function LogoutButton({ className = "" }) {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await base44.auth.logout("/login");
+      await appApi.auth.logout("/login");
     } catch (e) {
       window.location.href = "/login";
     }

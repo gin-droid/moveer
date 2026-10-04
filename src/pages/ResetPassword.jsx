@@ -1,16 +1,12 @@
 import React, { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Loader2, AlertTriangle } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function ResetPassword() {
-  const [searchParams] = useSearchParams();
-  const resetToken = searchParams.get("token");
-
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,7 +21,7 @@ export default function ResetPassword() {
     }
     setLoading(true);
     try {
-      await base44.auth.resetPassword({ resetToken, newPassword });
+      await appApi.auth.resetPassword({ newPassword });
       window.location.href = "/login";
     } catch (err) {
       setError(err.message || "Impossibile reimpostare la password");
@@ -33,25 +29,6 @@ export default function ResetPassword() {
       setLoading(false);
     }
   };
-
-  if (!resetToken) {
-    return (
-      <AuthLayout
-        icon={AlertTriangle}
-        title="Link di reset non valido"
-        subtitle="Questo link di reset password è mancante o non valido"
-        footer={
-          <Link to="/forgot-password" className="text-primary font-medium hover:underline">
-            Richiedi un nuovo link
-          </Link>
-        }
-      >
-        <p className="text-sm text-foreground text-center">
-          Il link utilizzato risulta incompleto. Richiedi una nuova email di reset password.
-        </p>
-      </AuthLayout>
-    );
-  }
 
   return (
     <AuthLayout

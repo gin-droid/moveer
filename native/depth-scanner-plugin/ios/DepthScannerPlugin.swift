@@ -21,29 +21,28 @@ public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
   private var recording = false
   private var maxDuration: Double = 30.0
   private var startTime: Double = 0
+  private var lastSampleTime: Double = 0
   private var frames: [[String: Any]] = []
   private var frameUrls: [String] = []
 
   // Giunzioni ARKit mappate ai nomi usati dal backend
   private let jointMap: [String: String] = [
-    "head": "head",
-    "neck_1": "neck",
-    "leftShoulder": "shoulder_l",
-    "rightShoulder": "shoulder_r",
-    "leftElbow": "elbow_l",
-    "rightElbow": "elbow_r",
-    "leftWrist": "wrist_l",
-    "rightWrist": "wrist_r",
-    "leftHand": "hand_l",
-    "rightHand": "hand_r",
-    "spine_7": "spine_chest",
-    "spine_3": "spine_base",
-    "leftHip": "hip_l",
-    "rightHip": "hip_r",
-    "leftKnee": "knee_l",
-    "rightKnee": "knee_r",
-    "leftAnkle": "ankle_l",
-    "rightAnkle": "ankle_r"
+    "head_joint": "head",
+    "neck_1_joint": "neck",
+    "left_shoulder_1_joint": "shoulder_l",
+    "right_shoulder_1_joint": "shoulder_r",
+    "left_forearm_joint": "elbow_l",
+    "right_forearm_joint": "elbow_r",
+    "left_hand_joint": "wrist_l",
+    "right_hand_joint": "wrist_r",
+    "spine_7_joint": "spine_chest",
+    "spine_3_joint": "spine_base",
+    "left_upLeg_joint": "hip_l",
+    "right_upLeg_joint": "hip_r",
+    "left_leg_joint": "knee_l",
+    "right_leg_joint": "knee_r",
+    "left_foot_joint": "ankle_l",
+    "right_foot_joint": "ankle_r"
   ]
 
   @objc func isAvailable(_ call: CAPPluginCall) {
@@ -79,6 +78,7 @@ public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
     }
     recording = true
     startTime = CACurrentMediaTime()
+    lastSampleTime = 0
     call.resolve()
   }
 
@@ -90,6 +90,7 @@ public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
     // Per ora restituisce i dati strutturati; l'upload avviene lato JS.
     let depthData: [String: Any] = [
       "sensorType": ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) ? "lidar" : "tof",
+      "coordinateSystem": "right_handed_y_up_meters",
       "frames": frames
     ]
     call.resolve([
@@ -114,13 +115,15 @@ public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
       session.pause()
       return
     }
+    guard elapsed - lastSampleTime >= 0.2, frames.count < 180 else { return }
+    lastSampleTime = elapsed
 
     guard let body = frame.bodyAnchor as? ARBodyAnchor else { return }
     let joints = serializeJoints(body)
     let depthStats = depthRangeStats(frame.sceneDepth?.depthMap)
 
     let entry: [String: Any] = [
-      "timestamp": frame.timestamp,
+      "timestamp": elapsed,
       "joints3D": joints,
       "depthRangeMm": depthStats
     ]
@@ -136,8 +139,7 @@ public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
         "id": mappedId,
         "x": pos.x,
         "y": pos.y,
-        "z": pos.z,
-        "confidence": 1.0
+        "z": pos.z
       ])
     }
     return out
@@ -151,21 +153,31 @@ public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
     let h = CVPixelBufferGetHeight(buf)
     let base = CVPixelBufferGetBaseAddress(buf)
     let ptr = base?.assumingMemoryBound(to: Float.self)
+    let rowStride = CVPixelBufferGetBytesPerRow(buf) / MemoryLayout<Float>.size
     var minV: Float = .greatestFiniteMagnitude
     var maxV: Float = 0
-    var sum: Float = 0
-    var count: Int = 0
+    var samples: [Float] = []
     if let p = ptr {
-      for i in 0..<(w * h) {
-        let v = p[i]
-        if v.isNaN || v <= 0 { continue }
-        minV = min(minV, v)
-        maxV = max(maxV, v)
-        sum += v
-        count += 1
+      for y in stride(from: 0, to: h, by: 8) {
+        for x in stride(from: 0, to: w, by: 8) {
+          let v = p[y * rowStride + x]
+          if !v.isFinite || v <= 0 { continue }
+          minV = min(minV, v)
+          maxV = max(maxV, v)
+          samples.append(v)
+        }
       }
     }
-    let median = count > 0 ? sum / Float(count) : 0
+    guard !samples.isEmpty else { return [:] }
+    samples.sort()
+    let median: Float
+    if samples.isEmpty {
+      median = 0
+    } else if samples.count.isMultiple(of: 2) {
+      median = (samples[samples.count / 2 - 1] + samples[samples.count / 2]) / 2
+    } else {
+      median = samples[samples.count / 2]
+    }
     // ARKit depth è in metri → converti in mm
     return [
       "min": Double(minV) * 1000,

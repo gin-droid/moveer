@@ -12,16 +12,7 @@ import {
 /**
  * Standard confirm dialog used across the app in place of window.confirm.
  *
- * @param {boolean} open - whether the dialog is visible
- * @param {(open:boolean)=>void} onOpenChange - controlled open state setter
- * @param {()=>void} onConfirm - invoked when the user confirms
- * @param {object} opts
- * @param {string} [opts.title="Conferma"]
- * @param {string} [opts.description]
- * @param {string} [opts.confirmLabel="Elimina"]
- * @param {string} [opts.cancelLabel="Annulla"]
- * @param {boolean} [opts.destructive=true]
- * @param {boolean} [opts.loading=false]
+ * @param {{open: boolean, onOpenChange: (open: boolean) => void, onConfirm: () => void, opts?: {title?: string, description?: string, confirmLabel?: string, cancelLabel?: string, destructive?: boolean, loading?: boolean}}} props
  */
 export default function ConfirmDialog({
   open,

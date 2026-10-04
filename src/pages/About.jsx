@@ -12,7 +12,7 @@ export default function About() {
       "@context": "https://schema.org",
       "@type": "WebApplication",
       name: "moVeerAI",
-      url: "https://moveer.base44.app",
+      url: import.meta.env.VITE_SITE_URL || window.location.origin,
       description:
         "Analisi biomeccanica del movimento guidata dall'IA per postura e tecnica di allenamento.",
       applicationCategory: "HealthApplication",

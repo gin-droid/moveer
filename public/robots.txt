@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://moveer.base44.app/sitemap.xml
+Sitemap: https://www.moveer.eu/sitemap.xml

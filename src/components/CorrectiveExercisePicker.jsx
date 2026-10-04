@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Loader2, Dumbbell, Check, ExternalLink } from "lucide-react";
 
 const normalize = (s) => ({
@@ -22,7 +22,7 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
     const arr = (sugg || []).filter((s) => ids.has(s.exercise_id)).map(normalize);
     setSaving(true);
     try {
-      await base44.entities.AnalysisReport.update(report.id, {
+      await appApi.entities.AnalysisReport.update(report.id, {
         selected_corrective_exercises: arr,
       });
       onSelectionChange?.(arr);
@@ -43,7 +43,7 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
       setLoading(true);
       setError("");
       try {
-        const res = await base44.functions.invoke("suggestCorrectiveExercises", {
+        const res = await appApi.functions.invoke("suggestCorrectiveExercises", {
           reportId: report.id,
         });
         if (res.data?.error) throw new Error(res.data.error);

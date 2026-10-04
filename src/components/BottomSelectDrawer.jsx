@@ -4,6 +4,7 @@ import {
 } from "@/components/ui/sheet";
 import { Check, ChevronDown } from "lucide-react";
 
+/** @param {{value: string, onChange: (value: string) => void, options: Array<{value: string, label: string, sublabel?: string}>, title?: string, placeholder?: string, className?: string}} props */
 export default function BottomSelectDrawer({
   value,
   onChange,

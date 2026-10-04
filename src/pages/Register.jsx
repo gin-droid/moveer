@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,8 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import OnboardingFlow from "@/components/OnboardingFlow";
+
+const OTP_LENGTH = 8;
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -32,7 +34,7 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await base44.auth.register({ email, password });
+      await appApi.auth.register({ email, password });
       setShowOtp(true);
     } catch (err) {
       setError(err.message || "Registrazione fallita");
@@ -45,10 +47,10 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      const result = await base44.auth.verifyOtp({ email, otpCode });
+      const result = await appApi.auth.verifyOtp({ email, otpCode });
       if (result?.access_token) {
-        base44.auth.setToken(result.access_token);
-        try { await base44.auth.updateMe({ gender }); } catch (e) { /* non-blocking */ }
+        appApi.auth.setToken(result.access_token);
+        try { await appApi.auth.updateMe({ gender }); } catch (e) { /* non-blocking */ }
         setShowOnboarding(true);
       }
     } catch (err) {
@@ -61,7 +63,7 @@ export default function Register() {
   const handleResend = async () => {
     setError("");
     try {
-      await base44.auth.resendOtp(email);
+      await appApi.auth.resendOtp(email);
       toast({
         title: "Codice inviato",
         description: "Controlla la tua email per il nuovo codice.",
@@ -72,7 +74,7 @@ export default function Register() {
   };
 
   const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", safeReturnTo());
+    appApi.auth.loginWithProvider("google", safeReturnTo());
   };
 
   if (showOtp) {
@@ -89,26 +91,23 @@ export default function Register() {
         )}
         <div className="flex justify-center mb-6">
           <InputOTP
-            maxLength={8}
+            maxLength={OTP_LENGTH}
             value={otpCode}
             onChange={setOtpCode}
             autoFocus
             autoComplete="one-time-code"
           >
             <InputOTPGroup className="gap-1 sm:gap-2">
-              <InputOTPSlot index={0} className="w-7 sm:w-9" />
-              <InputOTPSlot index={1} className="w-7 sm:w-9" />
-              <InputOTPSlot index={2} className="w-7 sm:w-9" />
-              <InputOTPSlot index={3} className="w-7 sm:w-9" />
-              <InputOTPSlot index={4} className="w-7 sm:w-9" />
-              <InputOTPSlot index={5} className="w-7 sm:w-9" />               <InputOTPSlot index={6} className="w-7 sm:w-9" />               <InputOTPSlot index={7} className="w-7 sm:w-9" />
+              {Array.from({ length: OTP_LENGTH }, (_, index) => (
+                <InputOTPSlot key={index} index={index} className="w-7 sm:w-9" />
+              ))}
             </InputOTPGroup>
           </InputOTP>
         </div>
         <Button
           className="w-full h-12 font-medium"
           onClick={handleVerify}
-          disabled={loading || otpCode.length !== 8}
+          disabled={loading || otpCode.length !== OTP_LENGTH}
         >
           {loading ? (
             <>

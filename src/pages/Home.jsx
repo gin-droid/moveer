@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Video, Dumbbell, FileText, ArrowRight, AlertTriangle, Activity, ShieldCheck } from "lucide-react";
 import GenderOnboarding from "@/components/GenderOnboarding";
 import { useAuth } from "@/lib/AuthContext";
@@ -24,7 +24,7 @@ export default function Home() {
     (async () => {
       try {
         const [r, e] = await Promise.all([
-          base44.entities.AnalysisReport.list("-created_date", 5),
+          appApi.entities.AnalysisReport.list("-created_date", 5),
           loadPreferredExercises(user),
         ]);
         setReports(r);

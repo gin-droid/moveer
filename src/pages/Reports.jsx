@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { FileText, ArrowRight, AlertTriangle, Trash2, Loader2 } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -17,7 +17,7 @@ export default function Reports() {
 
   const loadReports = async () => {
     try {
-      const data = await base44.entities.AnalysisReport.list("-created_date", 100);
+      const data = await appApi.entities.AnalysisReport.list("-created_date", 100);
       setReports(data);
       cacheReportList(data);
     } catch (err) {
@@ -42,7 +42,7 @@ export default function Reports() {
     const previous = reports;
     setReports((prev) => prev.filter((r) => r.id !== id)); // optimistic update
     try {
-      await base44.entities.AnalysisReport.delete(id);
+      await appApi.entities.AnalysisReport.delete(id);
       removeCachedReport(id);
     } catch (err) {
       setReports(previous); // revert on failure

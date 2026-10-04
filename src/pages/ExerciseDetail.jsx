@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Video, AlertTriangle, Dumbbell, Target, ExternalLink } from "lucide-react";
 import { getYouTubeId, isDirectVideo, youtubeSearchUrl } from "@/lib/videoEmbed";
 
@@ -12,7 +12,7 @@ export default function ExerciseDetail() {
   useEffect(() => {
     (async () => {
       try {
-        setEx(await base44.entities.Exercise.get(id));
+        setEx(await appApi.entities.Exercise.get(id));
       } catch (err) {
         console.error(err);
       } finally {

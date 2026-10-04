@@ -12,12 +12,7 @@ import { Button } from "@/components/ui/button";
 /**
  * Standard informational dialog used in place of window.alert.
  *
- * @param {boolean} open
- * @param {(open:boolean)=>void} onOpenChange
- * @param {object} opts
- * @param {string} [opts.title]
- * @param {string} [opts.description]
- * @param {string} [opts.closeLabel="Chiudi"]
+ * @param {{open: boolean, onOpenChange: (open: boolean) => void, opts?: {title?: string, description?: string, closeLabel?: string}}} props
  */
 export default function InfoDialog({ open, onOpenChange, opts = {} }) {
   const { title = "Avviso", description = "", closeLabel = "Chiudi" } = opts;

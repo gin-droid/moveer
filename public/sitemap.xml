@@ -1,22 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://moveer.base44.app/</loc>
+    <loc>https://www.moveer.eu/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://moveer.base44.app/about</loc>
+    <loc>https://www.moveer.eu/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://moveer.base44.app/contact</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://moveer.base44.app/login</loc>
+    <loc>https://www.moveer.eu/login</loc>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>

@@ -21,12 +21,10 @@ DESCRIZIONE IDENTIFICATIVA
 LINGUAGGIO DI PROGRAMMAZIONE
   Frontend:  JavaScript (React 18 + Vite)
   Stile:     Tailwind CSS + shadcn/ui (Radix UI)
-  Backend:   Base44 BaaS (Backend-as-a-Service)
-             Funzioni server-side in TypeScript (Node.js/Deno runtime)
-  Database:  Base44 Entities (schema JSON, NoSQL)
-  Integrazioni IA: LLM vision (analisi posturale), biomechanics engine,
-             agente AI in-app (exercise_mentor) con accesso al catalogo
-             esercizi e ai report dell'utente
+  Backend:   Supabase BaaS (Auth, PostgreSQL, Storage, Edge Functions)
+  Database:  PostgreSQL con Row Level Security (RLS)
+  Integrazioni IA: Gemini API per analisi vision, biomechanics engine,
+             agente AI in-app con accesso RLS al catalogo e ai report
   Native:    Plugin Capacitor (@moVeerAI/depth-scanner) per acquisizione
              dati di profondita LiDAR/ToF (Swift/ARKit per iOS,
              Kotlin/ARCore per Android); helper depth3d.ts per il
@@ -34,43 +32,43 @@ LINGUAGGIO DI PROGRAMMAZIONE
   Wearable:  Web Bluetooth API per fascia cardio esterna (GATT service
              0x180D); libreria wearableSensors.js per parsing e
              aggregazione dati fisiologici
-  Piattaforma di pubblicazione: Base44 (web + build native iOS/Android)
+  Piattaforma: frontend web sul dominio proprietario + backend Supabase;
+               shell native iOS/Android da configurare separatamente
 
 DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
-  URL di pubblicazione:  https://moveer.base44.app
-  Data prima pubblicazione: Da registrare al primo deploy effettivo
-                            (app pubblicata su dominio Base44)
+  URL di pubblicazione:  configurato con VITE_SITE_URL
+  Data primo deploy Supabase: da registrare al completamento della migrazione
   Luogo di sviluppo:      Italia (Europe/Rome timezone)
-  Sviluppatore:           Account proprietario app Base44
+  Sviluppatore:           Account proprietario moVeerAI
 
 VERSIONE CORRENTE
   Versione: 1.5
-  Data ultimo aggiornamento scheda: 2026-09-28
+  Data ultimo aggiornamento scheda: 2026-10-01
 
 ================================================================
 NOTE TECNICHE
   - Architettura single-page application (SPA) con routing lato client
   - Layout responsive mobile-first con safe-area iOS (notch/home indicator)
-  - Autenticazione gestita da Base44 Auth (email/password, Google OAuth, OTP)
-  - Entita dati: Exercise (catalogo 691 esercizi, 14 macro-categorie),
-    AnalysisReport (con depth_metadata e wearable_data), Athlete
-    (atleti/clienti con RLS per utente, campo email per notifiche),
-    User (con gender, plan, blocked, role)
-    - Funzioni backend: analyzeExercise (analisi IA con supporto depth 3D
+  - Autenticazione gestita da Supabase Auth (email/password, Google OAuth, OTP)
+  - Tabelle PostgreSQL: exercises, analysis_reports, athletes, profiles,
+    user_entitlements, mentor_conversations, mentor_messages
+  - Catalogo previsto: 691 esercizi, 14 macro-categorie; export dati non
+    incluso nel repository e da importare nel progetto Supabase
+  - Funzioni Edge: analyzeExercise (analisi IA con supporto depth 3D
     e dati wearable), deleteOwnAccount, sendUserReport (inoltro
     segnalazioni utenti via email agli admin), notifyAthleteReport
     (notifica email automatica all'atleta a nuovo report pronto, solo
     piani a pagamento Pro/Coach), suggestCorrectiveExercises (suggerisce
     esercizi di correzione mirati dal catalogo in base ai difetti di
     postura rilevati nel report)
-  - Agente AI Mentore (exercise_mentor): chat conversazionale con
-    accesso in lettura a Exercise e AnalysisReport, guida tecnica
+  - Agente AI Mentore: chat conversazionale con accesso RLS al catalogo
+    e ai report, guida tecnica
     personalizzata sull'esecuzione degli esercizi
   - Integrazione sensori wearable: fascia cardio Bluetooth esterna,
     dati fisiologici (frequenza cardiaca) correlati alla qualità tecnica
   - Export report in PDF (jsPDF) con diagramma corporeo SVG
-  - Acquisizione video: CameraRecorder RGB (web) + DepthScanner nativo
-    (LiDAR/ToF via Capacitor) con fallback graduale ai soli frame RGB
+  - Acquisizione video: CameraRecorder RGB (web); import depth JSON
+    LiDAR/ToF, visualizzazione 3D nei report; plugin Android incompleto
   - Salvataggio video registrati sul dispositivo (download locale)
   - Calcolo biomeccanico deterministico dello stress articolare basato su
     profili di movimento pattern-specifici (incluso pattern ciclismo)
@@ -95,8 +93,7 @@ NOTE TECNICHE
   - Branding personalizzato: campo logo_url su User, LogoUploader per
     upload logo personale (piano Pro/Coach), logo renderizzato nell'header
     dei report a schermo e nei PDF esportati
-  - API upload allineata: Analyze.jsx usa UploadPublicFile (API corrente)
-    per upload frame e video originale
+  - Upload media su Supabase Storage; report e punti depth in PostgreSQL
   - Ricerca e filtri atleti: Athletes.jsx con ricerca testuale (nome/note)
     e filtro per genere via useMemo, contatore risultati e reset filtri
   - Notifica automatica atleti: campo email su Athlete, funzione backend

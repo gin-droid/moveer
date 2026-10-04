@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -35,7 +35,7 @@ export default function SettingsDrawer({ open, onOpenChange }) {
     if (open) {
       (async () => {
         try {
-          const u = await base44.auth.me();
+          const u = await appApi.auth.me();
           setMe(u);
           setGender(u.gender || "");
           setLogoUrl(u.logo_url || "");
@@ -54,9 +54,9 @@ export default function SettingsDrawer({ open, onOpenChange }) {
     setDeleting(true);
     setError("");
     try {
-      await base44.functions.invoke("deleteOwnAccount", {});
+      await appApi.functions.invoke("deleteOwnAccount", {});
       setConfirmOpen(false);
-      await base44.auth.logout("/register");
+      await appApi.auth.logout("/register");
     } catch (err) {
       setError(err.message || "Errore durante l'eliminazione dell'account.");
       setDeleting(false);
@@ -67,7 +67,7 @@ export default function SettingsDrawer({ open, onOpenChange }) {
     setGender(g);
     setSavingGender(true);
     try {
-      const updated = await base44.auth.updateMe({ gender: g });
+      const updated = await appApi.auth.updateMe({ gender: g });
       setMe(updated || { ...me, gender: g });
     } catch (e) {
       /* ignore */

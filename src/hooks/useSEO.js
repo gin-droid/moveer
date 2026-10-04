@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SITE_URL = "https://moveer.base44.app";
+const getSiteUrl = () => import.meta.env.VITE_SITE_URL || window.location.origin;
 
 function upsertMeta(selector, attr, key, content) {
   if (!content) return;
@@ -26,14 +26,14 @@ function upsertLink(rel, href) {
 
 function upsertJsonLd(id, data) {
   if (!data) return;
-  let el = document.head.querySelector(`script[data-jsonld="${id}"]`);
-  if (!el) {
-    el = document.createElement("script");
-    el.type = "application/ld+json";
-    el.setAttribute("data-jsonld", id);
-    document.head.appendChild(el);
+  const existing = document.head.querySelector(`script[data-jsonld="${id}"]`);
+  const script = existing instanceof HTMLScriptElement ? existing : document.createElement("script");
+  if (script !== existing) {
+    script.setAttribute("data-jsonld", id);
+    document.head.appendChild(script);
   }
-  el.textContent = JSON.stringify(data);
+  script.type = "application/ld+json";
+  script.textContent = JSON.stringify(data);
 }
 
 /**
@@ -41,10 +41,12 @@ function upsertJsonLd(id, data) {
  * Open Graph, Twitter Card, canonical URL, JSON-LD structured data).
  * Works for SPA crawlers that render JavaScript (Google, Bing).
  */
+/** @param {{title?: string, description?: string, path?: string, image?: string, type?: string, jsonLd?: unknown}} options */
 export function useSEO({ title, description, path, image, type = "website", jsonLd }) {
   useEffect(() => {
     if (title) document.title = title;
-    const url = path ? `${SITE_URL}${path}` : SITE_URL;
+    const siteUrl = getSiteUrl();
+    const url = path ? `${siteUrl}${path}` : siteUrl;
 
     upsertMeta('meta[name="description"]', "name", "description", description);
     upsertMeta('meta[property="og:title"]', "property", "og:title", title);

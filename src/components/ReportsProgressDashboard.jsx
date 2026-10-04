@@ -26,6 +26,7 @@ const powerValue = (r) => {
   return motion.peak_accel ?? motion.avg_accel ?? null;
 };
 
+/** @param {{active?: boolean, payload?: Array<{dataKey: string, name?: string, value: string | number}>, label?: string, unit?: string}} props */
 const CustomTooltip = ({ active, payload, label, unit }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -44,7 +45,7 @@ export default function ReportsProgressDashboard({ reports }) {
   const series = useMemo(() => {
     const sorted = [...reports]
       .filter((r) => r.created_date)
-      .sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+      .sort((a, b) => new Date(a.created_date).getTime() - new Date(b.created_date).getTime());
     return sorted.map((r) => ({
       date: formatDate(r.created_date),
       score: r.score ?? 0,
@@ -195,6 +196,7 @@ export default function ReportsProgressDashboard({ reports }) {
   );
 }
 
+/** @param {{icon: import("react").ComponentType<any>, label: string, value: string | number, delta?: number | null, unit?: string}} props */
 function KpiCard({ icon: Icon, label, value, delta, unit }) {
   const hasDelta = delta != null && delta !== 0;
   const positive = (delta || 0) > 0;

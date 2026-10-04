@@ -60,6 +60,22 @@
         }
       }
     },
+    "depth_analysis": {
+      "type": "object",
+      "title": "Analisi cinematica 3D",
+      "description": "Metriche articolari aggregate e coordinate dei frame chiave in metri, relative al bacino.",
+      "properties": {
+        "sensorType": { "type": "string", "enum": ["lidar", "tof"] },
+        "coordinateSystem": { "type": "string" },
+        "units": { "type": "string", "enum": ["meters"] },
+        "sourceFrameCount": { "type": "number" },
+        "validFrameCount": { "type": "number" },
+        "maxJointCount": { "type": "number" },
+        "meanConfidence": { "type": "number" },
+        "measurements": { "type": "object" },
+        "keyFrames": { "type": "array", "items": { "type": "object" } }
+      }
+    },
     "wearable_data": {
       "type": "object",
       "title": "Dati wearable",

@@ -19,8 +19,8 @@ export interface Joint3D {
   x: number;
   y: number;
   z: number;
-  /** confidenza 0-1 */
-  confidence: number;
+  /** confidenza 0-1 se fornita dal sensore */
+  confidence?: number;
 }
 
 export interface DepthFrame {
@@ -32,6 +32,8 @@ export interface DepthFrame {
 
 export interface DepthData {
   sensorType: "lidar" | "tof";
+  /** Coordinate del modello ARKit: metri, mano destra, asse Y verticale. */
+  coordinateSystem: "right_handed_y_up_meters";
   frames: DepthFrame[];
 }
 

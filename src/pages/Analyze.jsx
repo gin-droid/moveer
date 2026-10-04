@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
-import { Video, Upload, Loader2, ChevronRight, Sparkles, Camera, X } from "lucide-react";
+import { appApi } from "@/api/appApi";
+import { Activity, Video, Upload, Loader2, ChevronRight, Sparkles, Camera, X } from "lucide-react";
 import { validateMediaFile, extractVideoFrames, formatFileSize, isVideoFile } from "@/lib/videoFrames";
 import ExercisePicker from "@/components/ExercisePicker";
 import CameraRecorder from "@/components/CameraRecorder";
 import WearableConnector from "@/components/WearableConnector";
 import BottomSelectDrawer from "@/components/BottomSelectDrawer";
+import { analyzeDepthData } from "../../supabase/functions/_shared/depth3d";
 
 export default function Analyze() {
   const [params] = useSearchParams();
@@ -24,15 +25,17 @@ export default function Analyze() {
   const [wearableData, setWearableData] = useState(null);
   const [athletes, setAthletes] = useState([]);
   const [selectedAthleteId, setSelectedAthleteId] = useState("");
+  const [depthData, setDepthData] = useState(null);
+  const [depthFileName, setDepthFileName] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await base44.entities.Exercise.list("-created_date", 500);
+        const data = await appApi.entities.Exercise.list("-created_date", 500);
         setExercises(data);
         const pre = params.get("exercise");
         if (pre) setSelectedId(pre);
-        const aths = await base44.entities.Athlete.list("-created_date", 500);
+        const aths = await appApi.entities.Athlete.list("-created_date", 500);
         setAthletes(aths);
         const preAth = params.get("athlete");
         if (preAth) setSelectedAthleteId(preAth);
@@ -70,6 +73,27 @@ export default function Analyze() {
     setPreviewUrl("");
   };
 
+  const loadDepthFile = async (depthFile) => {
+    setError("");
+    try {
+      const parsed = JSON.parse(await depthFile.text());
+      const data = parsed.depthData || parsed;
+      if (!["lidar", "tof"].includes(data.sensorType) || !Array.isArray(data.frames)) {
+        throw new Error("Il JSON deve contenere sensorType e frames.");
+      }
+      const analysis = analyzeDepthData(data);
+      if (!analysis.validFrameCount) {
+        throw new Error("Nessun frame contiene almeno tre giunzioni 3D affidabili.");
+      }
+      setDepthData({ ...data, coordinateSystem: data.coordinateSystem || "right_handed_y_up_meters" });
+      setDepthFileName(depthFile.name);
+    } catch (err) {
+      setDepthData(null);
+      setDepthFileName("");
+      setError(err.message || "File di profondità non valido.");
+    }
+  };
+
   const analyze = async () => {
     setError("");
     if (!selected) { setError("Seleziona un esercizio da analizzare."); return; }
@@ -95,7 +119,7 @@ export default function Analyze() {
       const frameUris = (
         await Promise.all(
           frameFiles.map((ff) =>
-           base44.integrations.Core.UploadPrivateFile({ file: ff }).then((r) => r.file_uri).catch(() => null)
+           appApi.integrations.Core.UploadPrivateFile({ file: ff }).then((r) => r.file_uri).catch(() => null)
           )
         )
       ).filter(Boolean);
@@ -105,7 +129,7 @@ export default function Analyze() {
       const frameUrls = (
         await Promise.all(
           frameUris.map((uri) =>
-            base44.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 600 }).then((r) => r.signed_url).catch(() => null)
+            appApi.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 600 }).then((r) => r.signed_url).catch(() => null)
           )
         )
       ).filter(Boolean);
@@ -117,18 +141,19 @@ export default function Analyze() {
       const VIDEO_STORE_CAP = 50 * 1024 * 1024;
       let videoUploadPromise = Promise.resolve(null);
       if (isVideo && file.size <= VIDEO_STORE_CAP) {
-        videoUploadPromise = base44.integrations.Core
+        videoUploadPromise = appApi.integrations.Core
           .UploadPrivateFile({ file })
           .then((r) => r.file_uri || null)
           .catch(() => null);
       }
 
       setProgressMsg("Analisi biomeccanica in corso…");
-      const res = await base44.functions.invoke("analyzeExercise", {
+      const res = await appApi.functions.invoke("analyzeExercise", {
         exerciseName: selected.name,
         macroCategory: selected.macro_category,
         subcategory: selected.subcategory,
         frameUrls,
+        depthData,
         notes,
         wearableData: wearableData || null,
         athleteId: selectedAthleteId || null,
@@ -140,14 +165,14 @@ export default function Analyze() {
       try {
         const videoUri = await videoUploadPromise;
         if (videoUri) {
-          await base44.entities.AnalysisReport.update(report.id, { video_uri: videoUri });
+          await appApi.entities.AnalysisReport.update(report.id, { video_uri: videoUri });
         }
       } catch {
         /* non-blocking */
       }
 
       if (selectedAthleteId) {
-        base44.functions.invoke("notifyAthleteReport", {
+        appApi.functions.invoke("notifyAthleteReport", {
           athleteId: selectedAthleteId,
           exerciseName: selected.name,
           reportId: report.id,
@@ -279,6 +304,40 @@ export default function Analyze() {
         )}
       </Section>
 
+      <Section label="Dati di profondità 3D" hint="opzionale">
+        {depthData ? (
+          <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+            <Activity className="w-5 h-5 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-xs font-medium text-foreground">{depthFileName}</div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                {depthData.sensorType.toUpperCase()} · {analyzeDepthData(depthData).validFrameCount} frame validi
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setDepthData(null); setDepthFileName(""); }}
+              className="rounded-md p-2 text-muted-foreground hover:text-foreground"
+              aria-label="Rimuovi dati di profondità"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <label className="block cursor-pointer rounded-xl border border-dashed border-border bg-card p-4 text-center transition-colors hover:border-primary/40">
+            <input
+              type="file"
+              accept="application/json,.json"
+              className="sr-only"
+              onChange={(event) => event.target.files?.[0] && loadDepthFile(event.target.files[0])}
+            />
+            <Activity className="mx-auto mb-1.5 h-5 w-5 text-muted-foreground" />
+            <span className="text-sm text-foreground">Importa JSON LiDAR/ToF</span>
+            <span className="mt-1 block text-[11px] text-muted-foreground">Coordinate 3D in metri con array joints3D</span>
+          </label>
+        )}
+      </Section>
+
       {/* Wearable */}
       <Section label="Sensori wearable" hint="opzionale" step={3}>
         <WearableConnector onWearableData={setWearableData} />
@@ -332,6 +391,7 @@ export default function Analyze() {
   );
 }
 
+/** @param {{label: string, hint?: string, step?: number, children?: import("react").ReactNode}} props */
 function Section({ label, hint, step, children }) {
   return (
     <div>

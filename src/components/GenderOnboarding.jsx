@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { useAuth } from "@/lib/AuthContext";
 import { Loader2, UserRound } from "lucide-react";
 
@@ -15,7 +15,7 @@ export default function GenderOnboarding() {
   const choose = async (g) => {
     setSaving(true);
     try {
-      await base44.auth.updateMe({ gender: g });
+      await appApi.auth.updateMe({ gender: g });
       setOpen(false);
     } catch (e) {
       /* ignore */

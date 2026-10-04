@@ -5,8 +5,8 @@
 
 // Costi annuali della piattaforma e degli store
 export const COSTS = {
-  base44_builder_annual: { label: "Base44 Builder (annuale)", value: 480, note: "Piano attuale — 250 crediti messaggio/mese" },
-  base44_pro_annual: { label: "Base44 Pro (annuale)", value: 960, note: "Piano superiore — 500 crediti messaggio/mese" },
+  base44_builder_annual: { label: "Base44 Builder (stima storica)", value: 480, note: "Costo legacy, non applicabile al backend Supabase" },
+  base44_pro_annual: { label: "Base44 Pro (stima storica)", value: 960, note: "Scenario legacy, non applicabile al backend Supabase" },
   google_play: { label: "Google Play Console", value: 25, note: "Account sviluppatore Android (una tantum, ammortizzato)" },
   apple_store: { label: "Apple Developer Program", value: 100, note: "Account sviluppatore iOS (rinnovo annuale)" },
 };

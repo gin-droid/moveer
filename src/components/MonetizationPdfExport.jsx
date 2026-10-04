@@ -53,8 +53,8 @@ export default function MonetizationPdfExport() {
       addText(`  ${c.note}`, 9, { color: [120, 120, 120] });
     });
     y += 4;
-    addText(`Totale minimo (Builder + Store): €${TOTAL_BUILDER}/anno`, 12, { style: "bold", color: [20, 184, 166] });
-    addText(`Totale massimo (Pro + Store): €${TOTAL_PRO}/anno`, 12, { style: "bold", color: [217, 119, 6] });
+    addText(`Scenario storico minimo (Builder + Store): €${TOTAL_BUILDER}/anno`, 12, { style: "bold", color: [20, 184, 166] });
+    addText(`Scenario storico massimo (Pro + Store): €${TOTAL_PRO}/anno`, 12, { style: "bold", color: [217, 119, 6] });
     y += 8;
     addDivider();
 
@@ -102,9 +102,8 @@ export default function MonetizationPdfExport() {
     y += 4;
     addText("• Il piano Freemium serve come funnel: attira utenti senza costi e li converte verso Pro/Coach.", 11);
     addText("• Il piano Pro è il punto di equilibrio: prezzo accessibile che copre i costi con pochi abbonati.", 11);
-    addText("• Il piano Coach è il margine: ogni abbonato Coach copre quasi interamente il costo annuale Builder.", 11);
-    addText("• Con soli 7 abbonati Pro (oppure 4 Coach) si coprono i costi del piano Builder + store.", 11);
-    addText("• Con 11 abbonati Pro (oppure 6 Coach) si passa al piano Pro di Base44 con margine.", 11);
+    addText("• Le soglie di pareggio sono stime storiche basate sui costi Base44 e degli store.", 11);
+    addText("• I costi Supabase, AI, email, dominio e commissioni Stripe non sono ancora stimati.", 11);
     addText("• I prezzi possono essere registrati su Google Play e App Store Connect come abbonamenti in-app.", 11);
     y += 8;
 

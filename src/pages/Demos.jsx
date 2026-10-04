@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { Search, Play, ExternalLink, Loader2, X } from "lucide-react";
 import { hasDemoVideo, youtubeSearchUrl } from "@/lib/videoEmbed";
 import DemoModal from "@/components/DemoModal";
@@ -14,7 +14,7 @@ export default function Demos() {
 
   const loadDemos = async () => {
     try {
-      setExercises(await base44.entities.Exercise.list("-created_date", 500));
+      setExercises(await appApi.entities.Exercise.list("-created_date", 500));
     } catch (e) {
       console.error(e);
     } finally {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { PLANS } from "@/lib/monetizationData";
 import { Check, X, CreditCard, Users, Video, Sparkles, Loader2, ShieldCheck } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -14,7 +14,7 @@ export default function Subscription() {
   useEffect(() => {
     (async () => {
       try {
-        const u = await base44.auth.me();
+        const u = await appApi.auth.me();
         setMe(u);
       } catch (e) {
         /* ignore */
@@ -33,7 +33,7 @@ export default function Subscription() {
         title: "Pagamento completato",
         description: "Il tuo piano Pro è attivo. Benvenuto!",
       });
-      base44.auth.me().then(setMe).catch(() => {});
+      appApi.auth.me().then(setMe).catch(() => {});
     } else if (status === "cancel") {
       toast({
         title: "Pagamento annullato",
@@ -59,7 +59,7 @@ export default function Subscription() {
       if (checkoutTab) checkoutTab.opener = null;
 
       try {
-        const res = await base44.functions.invoke("createCheckoutSession", {
+        const res = await appApi.functions.invoke("createCheckoutSession", {
           planId,
           userId: me?.id,
           userEmail: me?.email,
@@ -97,7 +97,7 @@ export default function Subscription() {
     try {
       // Free downgrades and admin changes use changePlan directly.
       // Paid upgrades (pro) go through Stripe Checkout via handleCheckout.
-      const res = await base44.functions.invoke("changePlan", { planId });
+      const res = await appApi.functions.invoke("changePlan", { planId });
       if (res.data?.error) throw new Error(res.data.error);
       const newPlan = res.data?.plan || planId;
       setMe({ ...me, plan: newPlan });

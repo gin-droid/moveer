@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { TrendingUp, ArrowUpRight, ArrowDownRight, Minus, GitCompare, AlertTriangle } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -19,7 +19,7 @@ export default function Compare() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await base44.entities.AnalysisReport.list("-created_date", 200);
+        const data = await appApi.entities.AnalysisReport.list("-created_date", 200);
         setReports(data);
       } catch (err) {
         console.error(err);
@@ -47,7 +47,7 @@ export default function Compare() {
   const exerciseReports = useMemo(() => {
     return reports
       .filter((r) => r.exercise_name === exerciseName)
-      .sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+      .sort((a, b) => new Date(a.created_date).getTime() - new Date(b.created_date).getTime());
   }, [reports, exerciseName]);
 
   // Default A = oldest, B = newest
@@ -190,7 +190,8 @@ function ReportPicker({ label, reports, value, onChange }) {
   );
 }
 
-function ReportColumn({ report, tag, highlight }) {
+/** @param {{report: any, tag: string, highlight?: boolean}} props */
+function ReportColumn({ report, tag, highlight = false }) {
   const issues = report.issues_detected || [];
   const sevCounts = { Lievo: 0, Moderato: 0, Grave: 0 };
   issues.forEach((i) => { if (sevCounts[i.severity] !== undefined) sevCounts[i.severity]++; });

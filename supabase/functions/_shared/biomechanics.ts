@@ -1,4 +1,4 @@
-// Motore biomeccanico deterministico per il calcolo dello stress articolare.
+// Motore condiviso per il calcolo biomeccanico deterministico dello stress articolare.
 // Confronta la postura osservata con l'ESECUZIONE OTTIMA specifica del pattern
 // di movimento (squat, hinge, push, pull, lunge, ecc.) — non con una generica
 // posizione neutra in piedi. Questo evita di penalizzare esecuzioni corrette

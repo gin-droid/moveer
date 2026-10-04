@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import {
   Loader2, Trash2, Pencil, UserCheck, Calendar, Sparkles, FileText,
 } from "lucide-react";
@@ -30,7 +30,7 @@ export default function AthleteDetail() {
 
   const loadAll = async () => {
     try {
-      const a = await base44.entities.Athlete.get(id);
+      const a = await appApi.entities.Athlete.get(id);
       setAthlete(a);
       setForm({
         name: a.name || "",
@@ -38,7 +38,7 @@ export default function AthleteDetail() {
         birth_date: a.birth_date || "",
         notes: a.notes || "",
       });
-      const reps = await base44.entities.AnalysisReport.filter({ athlete_id: id }, "-created_date", 200);
+      const reps = await appApi.entities.AnalysisReport.filter({ athlete_id: id }, "-created_date", 200);
       setReports(reps);
     } catch (err) {
       setError(err.message || "Atleta non trovato.");
@@ -60,7 +60,7 @@ export default function AthleteDetail() {
     setSaving(true);
     setError("");
     try {
-      const updated = await base44.entities.Athlete.update(id, {
+      const updated = await appApi.entities.Athlete.update(id, {
         name: form.name.trim(),
         gender: form.gender || null,
         birth_date: form.birth_date || null,
@@ -78,7 +78,7 @@ export default function AthleteDetail() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await base44.entities.Athlete.delete(id);
+      await appApi.entities.Athlete.delete(id);
       navigate("/atleti");
     } catch (err) {
       setInfoState({

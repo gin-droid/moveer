@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { useAuth } from "@/lib/AuthContext";
 import { PLANS } from "@/lib/monetizationData";
 import { Send, Sparkles, MessageCircle, Plus, Lock } from "lucide-react";
@@ -50,13 +50,13 @@ export default function Mentor() {
   useEffect(() => {
     (async () => {
       try {
-        const list = await base44.agents.listConversations({ agent_name: AGENT_NAME });
+        const list = await appApi.agents.listConversations({ agent_name: AGENT_NAME });
         setConversations(list || []);
         if (list && list.length > 0) {
-          const full = await base44.agents.getConversation(list[0].id);
+          const full = await appApi.agents.getConversation(list[0].id);
           await loadConversation(full);
         } else {
-          const conv = await base44.agents.createConversation({
+          const conv = await appApi.agents.createConversation({
             agent_name: AGENT_NAME,
             metadata: { name: "Mentore", description: "Guida agli esercizi" },
           });
@@ -72,7 +72,7 @@ export default function Mentor() {
 
   useEffect(() => {
     if (!conversation?.id) return;
-    const unsub = base44.agents.subscribeToConversation(conversation.id, (data) => {
+    const unsub = appApi.agents.subscribeToConversation(conversation.id, (data) => {
       setMessages(data.messages || []);
     });
     return () => unsub();
@@ -100,7 +100,7 @@ export default function Mentor() {
       // Server-side quota check + message submission in one atomic call.
       // The backend function verifies the quota AND adds the message, so the
       // client cannot bypass the quota by calling addMessage directly.
-      const res = await base44.functions.invoke("sendMentorMessage", {
+      const res = await appApi.functions.invoke("sendMentorMessage", {
         conversationId: conversation.id,
         text,
       });
@@ -120,7 +120,7 @@ export default function Mentor() {
   const newChat = async () => {
     setLoading(true);
     try {
-      const conv = await base44.agents.createConversation({
+      const conv = await appApi.agents.createConversation({
         agent_name: AGENT_NAME,
         metadata: { name: "Mentore", description: "Guida agli esercizi" },
       });

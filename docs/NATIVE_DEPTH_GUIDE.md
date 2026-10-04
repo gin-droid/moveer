@@ -2,6 +2,16 @@
 
 Questa guida descrive come estendere moVeerAI con un modulo nativo che sfrutta i sensori di profondità (LiDAR su iPhone/iPad Pro, ToF su alcuni Android) per una scansione 3D precisa del corpo durante l'analisi biomeccanica.
 
+## Stato implementazione
+
+- `depth3d.ts` normalizza i nomi delle giunzioni, scarta coordinate non finite e punti con confidenza esplicitamente bassa, calcola angoli bilaterali e seleziona frame rappresentativi. Gli angoli inclusi valgono 180° a arto esteso; la flessione anatomica vale 0° in estensione.
+- La schermata Analizza accetta un JSON `DepthData`; il backend integra misure e punti 3D nel prompt, proietta il frame più distante dal pattern ottimale nella mappa posturale e salva `depth_analysis` nel report.
+- I report con dati depth mostrano misure aggregate e uno scheletro 3D orbitabile. I punti visualizzati sono relativi al bacino e restano espressi in metri.
+- Il plugin iOS serializza i nomi JointName ARKit e campiona al massimo 5 frame al secondo. Non fornisce confidenza per singola giuntura.
+- Il plugin Android usa ARCore `LATEST_CAMERA_IMAGE` + ML Kit Pose Detection, campiona al massimo 5 frame/s e unprojecta i landmark sulla depth map usando gli intrinseci della camera.
+- Il plugin nativo non è ancora invocato direttamente dalla schermata Analizza e non produce URL RGB; la UI accetta JSON depth e video separati.
+- Il pacchetto Capacitor locale e il modulo Gradle Android sono configurati. La shell Android va generata/sincronizzata con i comandi descritti nel README e provata su hardware.
+
 ## Perché serve il nativo
 
 Il web (`getUserMedia`) fornisce solo il flusso RGB. I sensori di profondità non sono esposti dai browser. Per ottenere:
@@ -186,7 +196,8 @@ Il payload inviato a `analyzeExercise` viene esteso:
   "depthData": {
     "frames": [
       {
-        "timestamp": 0.0,
+      "sensorType": "lidar",
+      "coordinateSystem": "right_handed_y_up_meters"
         "joints3D": [
           { "id": "leftKnee", "x": 0.12, "y": -0.45, "z": 0.8, "confidence": 0.92 }
         ],
@@ -198,7 +209,7 @@ Il payload inviato a `analyzeExercise` viene esteso:
 }
 ```
 
-La funzione `analyzeExercise` (vedi `base44/functions/analyzeExercise/`) va estesa per:
+La funzione `analyzeExercise` (vedi `supabase/functions/analyzeExercise/`, con gli algoritmi condivisi in `supabase/functions/_shared/`) va estesa per:
 - accettare `depthData` opzionale
 - quando presente, calcolare **angoli articolari 3D reali** invece di stimarli dal 2D
 - arricchire `body_diagram` con coordinate 3D e stress basato su deviazione angolare reale
@@ -243,6 +254,13 @@ Implementazione web (fallback): restituisce `available: false`, così la pagina 
 
 ## Task per implementare
 
+## Lavori residui
+
+1. Generare e sincronizzare la shell Android Capacitor, quindi verificare permessi, camera ARCore e detector ML Kit su un telefono supportato.
+2. Aggiungere una preview nativa e sincronizzare i timestamp depth con il video RGB; al momento i due input sono separati.
+3. Validare scala, assi, rotazione dello schermo e proiezione su dispositivi reali. ARCore restituisce coordinate metriche y-up.
+4. Aggiungere marker anatomici ASIS/patella prima di stimare il Q-angle; oggi il modulo lo dichiara non calcolabile.
+
 1. **Creare il plugin Capacitor** con scaffold sopra (da sviluppare in Xcode/Android Studio)
 2. **iOS**: implementare `ARBodyTrackingConfiguration` + `sceneDepth` in `DepthScannerPlugin.swift`
 3. **Android**: implementare ARCore Depth API + ML Kit Pose in `DepthScannerPlugin.kt`
@@ -254,5 +272,6 @@ Implementazione web (fallback): restituisce `available: false`, così la pagina 
 - Body tracking ARKit richiede iOS 14+ e iPhone Xs o superiore; LiDAR richiede 12 Pro+
 - ARCore Depth API funziona solo su dispositivi con ToF o depth-from-motion (qualità variabile)
 - Nessun supporto su desktop/web — il fallback `CameraRecorder` resta per quei casi
+- La mappa di profondità non equivale a un modello di forze articolari: i punteggi restano indicatori di deviazione cinematica, non misure cliniche o di carico interno.
 
 Per procedere serve un ambiente di sviluppo nativo (Xcode per iOS, Android Studio per Android). Posso generare lo scaffold completo del plugin e le modifiche al backend `analyzeExercise` non appena confermi.

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { appApi } from "@/api/appApi";
 import { ImagePlus, Loader2, Trash2, ImageIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -21,8 +21,8 @@ export default function LogoUploader({ currentLogo, onSaved }) {
     }
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
-      await base44.auth.updateMe({ logo_url: file_url });
+      const { file_url } = await appApi.integrations.Core.UploadPublicFile({ file });
+      await appApi.auth.updateMe({ logo_url: file_url });
       onSaved?.(file_url);
       toast({ title: "Logo aggiornato", description: "Il tuo logo comparirà nei report e nei PDF." });
       if (inputRef.current) inputRef.current.value = "";
@@ -36,7 +36,7 @@ export default function LogoUploader({ currentLogo, onSaved }) {
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      await base44.auth.updateMe({ logo_url: "" });
+      await appApi.auth.updateMe({ logo_url: "" });
       onSaved?.("");
       toast({ title: "Logo rimosso" });
     } catch (err) {

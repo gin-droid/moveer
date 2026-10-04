@@ -1,5 +1,5 @@
 {
-  "name": "base44-app",
+  "name": "moveer-ai",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,13 +9,21 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "supabase:start": "npx supabase start",
+    "supabase:db:push": "npx supabase db push",
+    "supabase:functions:deploy": "npx supabase functions deploy",
+    "catalog:import-base44": "node scripts/import-base44-exercises.mjs",
+    "catalog:migrate-base44-media": "node scripts/migrate-base44-media.mjs",
+    "cap:add:android": "npx cap add android",
+    "cap:sync:android": "npx cap sync android"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.52",
-    "@base44/vite-plugin": "^1.0.44",
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^4.1.2",
+    "@moveerai/depth-scanner": "file:./native/depth-scanner-plugin",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-aspect-ratio": "^1.1.2",
@@ -45,6 +53,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@stripe/react-stripe-js": "^3.0.0",
     "@stripe/stripe-js": "^5.2.0",
+    "@supabase/supabase-js": "^2.57.0",
     "@tanstack/react-query": "^5.84.1",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
@@ -80,10 +89,12 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.1",
     "@eslint/js": "^9.19.0",
     "@types/node": "^22.13.5",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "@types/three": "^0.171.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "baseline-browser-mapping": "^2.8.32",
@@ -94,6 +105,7 @@
     "eslint-plugin-unused-imports": "^4.3.0",
     "globals": "^15.14.0",
     "postcss": "^8.5.3",
+    "supabase": "^2.117.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2",
     "vite": "^6.1.0"
