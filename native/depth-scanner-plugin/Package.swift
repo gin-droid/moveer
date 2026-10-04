@@ -2,10 +2,10 @@
 import PackageDescription
 
 let package = Package(
-  name: "DepthScannerPlugin",
+  name: "MoveeraiDepthScanner",
   platforms: [.iOS(.v15)],
   products: [
-    .library(name: "DepthScannerPlugin", targets: ["DepthScannerPlugin"])
+    .library(name: "MoveeraiDepthScanner", targets: ["DepthScannerPlugin"])
   ],
   dependencies: [
     .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.2")
@@ -16,8 +16,7 @@ let package = Package(
       dependencies: [
         .product(name: "Capacitor", package: "capacitor-swift-pm")
       ],
-      path: "ios",
-      exclude: ["DepthScannerPlugin.m"]
+      path: "ios"
     )
   ]
 )

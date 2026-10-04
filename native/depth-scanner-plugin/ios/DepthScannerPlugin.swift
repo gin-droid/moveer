@@ -136,7 +136,7 @@ public class DepthScannerPlugin: CAPPlugin, CAPBridgedPlugin, ARSessionDelegate 
     guard elapsed - lastSampleTime >= 0.2, frames.count < 180 else { return }
     lastSampleTime = elapsed
 
-    guard let body = frame.bodyAnchor as? ARBodyAnchor else { return }
+    guard let body = frame.anchors.compactMap({ $0 as? ARBodyAnchor }).first else { return }
     let joints = serializeJoints(body)
     let depthStats = depthRangeStats(frame.sceneDepth?.depthMap)
 
