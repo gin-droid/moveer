@@ -39,7 +39,8 @@ jobs:
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages")
           echo "GitHub Pages API HTTP ${status_code}"
           if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
-            jq -r '.message // "GitHub Pages configuration failed"' "$response_file"
+            error_message=$(jq -r '.message // "GitHub Pages configuration failed"' "$response_file" | tr '\r\n' ' ')
+            echo "::error title=GitHub Pages API HTTP ${status_code}::${error_message}"
             exit 1
           fi
 
