@@ -26,7 +26,7 @@ const secondaryItems = [
   { to: "/mentore", label: "Mentore", icon: Sparkles },
   { to: "/abbonamento", label: "Abbonamento", icon: CreditCard },
   { to: "/utenti", label: "Utenti", icon: UsersIcon },
-  { to: "/about", label: "Chi siamo", icon: Info },
+  { to: "/about", label: "Cos'è", icon: Info },
   { action: "feedback", label: "Inviaci una segnalazione", icon: MessageSquareWarning },
 ];
 

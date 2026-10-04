@@ -67,7 +67,7 @@ export default function Login() {
           </Link>
           <div className="mt-3 text-xs text-muted-foreground">
             <Link to="/gestione" className="mr-4 hover:text-primary">Link utili</Link>
-            <Link to="/about" className="hover:text-primary">Chi siamo</Link>
+            <Link to="/about" className="hover:text-primary">Cos'è</Link>
           </div>
         </>
       }

@@ -14,7 +14,7 @@ export default function PublicLayout() {
           </Link>
           <nav className="flex items-center gap-4 sm:gap-5 text-sm">
             <Link to="/gestione" className="text-muted-foreground hover:text-foreground transition-colors">Link utili</Link>
-            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">Chi siamo</Link>
+            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">Cos'è</Link>
             <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">Accedi</Link>
           </nav>
         </div>
@@ -31,7 +31,7 @@ export default function PublicLayout() {
           <span>© {new Date().getFullYear()} moVeerAI — Analisi postura e tecnica</span>
           <nav className="flex items-center gap-4">
             <Link to="/gestione" className="hover:text-foreground transition-colors">Link utili</Link>
-            <Link to="/about" className="hover:text-foreground transition-colors">Chi siamo</Link>
+            <Link to="/about" className="hover:text-foreground transition-colors">Cos'è</Link>
             <Link to="/login" className="hover:text-foreground transition-colors">Accedi</Link>
           </nav>
         </div>

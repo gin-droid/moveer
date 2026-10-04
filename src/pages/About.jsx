@@ -1,10 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Video, Activity, Dumbbell, Shield, Sparkles, Target, Users, ArrowLeft } from "lucide-react";
+import { Video, Activity, Dumbbell, Shield, Target, Users, ArrowLeft } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 
 export default function About() {
   useSEO({
-    title: "Chi siamo — moVeerAI | Analisi biomeccanica IA",
+    title: "Cos'è moVeerAI | Analisi biomeccanica IA",
     description:
       "moVeerAI è la piattaforma IA di analisi biomeccanica del movimento: rileva errori posturali, calcola lo stress articolare e restituisce correzioni mirate ed esercizi correttivi per atleti, trainer e appassionati di fitness.",
     path: "/about",
@@ -32,12 +32,11 @@ export default function About() {
         Indietro
       </button>
       <div>
-        <h1 className="font-display text-3xl sm:text-4xl font-semibold text-white tracking-tight">Chi siamo</h1>
+        <h1 className="font-display text-3xl sm:text-4xl font-semibold text-white tracking-tight">Cos'è</h1>
         <p className="mt-2 text-primary text-sm font-medium uppercase tracking-[0.15em]">moVeerAI</p>
       </div>
 
-      {/* Cos'è */}
-      <Section icon={Sparkles} title="Cos'è">
+      <div className="space-y-3 text-muted-foreground leading-relaxed text-[15px] pl-0.5">
         <p>
           <strong className="text-white">moVeerAI</strong> è una piattaforma di analisi del movimento guidata
           dall'intelligenza artificiale. Attraverso l'analisi biomeccanica del video, l'IA rileva gli errori
@@ -49,7 +48,7 @@ export default function About() {
           dispositivi compatibili — dati di profondità LiDAR/ToF e sensori wearable Bluetooth per una
           valutazione tridimensionale della postura.
         </p>
-      </Section>
+      </div>
 
       {/* Cosa fa */}
       <Section icon={Activity} title="Cosa fa">
