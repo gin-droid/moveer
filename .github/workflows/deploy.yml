@@ -21,25 +21,16 @@ jobs:
       - name: Checkout codice
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-
-      - name: Installa dipendenze
-        run: npm ci
-
-      - name: Build del progetto Vite
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_API_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_PUBLIC_KEY }}
-          VITE_SITE_URL: https://app.moveer.eu
+      - name: Verifica build PWA generata localmente
         run: |
-          test -n "$VITE_SUPABASE_URL" || { echo "::error::Set VITE_API_URL in repository Actions secrets."; exit 1; }
-          test -n "$VITE_SUPABASE_ANON_KEY" || { echo "::error::Set VITE_PUBLIC_KEY in repository Actions secrets."; exit 1; }
-          npm run build
-          cp dist/index.html dist/404.html
+          test -s dist/index.html
+          test -s dist/manifest.json
+          test -s dist/sw.js
+          test -s dist/moveerai-icon-192.png
+          test -s dist/moveerai-icon-512.png
+
+      - name: Fallback per le route SPA
+        run: cp dist/index.html dist/404.html
 
       - name: Carica artifact Pages
         uses: actions/upload-pages-artifact@v3
