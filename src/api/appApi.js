@@ -1,5 +1,14 @@
 import { requireSupabase, supabase } from '@/api/supabaseClient';
 
+const authRedirectUrl = (path) => {
+  const hostname = window.location.hostname;
+  const isMoveerDomain = hostname === 'moveer.eu' || hostname.endsWith('.moveer.eu');
+  const origin = !import.meta.env.DEV && isMoveerDomain
+    ? 'https://app.moveer.eu'
+    : window.location.origin;
+  return `${origin}${path}`;
+};
+
 const entityTables = {
   AnalysisReport: 'analysis_reports',
   Athlete: 'athletes',
@@ -159,13 +168,13 @@ const auth = {
   async loginWithProvider(provider, returnTo = '/') {
     const { error } = await requireSupabase().auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}${returnTo}` },
+      options: { redirectTo: authRedirectUrl(returnTo) },
     });
     if (error) throw error;
   },
   async resetPasswordRequest(email) {
     const { error } = await requireSupabase().auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: authRedirectUrl('/reset-password'),
     });
     if (error) throw error;
   },
