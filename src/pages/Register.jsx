@@ -89,26 +89,26 @@ export default function Register() {
         )}
         <div className="flex justify-center mb-6">
           <InputOTP
-            maxLength={6}
+            maxLength={8}
             value={otpCode}
             onChange={setOtpCode}
             autoFocus
             autoComplete="one-time-code"
           >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
+            <InputOTPGroup className="gap-1 sm:gap-2">
+              <InputOTPSlot index={0} className="w-7 sm:w-9" />
+              <InputOTPSlot index={1} className="w-7 sm:w-9" />
+              <InputOTPSlot index={2} className="w-7 sm:w-9" />
+              <InputOTPSlot index={3} className="w-7 sm:w-9" />
+              <InputOTPSlot index={4} className="w-7 sm:w-9" />
+              <InputOTPSlot index={5} className="w-7 sm:w-9" />               <InputOTPSlot index={6} className="w-7 sm:w-9" />               <InputOTPSlot index={7} className="w-7 sm:w-9" />
             </InputOTPGroup>
           </InputOTP>
         </div>
         <Button
           className="w-full h-12 font-medium"
           onClick={handleVerify}
-          disabled={loading || otpCode.length < 6}
+          disabled={loading || otpCode.length !== 8}
         >
           {loading ? (
             <>
