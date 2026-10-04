@@ -4,7 +4,7 @@ const authRedirectUrl = (path) => {
   const hostname = window.location.hostname;
   const isMoveerDomain = hostname === 'moveer.eu' || hostname.endsWith('.moveer.eu');
   const origin = !import.meta.env.DEV && isMoveerDomain
-    ? 'https://app.moveer.eu'
+    ? 'https://www.moveer.eu'
     : window.location.origin;
   return `${origin}${path}`;
 };
