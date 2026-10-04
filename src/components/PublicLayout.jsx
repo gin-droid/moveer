@@ -13,6 +13,7 @@ export default function PublicLayout() {
             <span className="font-display font-semibold text-white">moVeerAI</span>
           </Link>
           <nav className="flex items-center gap-4 sm:gap-5 text-sm">
+            <Link to="/gestione" className="text-muted-foreground hover:text-foreground transition-colors">Link utili</Link>
             <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">Chi siamo</Link>
             <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">Accedi</Link>
           </nav>
@@ -29,6 +30,7 @@ export default function PublicLayout() {
         <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <span>© {new Date().getFullYear()} moVeerAI — Analisi postura e tecnica</span>
           <nav className="flex items-center gap-4">
+            <Link to="/gestione" className="hover:text-foreground transition-colors">Link utili</Link>
             <Link to="/about" className="hover:text-foreground transition-colors">Chi siamo</Link>
             <Link to="/login" className="hover:text-foreground transition-colors">Accedi</Link>
           </nav>

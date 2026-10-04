@@ -1,0 +1,31 @@
+moVeerAI - LINK DI GESTIONE
+===========================
+
+APP PUBBLICA
+App: https://app.moveer.eu/
+Login: https://app.moveer.eu/login
+Centro di gestione: https://app.moveer.eu/gestione
+
+GITHUB
+Repository: https://github.com/gin-droid/moveer
+Deploy Pages e workflow: https://github.com/gin-droid/moveer/actions/workflows/deploy.yml
+Impostazioni GitHub Pages: https://github.com/gin-droid/moveer/settings/pages
+Secrets Actions: https://github.com/gin-droid/moveer/settings/secrets/actions
+
+SUPABASE
+Dashboard progetti: https://supabase.com/dashboard/projects
+Dopo aver scelto il progetto: Authentication > Sign In / Providers > Google
+URL Configuration > Redirect URLs: https://app.moveer.eu/**
+
+GOOGLE CLOUD
+Credenziali OAuth: https://console.cloud.google.com/apis/credentials
+Branding OAuth: https://console.cloud.google.com/auth/branding
+Pubblico e test user: https://console.cloud.google.com/auth/audience
+Client OAuth: https://console.cloud.google.com/auth/clients
+
+SVILUPPO LOCALE - SOLO SU QUESTO MAC
+Login Vite: http://127.0.0.1:5174/login
+Anteprima PWA: http://127.0.0.1:4173/login
+
+Questi sono solo collegamenti. Per aprire le pagine di gestione serve aver fatto
+accesso all'account GitHub, Supabase o Google Cloud corrispondente.

@@ -23,6 +23,7 @@ const Mentor = lazy(() => import('@/pages/Mentor'));
 const Monetization = lazy(() => import('@/pages/Monetization'));
 const Subscription = lazy(() => import('@/pages/Subscription'));
 const About = lazy(() => import('@/pages/About'));
+const ManagementLinks = lazy(() => import('@/pages/ManagementLinks'));
 import PublicLayout from '@/components/PublicLayout';
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));
@@ -90,6 +91,7 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<PublicLayout />}>
         <Route path="/about" element={<About />} />
+        <Route path="/gestione" element={<ManagementLinks />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>
