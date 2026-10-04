@@ -16,6 +16,7 @@ node_modules
 dist
 dist-ssr
 native/depth-scanner-plugin/.build/
+native/depth-scanner-plugin/.swiftpm/
 *.local
 /supabase/.temp/
 

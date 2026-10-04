@@ -5,9 +5,9 @@ import Capacitor
 /**
  * DepthScannerPlugin (iOS)
  *
- * Usa ARKit per:
- *  - ARBodyTrackingConfiguration → scheletro 3D del corpo (91 giunzioni)
- *  - sceneDepth (LiDAR, iPhone/iPad Pro) → mappa di profondità reale
+ * Usa ARKit Body Tracking per ottenere lo scheletro 3D del corpo.
+ * ARBodyTrackingConfiguration non supporta il flag sceneDepth: aggiungerlo
+ * causa un'eccezione nativa all'avvio della sessione.
  *
  * Registra frame sincronizzati (RGB JPEG + joints 3D + depth stats) e
  * li restituisce al JS tramite stopRecording().
@@ -74,18 +74,13 @@ public class DepthScannerPlugin: CAPPlugin, CAPBridgedPlugin, ARSessionDelegate 
   }
 
   @objc public func startRecording(_ call: CAPPluginCall) {
-    guard ARBodyTrackingConfiguration.isSupported,
-      ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) else {
-      call.reject("Serve un dispositivo Apple con body tracking e LiDAR supportato.")
+    guard ARBodyTrackingConfiguration.isSupported else {
+      call.reject("Body tracking non supportato su questo dispositivo.")
       return
     }
     maxDuration = call.getDouble("maxDurationSec") ?? 30.0
 
     let config = ARBodyTrackingConfiguration()
-    config.frameSemantics = [.bodyDetection]
-    if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
-      config.frameSemantics.insert(.sceneDepth)
-    }
 
     frames = []
     frameUrls = []
@@ -138,7 +133,7 @@ public class DepthScannerPlugin: CAPPlugin, CAPBridgedPlugin, ARSessionDelegate 
 
     guard let body = frame.anchors.compactMap({ $0 as? ARBodyAnchor }).first else { return }
     let joints = serializeJoints(body)
-    let depthStats = depthRangeStats(frame.sceneDepth?.depthMap)
+    let depthStats: [String: Any] = [:]
 
     let entry: [String: Any] = [
       "timestamp": elapsed,

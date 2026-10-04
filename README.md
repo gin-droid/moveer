@@ -41,7 +41,7 @@ Per SMTP Auth con Brevo usa `smtp-relay.brevo.com`, porta `587`, lo SMTP login m
 
 Le shell native `android/` e `ios/` sono incluse. Dopo le modifiche web o al plugin, esegui `npm run cap:sync:android` oppure `npm run cap:sync:ios`; apri i progetti con `npx cap open android` e `npx cap open ios`. Android richiede Android Studio, JDK e Android SDK; iOS richiede Xcode completo.
 
-La schermata Analizza chiama `DepthScanner.isAvailable()`, `startRecording()` e `stopRecording()`. Android usa ARCore Depth API e ML Kit; iOS usa ARKit Body Tracking e `sceneDepth` sui dispositivi LiDAR compatibili. I frame restituiti contengono giunzioni 3D in metri e statistiche depth, campionate fino a 5 Hz. Il plugin non restituisce frame RGB: carica anche un video o un'immagine per l'analisi visiva. La PWA/browser non espone i sensori LiDAR/ToF e mostra il fallback non disponibile.
+Durante la registrazione video nell'app nativa, `CameraRecorder` verifica la disponibilità del sensore e avvia/ferma automaticamente `DepthScanner`. Android usa ARCore Depth API e ML Kit; iOS usa ARKit Body Tracking per le giunzioni 3D. `ARBodyTrackingConfiguration` non supporta `sceneDepth`, quindi su iOS la mappa LiDAR per-pixel non è acquisita. Il video RGB resta obbligatorio per il report; le giunzioni 3D lo integrano. La PWA/browser non espone i sensori LiDAR/ToF.
 
 Le verifiche locali coprono build web e sync Capacitor, non la compilazione Xcode/Gradle né l'acquisizione su hardware. Testa su iPhone/iPad con LiDAR o dispositivo Android compatibile con ARCore Depth; emulatore e browser non forniscono misure 3D reali.
 

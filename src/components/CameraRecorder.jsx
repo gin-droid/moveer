@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Video, VideoOff, RotateCcw, Loader2, Camera, Square, Info, Download, Check, RefreshCw } from "lucide-react";
+import DepthScanner from "@moveerai/depth-scanner";
 
 /**
  * CameraRecorder
@@ -19,6 +20,9 @@ export default function CameraRecorder({ onRecorded, onClose }) {
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
+  const depthStartPromiseRef = useRef(Promise.resolve(false));
+  const depthRecordingRef = useRef(false);
+  const discardOnStopRef = useRef(false);
 
   const [facing, setFacing] = useState("environment");
   const [ready, setReady] = useState(false);
@@ -28,6 +32,9 @@ export default function CameraRecorder({ onRecorded, onClose }) {
   const [starting, setStarting] = useState(true);
   const [hasMultipleCams, setHasMultipleCams] = useState(false);
   const [recorded, setRecorded] = useState(null); // { file, url }
+  const [depthAvailable, setDepthAvailable] = useState(false);
+  const [depthRecording, setDepthRecording] = useState(false);
+  const [depthStatus, setDepthStatus] = useState("");
 
   const stopStream = () => {
     if (streamRef.current) {
@@ -80,9 +87,15 @@ export default function CameraRecorder({ onRecorded, onClose }) {
   };
 
   useEffect(() => {
+    let active = true;
+    DepthScanner.isAvailable()
+      .then((result) => { if (active) setDepthAvailable(Boolean(result.available)); })
+      .catch(() => { if (active) setDepthAvailable(false); });
     startCamera(facing);
     return () => {
+      active = false;
       stopStream();
+      if (depthRecordingRef.current) DepthScanner.cancelRecording().catch(() => {});
       if (timerRef.current) clearInterval(timerRef.current);
       if (recorded) URL.revokeObjectURL(recorded.url);
     };
@@ -98,6 +111,8 @@ export default function CameraRecorder({ onRecorded, onClose }) {
 
   const startRecording = () => {
     if (!streamRef.current) return;
+    discardOnStopRef.current = false;
+    setDepthStatus("");
     chunksRef.current = [];
     const mime = pickMime();
     let rec;
@@ -114,12 +129,28 @@ export default function CameraRecorder({ onRecorded, onClose }) {
     rec.ondataavailable = (e) => {
       if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
     };
-    rec.onstop = () => {
+    rec.onstop = async () => {
+      let nativeDepthData = null;
+      const depthStarted = await depthStartPromiseRef.current.catch(() => false);
+      if (depthStarted && !discardOnStopRef.current) {
+        try {
+          const result = await DepthScanner.stopRecording();
+          nativeDepthData = result?.depthData || null;
+          setDepthStatus(nativeDepthData?.frames?.length ? "Dati LiDAR/ToF acquisiti." : "Nessun frame depth valido; resta disponibile il video.");
+        } catch {
+          setDepthStatus("Scansione LiDAR/ToF non riuscita; resta disponibile il video.");
+        } finally {
+          depthRecordingRef.current = false;
+          setDepthRecording(false);
+        }
+      }
+      depthStartPromiseRef.current = Promise.resolve(false);
+      if (discardOnStopRef.current) return;
       const blob = new Blob(chunksRef.current, { type: mime || "video/webm" });
       const ext = (mime || "video/webm").includes("mp4") ? "mp4" : "webm";
       const file = new File([blob], `moVeerAI-${Date.now()}.${ext}`, { type: blob.type });
       const url = URL.createObjectURL(file);
-      setRecorded({ file, url });
+      setRecorded({ file, url, depthData: nativeDepthData });
     };
     rec.start();
     recorderRef.current = rec;
@@ -131,6 +162,26 @@ export default function CameraRecorder({ onRecorded, onClose }) {
         return s + 1;
       });
     }, 1000);
+
+    depthStartPromiseRef.current = DepthScanner.isAvailable()
+      .then(async (availability) => {
+        const available = Boolean(availability.available);
+        setDepthAvailable(available);
+        if (!available) return false;
+        try {
+          await DepthScanner.startRecording({ maxDurationSec: 30, facing });
+          depthRecordingRef.current = true;
+          setDepthRecording(true);
+          return true;
+        } catch {
+          setDepthStatus("Video in registrazione; scansione LiDAR/ToF non disponibile.");
+          return false;
+        }
+      })
+      .catch(() => {
+        setDepthAvailable(false);
+        return false;
+      });
   };
 
   const stopRecording = () => {
@@ -156,9 +207,25 @@ export default function CameraRecorder({ onRecorded, onClose }) {
   const useForAnalysis = () => {
     if (!recorded) return;
     const file = recorded.file;
+    const depthData = recorded.depthData;
     URL.revokeObjectURL(recorded.url);
     setRecorded(null);
-    onRecorded?.(file);
+    onRecorded?.(file, depthData);
+  };
+
+  const closeRecorder = async () => {
+    discardOnStopRef.current = true;
+    stopRecording();
+    try {
+      const depthStarted = await depthStartPromiseRef.current.catch(() => false);
+      if (depthStarted) await DepthScanner.cancelRecording();
+    } catch {
+      /* ignore cancellation errors */
+    }
+    depthRecordingRef.current = false;
+    stopStream();
+    if (recorded) URL.revokeObjectURL(recorded.url);
+    onClose?.();
   };
 
   const recordAgain = () => {
@@ -178,7 +245,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
           <span className="font-display font-semibold text-sm">Registrazione</span>
         </div>
         <button
-          onClick={() => { stopRecording(); stopStream(); onClose?.(); }}
+          onClick={closeRecorder}
           className="w-9 h-9 rounded-full bg-zinc-800 text-zinc-200 flex items-center justify-center hover:bg-zinc-700 transition-colors"
           aria-label="Chiudi"
         >
@@ -201,6 +268,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
           <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
             <span className="text-white text-sm font-mono">{fmt(seconds)}</span>
+            {depthRecording && <span className="border-l border-white/25 pl-2 text-[11px] text-emerald-200">LiDAR/ToF</span>}
           </div>
         )}
 
@@ -263,6 +331,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
               >
                 <RefreshCw className="w-4 h-4" /> Registra di nuovo
               </button>
+              {depthStatus && <p className="text-center text-xs text-zinc-400">{depthStatus}</p>}
             </div>
           </div>
         )}
@@ -277,10 +346,12 @@ export default function CameraRecorder({ onRecorded, onClose }) {
         <div className="flex items-start gap-2 mb-4 text-zinc-400 text-xs leading-relaxed">
           <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400/70" />
           <span>
-            Usiamo la fotocamera posteriore ad alta risoluzione. Su iPhone Pro il LiDAR assiste
-            l'autofocus per una messa a fuoco più precisa del corpo.
+            La registrazione video RGB resta il flusso principale. Nell'app nativa, LiDAR/ToF viene acquisito automaticamente se disponibile.
           </span>
         </div>
+        {depthAvailable && !recording && (
+          <p className="mb-3 text-center text-[11px] text-emerald-200">Sensore LiDAR/ToF rilevato: acquisizione automatica durante il video.</p>
+        )}
 
         <div className="flex items-center justify-center gap-6">
           {recording ? (

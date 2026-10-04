@@ -1,15 +1,15 @@
 # Percorso nativo: scansione profondità LiDAR/ToF
 
-Questa guida descrive come estendere moVeerAI con un modulo nativo che sfrutta i sensori di profondità (LiDAR su iPhone/iPad Pro, ToF su alcuni Android) per una scansione 3D precisa del corpo durante l'analisi biomeccanica.
+Questa guida descrive il modulo nativo che integra LiDAR su iPhone/iPad Pro e depth ARCore su Android nell'analisi biomeccanica basata sul video RGB.
 
 ## Stato implementazione
 
 - `depth3d.ts` normalizza i nomi delle giunzioni, scarta coordinate non finite e punti con confidenza esplicitamente bassa, calcola angoli bilaterali e seleziona frame rappresentativi. Gli angoli inclusi valgono 180° a arto esteso; la flessione anatomica vale 0° in estensione.
-- La schermata Analizza interroga il plugin Capacitor e consente di avviare/terminare una scansione LiDAR/ToF nativa; il backend integra misure e punti 3D nel prompt, proietta il frame più distante dal pattern ottimale nella mappa posturale e salva `depth_analysis` nel report.
+- Durante la registrazione video, `CameraRecorder` avvia e ferma automaticamente il plugin Capacitor se il sensore è disponibile; il backend integra misure e punti 3D nel prompt e salva `depth_analysis` nel report.
 - I report con dati depth mostrano misure aggregate e uno scheletro 3D orbitabile. I punti visualizzati sono relativi al bacino e restano espressi in metri.
-- Il plugin iOS serializza i nomi JointName ARKit e campiona al massimo 5 frame al secondo. Non fornisce confidenza per singola giuntura.
+- Il plugin iOS usa ARKit Body Tracking, serializza i nomi JointName e campiona al massimo 5 frame al secondo. Non fornisce confidenza per singola giuntura. `ARBodyTrackingConfiguration` non supporta `sceneDepth`, quindi su iOS non acquisisce la mappa LiDAR per-pixel.
 - Il plugin Android usa ARCore `LATEST_CAMERA_IMAGE` + ML Kit Pose Detection, campiona al massimo 5 frame/s e unprojecta i landmark sulla depth map usando gli intrinseci della camera.
-- Il plugin nativo viene invocato dalla schermata Analizza, ma restituisce solo depth e pose, non frame RGB. L'utente deve quindi fornire anche un video o un'immagine per l'analisi visiva. Nel browser/PWA il plugin dichiara il sensore non disponibile: i browser non espongono LiDAR/ToF.
+- Il video RGB resta obbligatorio per il report; la scansione depth è un'integrazione e non restituisce frame RGB. Nel browser/PWA i sensori LiDAR/ToF non sono esposti.
 - Il pacchetto Capacitor locale e il modulo Gradle Android sono configurati. La shell Android va generata/sincronizzata con i comandi descritti nel README e provata su hardware.
 
 ## Perché serve il nativo
@@ -21,11 +21,11 @@ Il web (`getUserMedia`) fornisce solo il flusso RGB. I sensori di profondità no
 
 è necessario un modulo nativo che invii i dati al backend di analisi esistente.
 
-## Architettura proposta
+## Flusso attuale
 
 ```
 ┌─────────────────────────┐     ┌──────────────────────┐
-│  App web (Base44/PWA)   │     │  Modulo nativo       │
+│  App moVeerAI           │     │  Modulo nativo       │
 │  - Catalogo esercizi    │     │  (Capacitor plugin)  │
 │  - Report, comparazioni │     │  - ARKit body/depth   │
 │  - UI analisi           │◄────┤  - ARCore depth       │
@@ -40,24 +40,11 @@ Il web (`getUserMedia`) fornisce solo il flusso RGB. I sensori di profondità no
                                 └──────────────────────┘
 ```
 
-Il modulo nativo è un **plugin Capacitor** (l'app Base44 è già una PWA installabile come app nativa). Il plugin espone un'API JS che la pagina Analizza chiama al posto di `CameraRecorder` quando è disponibile.
+Il modulo nativo è un **plugin Capacitor**. `CameraRecorder` lo avvia e lo ferma insieme al video; il video RGB resta l'input principale e i dati depth vengono aggiunti al payload di `analyzeExercise`.
 
 ## Rilevamento capability
 
-Nella pagina Analizza, si tenta prima il plugin nativo, poi si ricade sul `CameraRecorder` web:
-
-```js
-import { Capacitor } from "@capacitor/core";
-
-const hasNativeDepth = Capacitor.isNativePlatform() &&
-  (await DepthScanner.isAvailable()).available;
-
-if (hasNativeDepth) {
-  // usa scansione nativa con profondità
-} else {
-  // fallback: CameraRecorder web (RGB ad alta risoluzione)
-}
-```
+`CameraRecorder` controlla `DepthScanner.isAvailable()` e, se il sensore è disponibile, avvia e ferma la scansione depth durante la stessa registrazione del video. Nel browser il plugin restituisce `available: false`: la registrazione video RGB resta utilizzabile senza dati depth.
 
 ---
 
@@ -181,9 +168,10 @@ Nota: ARCore non ha un equivalente diretto di `ARBodyTrackingConfiguration`. Si 
 ## Flusso dati verso il backend
 
 Il plugin nativo produce, per ogni frame:
-1. **RGB JPEG** (caricato via `UploadFile`)
-2. **Joints 3D** (array `{ id, x, y, z, confidence }`)
-3. **Depth stats** (range min/max/medio, densità punti)
+1. **Joints 3D** (array `{ id, x, y, z, confidence }`)
+2. **Depth stats** (range min/max/mediana in millimetri)
+
+Il video RGB è registrato da `CameraRecorder` separatamente; i suoi frame vengono caricati e passati come `frameUrls`. La scansione LiDAR/ToF è un'integrazione facoltativa del video, non un sostituto.
 
 Il payload inviato a `analyzeExercise` viene esteso:
 
@@ -194,10 +182,11 @@ Il payload inviato a `analyzeExercise` viene esteso:
   "subcategory": "Lower body",
   "frameUrls": ["https://..."],
   "depthData": {
+    "sensorType": "lidar",
+    "coordinateSystem": "right_handed_y_up_meters",
     "frames": [
       {
-      "sensorType": "lidar",
-      "coordinateSystem": "right_handed_y_up_meters"
+        "timestamp": 1.2,
         "joints3D": [
           { "id": "leftKnee", "x": 0.12, "y": -0.45, "z": 0.8, "confidence": 0.92 }
         ],
@@ -209,64 +198,38 @@ Il payload inviato a `analyzeExercise` viene esteso:
 }
 ```
 
-La funzione `analyzeExercise` (vedi `supabase/functions/analyzeExercise/`, con gli algoritmi condivisi in `supabase/functions/_shared/`) va estesa per:
-- accettare `depthData` opzionale
-- quando presente, calcolare **angoli articolari 3D reali** invece di stimarli dal 2D
-- arricchire `body_diagram` con coordinate 3D e stress basato su deviazione angolare reale
-- aumentare il punteggio di confidenza del report
+La funzione `analyzeExercise` accetta già `depthData` opzionale, calcola angoli 3D, arricchisce il diagramma e salva `depth_analysis`/`depth_metadata` nel report. Se `depthData` manca, analizza i frame RGB normalmente.
 
 ---
 
-## Scaffold plugin Capacitor
+## Plugin Capacitor presente
 
-Struttura del plugin `@moVeerAI/depth-scanner`:
+Struttura attuale del plugin `@moveerai/depth-scanner`:
 
 ```
 depth-scanner-plugin/
+├── Package.swift
 ├── package.json
 ├── src/
-│   ├── definitions.ts        # interfacce TS
-│   └── index.ts              # implementazione web (fallback no-op)
+│   ├── definitions.ts
+│   └── index.ts
 ├── ios/
-│   ├── Plugin/
-│   │   ├── DepthScannerPlugin.swift
-│   │   └── DepthScannerPlugin.m
-│   └── Plugin.xcodeproj
+│   └── DepthScannerPlugin.swift
 └── android/
-    ├── src/main/java/.../DepthScannerPlugin.kt
+    └── DepthScannerPlugin.kt
     └── build.gradle
 ```
 
-`definitions.ts`:
-
-```typescript
-export interface DepthScannerPlugin {
-  isAvailable(): Promise<{ available: boolean; sensorType: "lidar" | "tof" | "none" }>;
-  startRecording(options: { maxDurationSec?: number }): Promise<void>;
-  stopRecording(): Promise<{ frameUrls: string[]; depthData: DepthData }>;
-  cancelRecording(): Promise<void>;
-}
-```
-
-Implementazione web (fallback): restituisce `available: false`, così la pagina Analizza ricade su `CameraRecorder`.
+L'implementazione web restituisce `available: false`. In Capacitor, `CameraRecorder` avvia il plugin insieme al video e allega `depthData` alla registrazione quando il plugin restituisce frame validi.
 
 ---
 
-## Task per implementare
-
 ## Lavori residui
 
-1. Generare e sincronizzare la shell Android Capacitor, quindi verificare permessi, camera ARCore e detector ML Kit su un telefono supportato.
-2. Aggiungere una preview nativa e sincronizzare i timestamp depth con il video RGB; al momento i due input sono separati.
-3. Validare scala, assi, rotazione dello schermo e proiezione su dispositivi reali. ARCore restituisce coordinate metriche y-up.
-4. Aggiungere marker anatomici ASIS/patella prima di stimare il Q-angle; oggi il modulo lo dichiara non calcolabile.
-
-1. **Creare il plugin Capacitor** con scaffold sopra (da sviluppare in Xcode/Android Studio)
-2. **iOS**: implementare `ARBodyTrackingConfiguration` + `sceneDepth` in `DepthScannerPlugin.swift`
-3. **Android**: implementare ARCore Depth API + ML Kit Pose in `DepthScannerPlugin.kt`
-4. **Estendere `analyzeExercise`** per consumare `depthData` (angoli 3D, stress reale)
-5. **Pagina Analizza**: rilevare `isAvailable()` e usare il plugin nativo quando presente
-6. **Estendere `AnalysisReport`** con campo opzionale `depth_metadata` (sensorType, jointCount, accuracy)
+1. Provare l'acquisizione su un iPhone 12 Pro con LiDAR e su un Android compatibile con ARCore Depth.
+2. Integrare `sceneDepth` iOS con un percorso ARWorldTracking/Vision compatibile con il video, evitando semantiche non supportate da `ARBodyTrackingConfiguration`.
+3. Validare scala, assi e proiezione del diagramma sui dispositivi reali.
+4. Aggiungere marker anatomici ASIS/patella prima di stimare il Q-angle.
 
 ### Limiti noti
 - Body tracking ARKit richiede iOS 14+ e iPhone Xs o superiore; LiDAR richiede 12 Pro+
@@ -274,4 +237,4 @@ Implementazione web (fallback): restituisce `available: false`, così la pagina 
 - Nessun supporto su desktop/web — il fallback `CameraRecorder` resta per quei casi
 - La mappa di profondità non equivale a un modello di forze articolari: i punteggi restano indicatori di deviazione cinematica, non misure cliniche o di carico interno.
 
-Per procedere serve un ambiente di sviluppo nativo (Xcode per iOS, Android Studio per Android). Posso generare lo scaffold completo del plugin e le modifiche al backend `analyzeExercise` non appena confermi.
+La compilazione iOS per simulatore è stata verificata. Per produrre un APK servono Android SDK e Android Studio; per distribuire su iPhone serve il profilo di firma Apple associato al Team Xcode.
