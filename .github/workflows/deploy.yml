@@ -26,12 +26,22 @@ jobs:
 
       - name: Associa il sottodominio app.moveer.eu
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh api --method PUT "repos/${GITHUB_REPOSITORY}/pages" \
-            -f cname=app.moveer.eu \
-            -f build_type=workflow \
-            -F https_enforced=true
+          response_file="${RUNNER_TEMP}/pages-response.json"
+          status_code=$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' \
+            --request PUT \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --header "Content-Type: application/json" \
+            --data '{"cname":"app.moveer.eu","build_type":"workflow","https_enforced":true}' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages")
+          echo "GitHub Pages API HTTP ${status_code}"
+          if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+            jq -r '.message // "GitHub Pages configuration failed"' "$response_file"
+            exit 1
+          fi
 
       - name: Verifica build PWA generata localmente
         run: |
