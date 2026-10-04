@@ -16,11 +16,14 @@
     "catalog:import-base44": "node scripts/import-base44-exercises.mjs",
     "catalog:migrate-base44-media": "node scripts/migrate-base44-media.mjs",
     "cap:add:android": "npx cap add android",
-    "cap:sync:android": "npx cap sync android"
+    "cap:sync:android": "npx cap sync android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync:ios": "npx cap sync ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^4.1.2",
     "@moveerai/depth-scanner": "file:./native/depth-scanner-plugin",

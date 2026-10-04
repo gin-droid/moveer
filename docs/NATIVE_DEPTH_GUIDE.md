@@ -5,11 +5,11 @@ Questa guida descrive come estendere moVeerAI con un modulo nativo che sfrutta i
 ## Stato implementazione
 
 - `depth3d.ts` normalizza i nomi delle giunzioni, scarta coordinate non finite e punti con confidenza esplicitamente bassa, calcola angoli bilaterali e seleziona frame rappresentativi. Gli angoli inclusi valgono 180° a arto esteso; la flessione anatomica vale 0° in estensione.
-- La schermata Analizza accetta un JSON `DepthData`; il backend integra misure e punti 3D nel prompt, proietta il frame più distante dal pattern ottimale nella mappa posturale e salva `depth_analysis` nel report.
+- La schermata Analizza interroga il plugin Capacitor e consente di avviare/terminare una scansione LiDAR/ToF nativa; il backend integra misure e punti 3D nel prompt, proietta il frame più distante dal pattern ottimale nella mappa posturale e salva `depth_analysis` nel report.
 - I report con dati depth mostrano misure aggregate e uno scheletro 3D orbitabile. I punti visualizzati sono relativi al bacino e restano espressi in metri.
 - Il plugin iOS serializza i nomi JointName ARKit e campiona al massimo 5 frame al secondo. Non fornisce confidenza per singola giuntura.
 - Il plugin Android usa ARCore `LATEST_CAMERA_IMAGE` + ML Kit Pose Detection, campiona al massimo 5 frame/s e unprojecta i landmark sulla depth map usando gli intrinseci della camera.
-- Il plugin nativo non è ancora invocato direttamente dalla schermata Analizza e non produce URL RGB; la UI accetta JSON depth e video separati.
+- Il plugin nativo viene invocato dalla schermata Analizza, ma restituisce solo depth e pose, non frame RGB. L'utente deve quindi fornire anche un video o un'immagine per l'analisi visiva. Nel browser/PWA il plugin dichiara il sensore non disponibile: i browser non espongono LiDAR/ToF.
 - Il pacchetto Capacitor locale e il modulo Gradle Android sono configurati. La shell Android va generata/sincronizzata con i comandi descritti nel README e provata su hardware.
 
 ## Perché serve il nativo

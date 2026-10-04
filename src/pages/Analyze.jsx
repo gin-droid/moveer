@@ -8,6 +8,7 @@ import CameraRecorder from "@/components/CameraRecorder";
 import WearableConnector from "@/components/WearableConnector";
 import BottomSelectDrawer from "@/components/BottomSelectDrawer";
 import { analyzeDepthData } from "../../supabase/functions/_shared/depth3d";
+import DepthScanner from "@moveerai/depth-scanner";
 
 export default function Analyze() {
   const [params] = useSearchParams();
@@ -26,7 +27,21 @@ export default function Analyze() {
   const [athletes, setAthletes] = useState([]);
   const [selectedAthleteId, setSelectedAthleteId] = useState("");
   const [depthData, setDepthData] = useState(null);
-  const [depthFileName, setDepthFileName] = useState("");
+  const [depthAvailability, setDepthAvailability] = useState(null);
+  const [depthRecording, setDepthRecording] = useState(false);
+  const [depthStatus, setDepthStatus] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    DepthScanner.isAvailable()
+      .then((result) => {
+        if (active) setDepthAvailability(result);
+      })
+      .catch(() => {
+        if (active) setDepthAvailability({ available: false, sensorType: "none" });
+      });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -73,25 +88,51 @@ export default function Analyze() {
     setPreviewUrl("");
   };
 
-  const loadDepthFile = async (depthFile) => {
+  const startDepthScan = async () => {
     setError("");
     try {
-      const parsed = JSON.parse(await depthFile.text());
-      const data = parsed.depthData || parsed;
-      if (!["lidar", "tof"].includes(data.sensorType) || !Array.isArray(data.frames)) {
-        throw new Error("Il JSON deve contenere sensorType e frames.");
+      await DepthScanner.startRecording({ maxDurationSec: 30, facing: "back" });
+      setDepthRecording(true);
+      setDepthStatus("Scansione in corso: mantieni il corpo intero nell'inquadratura.");
+    } catch (err) {
+      setDepthRecording(false);
+      setDepthStatus("");
+      setError(err.message || "Impossibile avviare la scansione LiDAR/ToF.");
+    }
+  };
+
+  const stopDepthScan = async () => {
+    setDepthRecording(false);
+    setDepthStatus("Elaborazione della scansione…");
+    setError("");
+    try {
+      const result = await DepthScanner.stopRecording();
+      const data = result?.depthData;
+      if (!["lidar", "tof"].includes(data?.sensorType) || !Array.isArray(data.frames)) {
+        throw new Error("La scansione non ha restituito dati di profondità validi.");
       }
       const analysis = analyzeDepthData(data);
       if (!analysis.validFrameCount) {
-        throw new Error("Nessun frame contiene almeno tre giunzioni 3D affidabili.");
+        throw new Error("Non sono state rilevate giunzioni 3D affidabili. Riprova mantenendo il corpo intero nell'inquadratura.");
       }
       setDepthData({ ...data, coordinateSystem: data.coordinateSystem || "right_handed_y_up_meters" });
-      setDepthFileName(depthFile.name);
+      setDepthStatus(`${data.sensorType.toUpperCase()} · ${analysis.validFrameCount} frame validi`);
     } catch (err) {
       setDepthData(null);
-      setDepthFileName("");
-      setError(err.message || "File di profondità non valido.");
+      setDepthStatus("");
+      setError(err.message || "Scansione LiDAR/ToF non riuscita.");
     }
+  };
+
+  const cancelDepthScan = async () => {
+    try {
+      if (depthRecording) await DepthScanner.cancelRecording();
+    } catch {
+      /* ignore cancellation errors */
+    }
+    setDepthRecording(false);
+    setDepthData(null);
+    setDepthStatus("");
   };
 
   const analyze = async () => {
@@ -304,37 +345,62 @@ export default function Analyze() {
         )}
       </Section>
 
-      <Section label="Dati di profondità 3D" hint="opzionale">
+      <Section label="Scansione LiDAR / ToF" hint="opzionale">
         {depthData ? (
           <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
-            <Activity className="w-5 h-5 shrink-0 text-primary" />
+            <Activity className="h-5 w-5 shrink-0 text-primary" />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-medium text-foreground">{depthFileName}</div>
-              <div className="mt-0.5 text-[11px] text-muted-foreground">
-                {depthData.sensorType.toUpperCase()} · {analyzeDepthData(depthData).validFrameCount} frame validi
-              </div>
+              <div className="text-xs font-medium text-foreground">Scansione 3D acquisita</div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">{depthStatus}</div>
             </div>
             <button
               type="button"
-              onClick={() => { setDepthData(null); setDepthFileName(""); }}
+              onClick={cancelDepthScan}
               className="rounded-md p-2 text-muted-foreground hover:text-foreground"
-              aria-label="Rimuovi dati di profondità"
+              aria-label="Rimuovi scansione 3D"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
+        ) : depthRecording ? (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-center">
+            <div className="flex items-center justify-center gap-2 text-sm font-medium text-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" /> Scansione in corso
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">{depthStatus}</p>
+            <button
+              type="button"
+              onClick={stopDepthScan}
+              className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Activity className="h-4 w-4" /> Termina scansione
+            </button>
+          </div>
+        ) : depthAvailability === null ? (
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Verifica sensore di profondità…
+          </div>
+        ) : depthAvailability.available ? (
+          <div className="rounded-xl border border-border bg-card p-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              Sensore {depthAvailability.sensorType.toUpperCase()} disponibile. Inquadra il corpo intero, poi avvia la scansione.
+            </p>
+            <button
+              type="button"
+              onClick={startDepthScan}
+              className="mt-3 inline-flex items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+            >
+              <Camera className="h-4 w-4" /> Avvia scansione 3D
+            </button>
+          </div>
         ) : (
-          <label className="block cursor-pointer rounded-xl border border-dashed border-border bg-card p-4 text-center transition-colors hover:border-primary/40">
-            <input
-              type="file"
-              accept="application/json,.json"
-              className="sr-only"
-              onChange={(event) => event.target.files?.[0] && loadDepthFile(event.target.files[0])}
-            />
-            <Activity className="mx-auto mb-1.5 h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-foreground">Importa JSON LiDAR/ToF</span>
-            <span className="mt-1 block text-[11px] text-muted-foreground">Coordinate 3D in metri con array joints3D</span>
-          </label>
+          <div className="rounded-xl border border-dashed border-border bg-card p-4 text-center">
+            <Activity className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
+            <p className="text-sm text-foreground">Scansione depth non disponibile</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              LiDAR/ToF richiede l'app nativa Capacitor e un dispositivo compatibile. Il browser usa la sola fotocamera RGB.
+            </p>
+          </div>
         )}
       </Section>
 

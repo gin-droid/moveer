@@ -15,8 +15,26 @@ import Capacitor
  * NOTA: questo file va compilato in Xcode. Richiede iOS 14+ e, per la
  * profondità LiDAR, un dispositivo con sensore LiDAR (iPhone 12 Pro+).
  */
+  public let identifier = "DepthScannerPlugin"
+  public let jsName = "DepthScanner"
+  public let pluginMethods: [CAPPluginMethod] = [
+    CAPPluginMethod(name: "isAvailable", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "startRecording", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "stopRecording", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "cancelRecording", returnType: CAPPluginReturnPromise)
+  ]
+
 @objc(DepthScannerPlugin)
-public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
+public class DepthScannerPlugin: CAPPlugin, CAPBridgedPlugin, ARSessionDelegate {
+  public let identifier = "DepthScannerPlugin"
+  public let jsName = "DepthScanner"
+  public let pluginMethods: [CAPPluginMethod] = [
+    CAPPluginMethod(name: "isAvailable", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "startRecording", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "stopRecording", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "cancelRecording", returnType: CAPPluginReturnPromise)
+  ]
+
   private var session: ARSession?
   private var recording = false
   private var maxDuration: Double = 30.0
@@ -45,23 +63,23 @@ public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
     "right_foot_joint": "ankle_r"
   ]
 
-  @objc func isAvailable(_ call: CAPPluginCall) {
+  @objc public func isAvailable(_ call: CAPPluginCall) {
     let bodySupported = ARBodyTrackingConfiguration.isSupported
     let lidarSupported = ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth)
-    let sensorType = lidarSupported ? "lidar" : (bodySupported ? "tof" : "none")
+    let sensorType = lidarSupported ? "lidar" : "none"
     call.resolve([
-      "available": bodySupported || lidarSupported,
+      "available": bodySupported && lidarSupported,
       "sensorType": sensorType
     ])
   }
 
-  @objc func startRecording(_ call: CAPPluginCall) {
-    guard ARBodyTrackingConfiguration.isSupported else {
-      call.reject("Body tracking non supportato su questo dispositivo (richiede iOS 14+ e iPhone Xs o superiore)")
+  @objc public func startRecording(_ call: CAPPluginCall) {
+    guard ARBodyTrackingConfiguration.isSupported,
+      ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) else {
+      call.reject("Serve un dispositivo Apple con body tracking e LiDAR supportato.")
       return
     }
     maxDuration = call.getDouble("maxDurationSec") ?? 30.0
-    let facing = call.getString("facing") ?? "back"
 
     let config = ARBodyTrackingConfiguration()
     config.frameSemantics = [.bodyDetection]
@@ -82,14 +100,14 @@ public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
     call.resolve()
   }
 
-  @objc func stopRecording(_ call: CAPPluginCall) {
+  @objc public func stopRecording(_ call: CAPPluginCall) {
     recording = false
     session?.pause()
 
     // Carica i frame RGB (in un'app reale qui si fa UploadFile verso il backend)
     // Per ora restituisce i dati strutturati; l'upload avviene lato JS.
     let depthData: [String: Any] = [
-      "sensorType": ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) ? "lidar" : "tof",
+      "sensorType": "lidar",
       "coordinateSystem": "right_handed_y_up_meters",
       "frames": frames
     ]
@@ -99,7 +117,7 @@ public class DepthScannerPlugin: CAPPlugin, ARSessionDelegate {
     ])
   }
 
-  @objc func cancelRecording(_ call: CAPPluginCall) {
+  @objc public func cancelRecording(_ call: CAPPluginCall) {
     recording = false
     session?.pause()
     frames = []

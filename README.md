@@ -37,11 +37,13 @@ Dopo aver collegato il progetto, pubblica le funzioni con `npm run supabase:func
 
 Per SMTP Auth con Brevo usa `smtp-relay.brevo.com`, porta `587`, lo SMTP login mostrato in Brevo e la SMTP key come password. Verifica prima il dominio mittente e usa un mittente autorizzato in `EMAIL_FROM`.
 
-## App Android
+## App Android e iOS
 
-Dopo `npm install`, genera la shell Android una sola volta con `npm run cap:add:android`; poi sincronizza dipendenze e plugin con `npm run cap:sync:android` e apri il progetto con `npx cap open android`. Servono Android Studio, JDK e Android SDK installati. Prova il plugin su un dispositivo fisico compatibile con ARCore: l'emulatore e i dispositivi senza depth supportato non restituiscono misure 3D affidabili.
+Le shell native `android/` e `ios/` sono incluse. Dopo le modifiche web o al plugin, esegui `npm run cap:sync:android` oppure `npm run cap:sync:ios`; apri i progetti con `npx cap open android` e `npx cap open ios`. Android richiede Android Studio, JDK e Android SDK; iOS richiede Xcode completo.
 
-Il plugin campiona pose/depth a 5 Hz. I frame restituiti includono punti world-space in metri con asse y-up e confidenza ML Kit. La UI React continua a richiedere un video separato o un JSON `DepthData`; la sincronizzazione in tempo reale tra video web e ARCore non è ancora implementata.
+La schermata Analizza chiama `DepthScanner.isAvailable()`, `startRecording()` e `stopRecording()`. Android usa ARCore Depth API e ML Kit; iOS usa ARKit Body Tracking e `sceneDepth` sui dispositivi LiDAR compatibili. I frame restituiti contengono giunzioni 3D in metri e statistiche depth, campionate fino a 5 Hz. Il plugin non restituisce frame RGB: carica anche un video o un'immagine per l'analisi visiva. La PWA/browser non espone i sensori LiDAR/ToF e mostra il fallback non disponibile.
+
+Le verifiche locali coprono build web e sync Capacitor, non la compilazione Xcode/Gradle né l'acquisizione su hardware. Testa su iPhone/iPad con LiDAR o dispositivo Android compatibile con ARCore Depth; emulatore e browser non forniscono misure 3D reali.
 
 Importa il catalogo e gli eventuali dati precedenti dopo aver applicato lo schema. Per importare gli esercizi dal vecchio progetto, usa `npm run catalog:import-base44`; per trasferire in Supabase Storage le immagini legacy già presenti in `exercises.image_url` e `profiles.logo_url`, configura temporaneamente `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` nell'ambiente locale e lancia `npm run catalog:migrate-base44-media`. Non impostare la service-role key in variabili `VITE_*` e non inserirla nel repository. Dopo la migrazione l'app usa soltanto gli URL Supabase per tali immagini. I file `base44/` e lo script di import rimangono strumenti di migrazione/archivio: non sono dipendenze di build o deploy.
 
