@@ -9,6 +9,19 @@ import WearableConnector from "@/components/WearableConnector";
 import BottomSelectDrawer from "@/components/BottomSelectDrawer";
 import { analyzeDepthData } from "../../supabase/functions/_shared/depth3d";
 
+async function getFunctionErrorMessage(error) {
+  const response = error?.context;
+  if (response && typeof response.clone === "function") {
+    try {
+      const body = await response.clone().json();
+      if (typeof body?.error === "string" && body.error) return body.error;
+    } catch {
+      // Fall back to the Supabase error message when the response is not JSON.
+    }
+  }
+  return error?.message || "La funzione di analisi non è raggiungibile.";
+}
+
 export default function Analyze() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -97,20 +110,30 @@ export default function Analyze() {
       const frameUris = frameFiles.length ? (
         await Promise.all(
           frameFiles.map((ff) =>
-           appApi.integrations.Core.UploadPrivateFile({ file: ff }).then((r) => r.file_uri).catch(() => null)
+            appApi.integrations.Core.UploadPrivateFile({ file: ff }).then((result) => {
+              if (!result?.file_uri) throw new Error("Storage non ha restituito il percorso del frame.");
+              return result.file_uri;
+            }).catch((uploadError) => {
+              throw new Error(`Caricamento frame non riuscito: ${uploadError.message || "errore Storage"}`);
+            })
           )
         )
-      ).filter(Boolean) : [];
+      ) : [];
       if (frameFiles.length > 0 && frameUris.length === 0) {
         throw new Error("Errore nel caricamento dei frame. Riprova.");
       }
       const frameUrls = frameUris.length ? (
         await Promise.all(
           frameUris.map((uri) =>
-            appApi.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 600 }).then((r) => r.signed_url).catch(() => null)
+            appApi.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 600 }).then((result) => {
+              if (!result?.signed_url) throw new Error("Storage non ha restituito l’URL del frame.");
+              return result.signed_url;
+            }).catch((urlError) => {
+              throw new Error(`Preparazione URL frame non riuscita: ${urlError.message || "errore Storage"}`);
+            })
           )
         )
-      ).filter(Boolean) : [];
+      ) : [];
       if (frameUris.length > 0 && frameUrls.length === 0) {
         throw new Error("Errore nel caricamento dei frame. Riprova.");
       }
@@ -126,7 +149,7 @@ export default function Analyze() {
       }
 
       setProgressMsg("Analisi biomeccanica in corso…");
-      const res = await appApi.functions.invoke("analyzeExercise", {
+      const { data, error: functionError } = await appApi.functions.invoke("analyzeExercise", {
         exerciseName: selected.name,
         macroCategory: selected.macro_category,
         subcategory: selected.subcategory,
@@ -136,8 +159,9 @@ export default function Analyze() {
         wearableData: wearableData || null,
         athleteId: selectedAthleteId || null,
       });
-      if (res.data?.error) throw new Error(res.data.error);
-      const report = res.data?.report;
+      if (functionError) throw new Error(await getFunctionErrorMessage(functionError));
+      if (data?.error) throw new Error(data.error);
+      const report = data?.report;
       if (!report?.id) throw new Error("Risposta non valida dalla funzione di analisi.");
 
       try {
@@ -168,7 +192,7 @@ export default function Analyze() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="mx-auto flex w-full min-w-0 max-w-sm flex-col gap-5">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card p-5 shadow-lg shadow-primary/10">
         <div className="absolute -right-12 -top-12 w-40 h-40 bg-primary/15 rounded-full blur-2xl z-0 pointer-events-none" />
@@ -202,7 +226,15 @@ export default function Analyze() {
       {/* Esercizio */}
       <Section label="Esercizio" step={1}>
         {loadingList ? (
-          <div className="text-muted-foreground text-sm text-center py-4">Caricamento catalogo…</div>
+          <div className="w-full overflow-hidden rounded-2xl border border-border bg-card" aria-label="Caricamento catalogo esercizi">
+            <div className="border-b border-border p-3">
+              <div className="h-10 rounded-xl border border-border bg-background" />
+              <div className="mt-2.5 h-8 rounded-lg bg-muted/60" />
+            </div>
+            <div className="flex h-[35vh] min-h-[220px] max-h-[320px] items-center justify-center text-center text-sm text-muted-foreground">
+              Caricamento catalogo…
+            </div>
+          </div>
         ) : (
           <>
             <ExercisePicker

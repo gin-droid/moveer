@@ -1,18 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Video, VideoOff, RotateCcw, Loader2, Camera, Square, Info, Download, Check, RefreshCw } from "lucide-react";
+import { X, Video, VideoOff, RotateCcw, Loader2, Camera, Square, Download, Check, RefreshCw, Pause, Play, ScanLine } from "lucide-react";
 import DepthScanner from "@moveerai/depth-scanner";
 
 /**
  * CameraRecorder
- * Apre la fotocamera del dispositivo e registra un video breve da analizzare.
- * Preferisce la fotocamera posteriore (facingMode: "environment") che sui
- * dispositivi dotati di sensore LiDAR/ToF beneficia dell'autofocus assistito
- * dalla profondità, migliorando la nitidezza del corpo nello spazio.
- *
- * Nota tecnica: i browser web non espongono direttamente la mappa di profondità
- * dei sensori LiDAR/ToF tramite API standard (getUserMedia restituisce solo RGB).
- * Richiediamo però la massima risoluzione/frame rate disponibili per fornire
- * all'IA il miglior input possibile.
+ * Registra prima il video RGB. La scansione depth opzionale parte solo dopo
+ * aver rilasciato la camera usata dal registratore video.
  */
 export default function CameraRecorder({ onRecorded, onClose }) {
   const videoRef = useRef(null);
@@ -20,20 +13,29 @@ export default function CameraRecorder({ onRecorded, onClose }) {
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
-  const depthStartPromiseRef = useRef(Promise.resolve(false));
-  const depthRecordingRef = useRef(false);
+  const depthTimerRef = useRef(null);
+  const elapsedSecondsRef = useRef(0);
+  const depthElapsedSecondsRef = useRef(0);
+  const depthScanActiveRef = useRef(false);
+  const depthScanStartingRef = useRef(false);
   const discardOnStopRef = useRef(false);
 
   const [facing, setFacing] = useState("environment");
   const [ready, setReady] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(true);
   const [hasMultipleCams, setHasMultipleCams] = useState(false);
   const [recorded, setRecorded] = useState(null); // { file, url }
   const [depthAvailable, setDepthAvailable] = useState(false);
-  const [depthRecording, setDepthRecording] = useState(false);
+  const [sensorType, setSensorType] = useState("none");
+  const [depthStarting, setDepthStarting] = useState(false);
+  const [depthScanning, setDepthScanning] = useState(false);
+  const [depthFinalizing, setDepthFinalizing] = useState(false);
+  const [depthSeconds, setDepthSeconds] = useState(0);
   const [depthStatus, setDepthStatus] = useState("");
 
   const stopStream = () => {
@@ -57,7 +59,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
           facingMode: { ideal: facingMode },
           width: { ideal: 1920 },
           height: { ideal: 1080 },
-          frameRate: { ideal: 60 },
+          frameRate: { ideal: 30 },
         },
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -89,18 +91,41 @@ export default function CameraRecorder({ onRecorded, onClose }) {
   useEffect(() => {
     let active = true;
     DepthScanner.isAvailable()
-      .then((result) => { if (active) setDepthAvailable(Boolean(result.available)); })
-      .catch(() => { if (active) setDepthAvailable(false); });
-    startCamera(facing);
+      .then((result) => {
+        if (!active) return;
+        setDepthAvailable(Boolean(result.available));
+        setSensorType(result.sensorType || "none");
+        startCamera(facing);
+      })
+      .catch(() => {
+        if (active) {
+          setDepthAvailable(false);
+          setSensorType("none");
+          startCamera(facing);
+        }
+      });
     return () => {
       active = false;
-      stopStream();
-      if (depthRecordingRef.current) DepthScanner.cancelRecording().catch(() => {});
       if (timerRef.current) clearInterval(timerRef.current);
-      if (recorded) URL.revokeObjectURL(recorded.url);
+      if (depthTimerRef.current) clearInterval(depthTimerRef.current);
+      discardOnStopRef.current = true;
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try { recorder.stop(); } catch { /* ignore teardown errors */ }
+      }
+      if (depthScanActiveRef.current || depthScanStartingRef.current) {
+        DepthScanner.cancelRecording().catch(() => {});
+      }
+      stopStream();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!recorded) return undefined;
+    const url = recorded.url;
+    return () => URL.revokeObjectURL(url);
+  }, [recorded?.url]);
 
   const flipCamera = () => {
     const next = facing === "environment" ? "user" : "environment";
@@ -109,131 +134,223 @@ export default function CameraRecorder({ onRecorded, onClose }) {
     startCamera(next);
   };
 
-  const startRecording = () => {
-    if (!streamRef.current) return;
-    discardOnStopRef.current = false;
-    setDepthStatus("");
-    chunksRef.current = [];
-    const mime = pickMime();
-    let rec;
+  const stopRecording = () => {
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state === "inactive") return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    setRecording(false);
+    setPaused(false);
+    setFinalizing(true);
     try {
-      rec = new MediaRecorder(streamRef.current, mime ? { mimeType: mime } : undefined);
+      recorder.stop();
+    } catch {
+      setFinalizing(false);
+      setError("Impossibile completare il file video. Riprova.");
+    }
+  };
+
+  const startElapsedTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      const next = elapsedSecondsRef.current + 1;
+      elapsedSecondsRef.current = next;
+      setSeconds(next);
+      if (next >= 30) stopRecording();
+    }, 1000);
+  };
+
+  const startRecording = () => {
+    if (!streamRef.current || recording || paused || finalizing) return;
+    discardOnStopRef.current = false;
+    setError("");
+    chunksRef.current = [];
+    const requestedMime = pickMime();
+    let recorder;
+    try {
+      recorder = new MediaRecorder(streamRef.current, requestedMime ? { mimeType: requestedMime } : undefined);
     } catch {
       try {
-        rec = new MediaRecorder(streamRef.current);
+        recorder = new MediaRecorder(streamRef.current);
       } catch {
-        setError("Registrazione non supportata su questo browser.");
+        setError("Registrazione non supportata su questo dispositivo.");
         return;
       }
     }
-    rec.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
-    };
-    rec.onstop = async () => {
-      let nativeDepthData = null;
-      const depthStarted = await depthStartPromiseRef.current.catch(() => false);
-      if (depthStarted && !discardOnStopRef.current) {
-        try {
-          const result = await DepthScanner.stopRecording();
-          nativeDepthData = result?.depthData || null;
-          setDepthStatus(nativeDepthData?.frames?.length ? "Dati LiDAR/ToF acquisiti." : "Nessun frame depth valido; resta disponibile il video.");
-        } catch {
-          setDepthStatus("Scansione LiDAR/ToF non riuscita; resta disponibile il video.");
-        } finally {
-          depthRecordingRef.current = false;
-          setDepthRecording(false);
-        }
-      }
-      depthStartPromiseRef.current = Promise.resolve(false);
-      if (discardOnStopRef.current) return;
-      const blob = new Blob(chunksRef.current, { type: mime || "video/webm" });
-      const ext = (mime || "video/webm").includes("mp4") ? "mp4" : "webm";
-      const file = new File([blob], `moVeerAI-${Date.now()}.${ext}`, { type: blob.type });
-      const url = URL.createObjectURL(file);
-      setRecorded({ file, url, depthData: nativeDepthData });
-    };
-    rec.start();
-    recorderRef.current = rec;
-    setRecording(true);
-    setSeconds(0);
-    timerRef.current = setInterval(() => {
-      setSeconds((s) => {
-        if (s + 1 >= 30) stopRecording();
-        return s + 1;
-      });
-    }, 1000);
 
-    depthStartPromiseRef.current = DepthScanner.isAvailable()
-      .then(async (availability) => {
-        const available = Boolean(availability.available);
-        setDepthAvailable(available);
-        if (!available) return false;
-        try {
-          await DepthScanner.startRecording({ maxDurationSec: 30, facing });
-          depthRecordingRef.current = true;
-          setDepthRecording(true);
-          return true;
-        } catch {
-          setDepthStatus("Video in registrazione; scansione LiDAR/ToF non disponibile.");
-          return false;
-        }
-      })
-      .catch(() => {
-        setDepthAvailable(false);
-        return false;
-      });
+    recorder.ondataavailable = (event) => {
+      if (event.data?.size) chunksRef.current.push(event.data);
+    };
+    recorder.onerror = () => {
+      setError("La registrazione video si è interrotta. Riprova.");
+    };
+    recorder.onstop = () => {
+      recorderRef.current = null;
+      setFinalizing(false);
+      if (discardOnStopRef.current) return;
+
+      const blobType = recorder.mimeType || chunksRef.current.find((chunk) => chunk.type)?.type || requestedMime || "video/mp4";
+      const blob = new Blob(chunksRef.current, { type: blobType });
+      chunksRef.current = [];
+      if (!blob.size) {
+        setError("Il dispositivo non ha prodotto dati video. Riprova la registrazione.");
+        return;
+      }
+      const ext = blobType.toLowerCase().includes("mp4") ? "mp4" : "webm";
+      const file = new File([blob], `moVeerAI-${Date.now()}.${ext}`, { type: blob.type });
+      setRecorded({ file, url: URL.createObjectURL(file) });
+    };
+
+    recorderRef.current = recorder;
+    try {
+      recorder.start(1000);
+    } catch {
+      try {
+        recorder.start();
+      } catch {
+        recorderRef.current = null;
+        setError("Impossibile avviare la registrazione su questo dispositivo.");
+        return;
+      }
+    }
+    elapsedSecondsRef.current = 0;
+    setSeconds(0);
+    setPaused(false);
+    setRecording(true);
+    startElapsedTimer();
   };
 
-  const stopRecording = () => {
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      recorderRef.current.stop();
+  const pauseRecording = () => {
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state !== "recording") return;
+    try {
+      recorder.pause();
+      if (timerRef.current) clearInterval(timerRef.current);
+      setRecording(false);
+      setPaused(true);
+    } catch {
+      setError("Impossibile mettere in pausa la registrazione.");
     }
-    if (timerRef.current) clearInterval(timerRef.current);
-    setRecording(false);
+  };
+
+  const resumeRecording = () => {
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state !== "paused") return;
+    try {
+      recorder.resume();
+      setPaused(false);
+      setRecording(true);
+      startElapsedTimer();
+    } catch {
+      setError("Impossibile riprendere la registrazione.");
+    }
+  };
+
+  const stopDepthScan = async () => {
+    if (!depthScanActiveRef.current) return;
+    depthScanActiveRef.current = false;
+    if (depthTimerRef.current) clearInterval(depthTimerRef.current);
+    setDepthScanning(false);
+    setDepthFinalizing(true);
+    try {
+      const result = await DepthScanner.stopRecording();
+      const data = result?.depthData;
+      const frames = Array.isArray(data?.frames)
+        ? data.frames.filter((frame) => Array.isArray(frame.joints3D) && frame.joints3D.length >= 3)
+        : [];
+      if (frames.length) {
+        const depthData = { ...data, frames };
+        setRecorded((current) => current ? { ...current, depthData } : current);
+        setDepthStatus(`Scansione ${sensorType === "lidar" ? "LiDAR" : "ToF"} completata: ${frames.length} frame validi.`);
+      } else {
+        setDepthStatus("Nessun frame depth valido. Il video è comunque pronto.");
+      }
+    } catch {
+      setDepthStatus("Scansione depth non riuscita. Il video è comunque pronto.");
+    } finally {
+      setDepthFinalizing(false);
+    }
+  };
+
+  const startDepthScan = async () => {
+    if (!recorded || !depthAvailable || depthStarting || depthScanning || depthFinalizing || depthScanStartingRef.current || depthScanActiveRef.current) return;
+    setDepthStarting(true);
+    depthScanStartingRef.current = true;
+    depthElapsedSecondsRef.current = 0;
+    setDepthSeconds(0);
+    setDepthStatus("");
+    setReady(false);
+    stopStream();
+    try {
+      await DepthScanner.startRecording({ maxDurationSec: 10, facing: "back" });
+      depthScanStartingRef.current = false;
+      if (discardOnStopRef.current) {
+        await DepthScanner.cancelRecording();
+        return;
+      }
+      depthScanActiveRef.current = true;
+      setDepthScanning(true);
+      depthTimerRef.current = setInterval(() => {
+        const next = depthElapsedSecondsRef.current + 1;
+        depthElapsedSecondsRef.current = next;
+        setDepthSeconds(next);
+        if (next >= 10) stopDepthScan();
+      }, 1000);
+    } catch {
+      depthScanStartingRef.current = false;
+      setDepthStatus("Sensore non avviabile. Il video è comunque pronto.");
+    } finally {
+      setDepthStarting(false);
+    }
   };
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-  const saveToPhone = () => {
+  const saveToPhone = async () => {
     if (!recorded) return;
+    try {
+      if (navigator.share && navigator.canShare?.({ files: [recorded.file] })) {
+        await navigator.share({ files: [recorded.file], title: recorded.file.name });
+        return;
+      }
+    } catch (shareError) {
+      if (shareError?.name === "AbortError") return;
+    }
+
     const a = document.createElement("a");
     a.href = recorded.url;
     a.download = recorded.file.name;
+    a.style.display = "none";
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    window.setTimeout(() => a.remove(), 1500);
   };
 
   const useForAnalysis = () => {
     if (!recorded) return;
     const file = recorded.file;
     const depthData = recorded.depthData;
-    URL.revokeObjectURL(recorded.url);
     setRecorded(null);
     onRecorded?.(file, depthData);
   };
 
-  const closeRecorder = async () => {
+  const closeRecorder = () => {
     discardOnStopRef.current = true;
-    stopRecording();
-    try {
-      const depthStarted = await depthStartPromiseRef.current.catch(() => false);
-      if (depthStarted) await DepthScanner.cancelRecording();
-    } catch {
-      /* ignore cancellation errors */
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (depthTimerRef.current) clearInterval(depthTimerRef.current);
+    if (depthScanActiveRef.current || depthScanStartingRef.current) {
+      DepthScanner.cancelRecording().catch(() => {});
     }
-    depthRecordingRef.current = false;
+    stopRecording();
     stopStream();
-    if (recorded) URL.revokeObjectURL(recorded.url);
     onClose?.();
   };
 
   const recordAgain = () => {
-    if (recorded) {
-      URL.revokeObjectURL(recorded.url);
-      setRecorded(null);
-    }
+    setRecorded(null);
     setSeconds(0);
+    elapsedSecondsRef.current = 0;
+    setDepthStatus("");
+    startCamera(facing);
   };
 
   return (
@@ -264,16 +381,15 @@ export default function CameraRecorder({ onRecorded, onClose }) {
         />
 
         {/* Recording indicator */}
-        {recording && (
+        {(recording || paused) && (
           <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-white text-sm font-mono">{fmt(seconds)}</span>
-            {depthRecording && <span className="border-l border-white/25 pl-2 text-[11px] text-emerald-200">LiDAR/ToF</span>}
+            <span className={`w-2.5 h-2.5 rounded-full ${paused ? "bg-amber-400" : "bg-rose-500 animate-pulse"}`} />
+            <span className="text-white text-sm font-mono">{paused ? "PAUSA" : "REC"} {fmt(seconds)}</span>
           </div>
         )}
 
         {/* Flip button */}
-        {ready && hasMultipleCams && !recording && (
+        {ready && hasMultipleCams && !recording && !paused && !recorded && (
           <button
             onClick={flipCamera}
             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/60 backdrop-blur text-white flex items-center justify-center hover:bg-black/80 transition-colors"
@@ -303,6 +419,13 @@ export default function CameraRecorder({ onRecorded, onClose }) {
           </div>
         )}
 
+        {finalizing && !recorded && !error && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-300 gap-2 bg-black/70">
+            <Loader2 className="w-7 h-7 animate-spin text-emerald-400" />
+            <span className="text-sm">Preparazione video…</span>
+          </div>
+        )}
+
         {/* Recorded preview + actions */}
         {recorded && (
           <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-5 px-6">
@@ -319,6 +442,23 @@ export default function CameraRecorder({ onRecorded, onClose }) {
               >
                 <Download className="w-4 h-4" /> Salva sul telefono
               </button>
+              {depthAvailable && !depthScanning && !depthStarting && !depthFinalizing && (
+                <button
+                  onClick={startDepthScan}
+                  className="w-full inline-flex items-center justify-center gap-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-100 font-medium text-sm px-4 py-3 rounded-xl transition-colors border border-emerald-800"
+                >
+                  <ScanLine className="w-4 h-4" />
+                  {recorded.depthData ? "Ripeti scansione depth" : `Scansiona ${sensorType === "lidar" ? "LiDAR" : "ToF"}`}
+                </button>
+              )}
+              {depthScanning && (
+                <button
+                  onClick={stopDepthScan}
+                  className="w-full inline-flex items-center justify-center gap-2 bg-rose-900/70 hover:bg-rose-900 text-white font-medium text-sm px-4 py-3 rounded-xl transition-colors border border-rose-800"
+                >
+                  <Square className="w-4 h-4" fill="currentColor" /> Termina scansione
+                </button>
+              )}
               <button
                 onClick={useForAnalysis}
                 className="w-full inline-flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium text-sm px-4 py-3 rounded-xl transition-colors border border-zinc-700"
@@ -335,6 +475,29 @@ export default function CameraRecorder({ onRecorded, onClose }) {
             </div>
           </div>
         )}
+
+        {(depthStarting || depthScanning || depthFinalizing) && (
+          <div className="absolute inset-0 z-20 bg-black/90 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
+            <p className="text-white text-sm font-semibold">
+              {depthStarting ? "Avvio sensore depth…" : depthFinalizing ? "Elaborazione frame depth…" : "Scansione depth in corso"}
+            </p>
+            {depthScanning && (
+              <>
+                <p className="text-zinc-300 text-xs max-w-xs">
+                  Scansione separata dal video. Ripeti il movimento per 10 secondi mantenendo il corpo nell’inquadratura.
+                </p>
+                <p className="text-emerald-200 text-sm font-mono">{fmt(depthSeconds)} / 00:10</p>
+                <button
+                  onClick={stopDepthScan}
+                  className="mt-2 inline-flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm px-5 py-3 rounded-xl"
+                >
+                  <Square className="w-4 h-4" fill="currentColor" /> STOP SCANSIONE
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Controls */}
@@ -342,39 +505,55 @@ export default function CameraRecorder({ onRecorded, onClose }) {
         <div className="px-4 py-5 pb-safe bg-black" />
       ) : (
       <div className="px-4 py-5 pb-safe bg-black">
-        {/* LiDAR/ToF hint */}
-        <div className="flex items-start gap-2 mb-4 text-zinc-400 text-xs leading-relaxed">
-          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400/70" />
-          <span>
-            La registrazione video RGB resta il flusso principale. Nell'app nativa, LiDAR/ToF viene acquisito automaticamente se disponibile.
-          </span>
-        </div>
-        {depthAvailable && !recording && (
-          <p className="mb-3 text-center text-[11px] text-emerald-200">Sensore LiDAR/ToF rilevato: acquisizione automatica durante il video.</p>
-        )}
-
-        <div className="flex items-center justify-center gap-6">
-          {recording ? (
-            <button
-              onClick={stopRecording}
-              className="w-16 h-16 rounded-full bg-rose-500 hover:bg-rose-600 flex items-center justify-center transition-colors shadow-lg shadow-rose-500/30"
-              aria-label="Ferma registrazione"
-            >
-              <Square className="w-6 h-6 text-white" fill="currentColor" />
-            </button>
+        <div className="flex items-center justify-center gap-5">
+          {recording || paused ? (
+            <>
+              {recording ? (
+                <button
+                  onClick={pauseRecording}
+                  className="w-16 h-16 rounded-full bg-amber-400 hover:bg-amber-300 flex flex-col items-center justify-center gap-1 transition-colors"
+                  aria-label="Pausa"
+                  title="Pausa"
+                >
+                  <Pause className="w-5 h-5 text-zinc-950" fill="currentColor" />
+                  <span className="text-[10px] font-semibold text-zinc-950">PAUSA</span>
+                </button>
+              ) : (
+                <button
+                  onClick={resumeRecording}
+                  className="w-16 h-16 rounded-full bg-emerald-400 hover:bg-emerald-300 flex flex-col items-center justify-center gap-1 transition-colors"
+                  aria-label="Riprendi registrazione"
+                  title="Riprendi registrazione"
+                >
+                  <Play className="w-5 h-5 text-zinc-950" fill="currentColor" />
+                  <span className="text-[10px] font-semibold text-zinc-950">RIPRENDI</span>
+                </button>
+              )}
+              <button
+                onClick={stopRecording}
+                className="w-16 h-16 rounded-full bg-rose-500 hover:bg-rose-600 flex flex-col items-center justify-center gap-1 transition-colors shadow-lg shadow-rose-500/30"
+                aria-label="Stop"
+                title="Stop"
+              >
+                <Square className="w-5 h-5 text-white" fill="currentColor" />
+                <span className="text-[10px] font-semibold text-white">STOP</span>
+              </button>
+            </>
           ) : (
             <button
               onClick={startRecording}
-              disabled={!ready}
-              className="w-16 h-16 rounded-full bg-emerald-400 hover:bg-emerald-300 disabled:bg-zinc-700 disabled:opacity-50 flex items-center justify-center transition-colors shadow-lg shadow-emerald-500/30"
-              aria-label="Registra"
+              disabled={!ready || finalizing}
+              className="w-16 h-16 rounded-full bg-rose-500 hover:bg-rose-400 disabled:bg-zinc-700 disabled:opacity-50 flex flex-col items-center justify-center gap-1 transition-colors shadow-lg shadow-rose-500/30"
+              aria-label="REC"
+              title="REC"
             >
-              <Video className="w-6 h-6 text-zinc-950" />
+              <Video className="w-5 h-5 text-white" />
+              <span className="text-[10px] font-semibold text-white">REC</span>
             </button>
           )}
         </div>
         <p className="text-center text-xs text-zinc-500 mt-3">
-          {recording ? "Tocca per fermare (max 30 secondi)" : "Tocca per iniziare a registrare"}
+          {finalizing ? "Preparazione del video…" : paused ? "Registrazione in pausa" : recording ? `Registrazione in corso · max 30 secondi` : "Tocca REC per iniziare"}
         </p>
       </div>
       )}

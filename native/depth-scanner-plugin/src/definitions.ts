@@ -44,6 +44,13 @@ export interface StartRecordingOptions {
   facing?: "back" | "front";
 }
 
+export interface NativeVideoRecordingResult {
+  /** Percorso locale dell'MP4 prodotto dal registratore nativo. */
+  videoPath: string;
+  /** Giunzioni e misure depth campionate dagli stessi frame del video. */
+  depthData: DepthData;
+}
+
 export interface StopRecordingResult {
   /** URL dei frame RGB caricati (JPEG) */
   frameUrls: string[];
@@ -57,6 +64,9 @@ export interface DepthScannerPlugin {
    * Sul web restituisce sempre { available: false, sensorType: "none" }.
    */
   isAvailable(): Promise<IsAvailableResult>;
+
+  /** Apre la camera nativa e registra video+depth sincronizzati con REC/pausa/stop. */
+  recordVideo(options: StartRecordingOptions): Promise<NativeVideoRecordingResult>;
 
   /** Avvia la sessione AR e la registrazione dei frame depth+RGB */
   startRecording(options: StartRecordingOptions): Promise<void>;

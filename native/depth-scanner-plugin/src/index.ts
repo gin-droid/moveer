@@ -11,6 +11,9 @@ import type { DepthScannerPlugin } from "./definitions";
 const DepthScannerWeb = registerPlugin<DepthScannerPlugin>("DepthScanner", {
   web: () => Promise.resolve({
     isAvailable: async () => ({ available: false, sensorType: "none" }),
+    recordVideo: async () => {
+      throw new Error("Registrazione nativa non disponibile sul web. Usa CameraRecorder.");
+    },
     startRecording: async () => {
       throw new Error("Depth scanning non disponibile sul web. Usa CameraRecorder.");
     },

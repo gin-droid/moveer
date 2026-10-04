@@ -13,7 +13,7 @@ export function json(body: unknown, status = 200) {
     status,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': Deno.env.get('APP_ORIGIN') || '*',
+      'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
     },
@@ -44,25 +44,61 @@ export async function consumeQuota(client: SupabaseClient, kind: 'analysis' | 'm
 export async function generateGeminiText(contents: unknown[], systemInstruction?: string, jsonResponse = true) {
   const apiKey = Deno.env.get('GEMINI_API_KEY');
   if (!apiKey) throw new Error('GEMINI_API_KEY non configurata nei secrets Supabase');
-  const model = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
-        generationConfig: {
-          temperature: 0.35,
-          ...(jsonResponse ? { responseMimeType: 'application/json' } : {}),
-        },
-      }),
+  const configuredModel = (Deno.env.get('GEMINI_MODEL') || '').trim().replace(/^models\//, '');
+  const model = !configuredModel || configuredModel === 'gemini-2.5-flash'
+    ? 'gemini-3.8-flash'
+    : configuredModel;
+  type GeminiPart = {
+    text?: string;
+    inlineData?: { mimeType?: string; data?: string };
+    inline_data?: { mime_type?: string; mimeType?: string; data?: string };
+  };
+  type GeminiTurn = { role?: string; parts?: GeminiPart[] };
+  const turns = contents as GeminiTurn[];
+  const toInteractionContent = (parts: GeminiPart[] = []) => parts.flatMap((part) => {
+    if (typeof part.text === 'string') return [{ type: 'text', text: part.text }];
+    const image = part.inlineData || part.inline_data;
+    if (image?.data) {
+      return [{
+        type: 'image',
+        mime_type: ('mimeType' in image ? image.mimeType : undefined) ||
+          ('mime_type' in image ? image.mime_type : undefined) || 'image/jpeg',
+        data: image.data,
+      }];
+    }
+    return [];
+  });
+  const input = turns.length === 1 && turns[0].role !== 'model'
+    ? toInteractionContent(turns[0].parts)
+    : turns.map((turn) => ({
+      type: turn.role === 'model' ? 'model_output' : 'user_input',
+      content: toInteractionContent(turn.parts),
+    }));
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
     },
-  );
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error?.message || 'Errore del servizio Gemini');
-  const text = result.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || '').join('');
+    body: JSON.stringify({
+      model,
+      input,
+      store: false,
+      ...(systemInstruction ? { system_instruction: systemInstruction } : {}),
+      generation_config: { temperature: 0.35 },
+      ...(jsonResponse ? { response_format: [{ type: 'text', mime_type: 'application/json' }] } : {}),
+    }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error?.message || `Errore Interactions API HTTP ${response.status}`);
+  const text = typeof result.output_text === 'string'
+    ? result.output_text
+    : (Array.isArray(result.steps) ? result.steps : [])
+      .filter((step: { type?: string }) => step.type === 'model_output')
+      .flatMap((step: { content?: Array<{ type?: string; text?: string }> }) => step.content || [])
+      .filter((item: { type?: string; text?: string }) => item.type === 'text' && typeof item.text === 'string')
+      .map((item: { text: string }) => item.text)
+      .join('');
   if (!text) throw new Error('Risposta Gemini vuota');
   return text;
 }
