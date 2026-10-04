@@ -21,6 +21,9 @@ jobs:
       - name: Checkout codice
         uses: actions/checkout@v4
 
+      - name: Configura GitHub Pages per Actions
+        uses: actions/configure-pages@v5
+
       - name: Verifica build PWA generata localmente
         run: |
           test -s dist/index.html
