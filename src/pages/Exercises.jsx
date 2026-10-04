@@ -9,6 +9,7 @@ export default function Exercises() {
   const { user } = useAuth();
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [activeMacro, setActiveMacro] = useState("Tutti");
   const [activeSub, setActiveSub] = useState("Tutti");
   const [activeDiff, setActiveDiff] = useState("Tutti");
@@ -17,11 +18,14 @@ export default function Exercises() {
   const [query, setQuery] = useState("");
 
   const loadExercises = async () => {
+    setLoading(true);
+    setLoadError(false);
     try {
       const data = await loadPreferredExercises(user);
       setExercises(data);
     } catch (err) {
       console.error(err);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -189,7 +193,7 @@ export default function Exercises() {
       )}
 
       {/* Result count + reset */}
-      {!loading && (
+      {!loading && !loadError && (
         <div className="flex items-center justify-between -mt-2">
           <div className="text-xs text-zinc-500">
             {filtered.length} {filtered.length === 1 ? "esercizio" : "esercizi"}
@@ -208,6 +212,21 @@ export default function Exercises() {
       {/* Grid */}
       {loading ? (
         <div className="text-zinc-500 text-sm">Caricamento…</div>
+      ) : loadError && exercises.length === 0 ? (
+        <div role="alert" className="rounded-2xl border border-dashed border-zinc-800 p-12 text-center text-zinc-400 text-sm">
+          <p>Catalogo non disponibile. Controlla la connessione e riprova.</p>
+          <button
+            type="button"
+            onClick={loadExercises}
+            className="mt-3 rounded-lg border border-zinc-700 px-3 py-2 text-white hover:border-zinc-500"
+          >
+            Riprova
+          </button>
+        </div>
+      ) : exercises.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-zinc-800 p-12 text-center text-zinc-500 text-sm">
+          Il catalogo non contiene ancora esercizi.
+        </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-zinc-800 p-12 text-center text-zinc-500 text-sm">
           Nessun esercizio trovato.

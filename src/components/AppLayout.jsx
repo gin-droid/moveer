@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, Link, useLocation, useOutlet, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard, Dumbbell, Video, FileText, Activity, TrendingUp,
   Users as UsersIcon, PlayCircle, User as UserIcon, ArrowLeft, Menu, Sparkles, UserCheck, CreditCard,
@@ -199,18 +198,12 @@ export default function AppLayout() {
         </header>
         <div className="max-w-md md:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 overflow-x-hidden">
           {isMobile ? (
-            <AnimatePresence mode="wait">
-              <motion.div
+            <div
                 key={location.pathname}
-                className="w-full overflow-hidden"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-              >
-                {outlet}
-              </motion.div>
-            </AnimatePresence>
+              className="w-full overflow-hidden animate-in fade-in-0 duration-150"
+            >
+              {outlet}
+            </div>
           ) : (
             <Outlet />
           )}

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -7,39 +8,41 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import AppLayout from '@/components/AppLayout';
-import Home from '@/pages/Home';
-import Exercises from '@/pages/Exercises';
-import ExerciseDetail from '@/pages/ExerciseDetail';
-import Demos from '@/pages/Demos';
-import Analyze from '@/pages/Analyze';
-import Reports from '@/pages/Reports';
-import ReportDetail from '@/pages/ReportDetail';
-import Compare from '@/pages/Compare';
-import Users from '@/pages/Users';
-import Athletes from '@/pages/Athletes';
-import AthleteDetail from '@/pages/AthleteDetail';
-import Mentor from '@/pages/Mentor';
-import Monetization from '@/pages/Monetization';
-import Subscription from '@/pages/Subscription';
-import About from '@/pages/About';
+const Home = lazy(() => import('@/pages/Home'));
+const Exercises = lazy(() => import('@/pages/Exercises'));
+const ExerciseDetail = lazy(() => import('@/pages/ExerciseDetail'));
+const Demos = lazy(() => import('@/pages/Demos'));
+const Analyze = lazy(() => import('@/pages/Analyze'));
+const Reports = lazy(() => import('@/pages/Reports'));
+const ReportDetail = lazy(() => import('@/pages/ReportDetail'));
+const Compare = lazy(() => import('@/pages/Compare'));
+const Users = lazy(() => import('@/pages/Users'));
+const Athletes = lazy(() => import('@/pages/Athletes'));
+const AthleteDetail = lazy(() => import('@/pages/AthleteDetail'));
+const Mentor = lazy(() => import('@/pages/Mentor'));
+const Monetization = lazy(() => import('@/pages/Monetization'));
+const Subscription = lazy(() => import('@/pages/Subscription'));
+const About = lazy(() => import('@/pages/About'));
 import PublicLayout from '@/components/PublicLayout';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import ForgotPassword from '@/pages/ForgotPassword';
-import ResetPassword from '@/pages/ResetPassword';
+const Login = lazy(() => import('@/pages/Login'));
+const Register = lazy(() => import('@/pages/Register'));
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Navigate } from 'react-router-dom';
+
+const AppLoading = () => (
+  <div className="fixed inset-0 flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+  </div>
+);
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
+    return <AppLoading />;
   }
 
   // Handle authentication errors
@@ -76,7 +79,8 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <Routes>
+    <Suspense fallback={<AppLoading />}>
+      <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -103,7 +107,8 @@ const AuthenticatedApp = () => {
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 };
 

@@ -4,7 +4,7 @@ Applicazione React/Vite con backend Supabase: Auth, PostgreSQL con Row Level Sec
 
 ## Avvio locale
 
-1. Installa Node.js 20 o successivo e le dipendenze con `npm install`.
+1. Installa Node.js 22 o successivo e le dipendenze con `npm install`.
 2. Crea un progetto gratuito su Supabase e copia `.env.example` in `.env.local`.
 3. Inserisci `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` dal pannello API del progetto. `VITE_SITE_URL` deve essere l'URL del dominio usato in produzione.
 4. Applica la migrazione SQL dal Supabase SQL Editor oppure collega il progetto con `npx supabase link --project-ref <project-ref>` e lancia `npm run supabase:db:push`.

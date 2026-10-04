@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Loader2, UserRound } from "lucide-react";
 
 export default function GenderOnboarding() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -16,6 +16,7 @@ export default function GenderOnboarding() {
     setSaving(true);
     try {
       await appApi.auth.updateMe({ gender: g });
+      updateUser({ gender: g });
       setOpen(false);
     } catch (e) {
       /* ignore */
@@ -34,12 +35,13 @@ export default function GenderOnboarding() {
           <h2 className="font-display text-lg font-semibold text-white">Seleziona il tuo genere</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-          Usiamo il genere per mostrare la sagoma corporea corretta (maschile o femminile) nella mappa posturale dei report.
+          Usiamo il genere per mostrare la sagoma corporea corretta nella mappa posturale dei report. Per “Altro” viene usata la sagoma maschile.
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {[
             { v: "maschio", l: "Maschio" },
             { v: "femmina", l: "Femmina" },
+            { v: "altro", l: "Altro" },
           ].map((opt) => (
             <button
               key={opt.v}

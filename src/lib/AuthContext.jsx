@@ -14,6 +14,10 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings] = useState(null);
 
+  const updateUser = (values) => {
+    setUser((currentUser) => currentUser ? { ...currentUser, ...values } : currentUser);
+  };
+
   useEffect(() => {
     checkAppState();
     if (!supabase) return undefined;
@@ -124,6 +128,7 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings,
       authChecked,
       logout,
+      updateUser,
       navigateToLogin,
       checkUserAuth,
       checkAppState

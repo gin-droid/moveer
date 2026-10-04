@@ -225,8 +225,12 @@ export default function Register() {
         </div>
         <div className="space-y-2">
           <Label>Genere</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {[{ v: "maschio", l: "Maschio" }, { v: "femmina", l: "Femmina" }].map((opt) => (
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { v: "maschio", l: "Maschio" },
+              { v: "femmina", l: "Femmina" },
+              { v: "altro", l: "Altro" },
+            ].map((opt) => (
               <button
                 type="button"
                 key={opt.v}

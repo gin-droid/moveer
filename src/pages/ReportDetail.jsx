@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { appApi } from "@/api/appApi";
 import { AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2 } from "lucide-react";
@@ -6,7 +6,7 @@ import ReportPdfExport from "@/components/ReportPdfExport";
 import CorrectiveExercisePicker from "@/components/CorrectiveExercisePicker";
 import { cacheReport, getCachedReport } from "@/lib/reportCache";
 import BodyDiagram from "@/components/BodyDiagram";
-import DepthAnalysisPanel from "@/components/DepthAnalysisPanel";
+const DepthAnalysisPanel = lazy(() => import("@/components/DepthAnalysisPanel"));
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -100,7 +100,9 @@ export default function ReportDetail() {
 
       {report.depth_analysis && (
         <Section icon={Activity} title="Misure cinematiche 3D">
-          <DepthAnalysisPanel analysis={report.depth_analysis} />
+          <Suspense fallback={<div className="text-zinc-500 text-sm">Caricamento visualizzazione 3D...</div>}>
+            <DepthAnalysisPanel analysis={report.depth_analysis} />
+          </Suspense>
         </Section>
       )}
 

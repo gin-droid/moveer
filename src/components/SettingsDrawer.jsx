@@ -129,12 +129,13 @@ export default function SettingsDrawer({ open, onOpenChange }) {
             <div className="rounded-2xl border border-border bg-card p-4">
               <div className="text-sm text-white mb-1">Sagoma corporea</div>
               <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                Seleziona il genere per visualizzare la sagoma corretta (maschile o femminile) nella mappa posturale dei report.
+                Per “Altro” viene usata la sagoma maschile nella mappa posturale dei report.
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {[
                   { v: "maschio", label: "Maschio" },
                   { v: "femmina", label: "Femmina" },
+                  { v: "altro", label: "Altro" },
                 ].map((opt) => {
                   const active = gender === opt.v;
                   return (

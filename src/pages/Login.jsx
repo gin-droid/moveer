@@ -21,6 +21,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   // Post-login destination (e.g. the MCP OAuth consent page sends users here
   // with returnTo so the grant flow can resume). Same-origin paths only.
   const returnTo = safeReturnTo();
@@ -39,8 +40,15 @@ export default function Login() {
     }
   };
 
-  const handleGoogle = () => {
-    appApi.auth.loginWithProvider("google", returnTo);
+  const handleGoogle = async () => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      await appApi.auth.loginWithProvider("google", returnTo);
+    } catch (err) {
+      setError(err.message || "Accesso con Google non riuscito.");
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -67,9 +75,10 @@ export default function Login() {
         variant="outline"
         className="w-full h-12 text-sm font-medium mb-6"
         onClick={handleGoogle}
+        disabled={googleLoading}
       >
         <GoogleIcon className="w-5 h-5 mr-2" />
-        Continua con Google
+        {googleLoading ? "Reindirizzamento a Google..." : "Continua con Google"}
       </Button>
 
       <div className="relative mb-6">
