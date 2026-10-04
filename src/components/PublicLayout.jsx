@@ -1,7 +1,9 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { Activity } from "lucide-react";
 
 export default function PublicLayout() {
+  const isAboutPage = useLocation().pathname === "/about";
+
   return (
     <div className="min-h-screen min-h-[100dvh] bg-background text-foreground flex flex-col">
       <header className="border-b border-border bg-sidebar pt-safe">
@@ -12,11 +14,13 @@ export default function PublicLayout() {
             </div>
             <span className="font-display font-semibold text-white">moVeerAI</span>
           </Link>
-          <nav className="flex items-center gap-4 sm:gap-5 text-sm">
-            <Link to="/gestione" className="text-muted-foreground hover:text-foreground transition-colors">Link utili</Link>
-            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">Cos'è</Link>
-            <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">Accedi</Link>
-          </nav>
+          {!isAboutPage && (
+            <nav className="flex items-center gap-4 sm:gap-5 text-sm">
+              <Link to="/gestione" className="text-muted-foreground hover:text-foreground transition-colors">Link utili</Link>
+              <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">Cos'è</Link>
+              <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">Accedi</Link>
+            </nav>
+          )}
         </div>
       </header>
 

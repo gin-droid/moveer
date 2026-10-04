@@ -73,7 +73,7 @@ export default function ReportDetail() {
   if (!report) return <div className="text-zinc-500 text-sm">Report non trovato.</div>;
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-sm space-y-5 sm:space-y-6">
       {/* Header */}
       <div className="rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-900/40 p-6 md:p-8">
         {canShowLogo && (

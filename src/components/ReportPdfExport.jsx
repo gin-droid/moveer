@@ -1,5 +1,9 @@
-import { FileDown } from "lucide-react";
+import { useState } from "react";
+import { FileDown, Loader2 } from "lucide-react";
 import jsPDF from "jspdf";
+import { Capacitor } from "@capacitor/core";
+import { Directory, Filesystem } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import { silhouettePoints } from "@/lib/bodySilhouette";
 import { analyzeFrontStress } from "@/lib/stressAnalysis";
 
@@ -10,7 +14,12 @@ const sevColors = {
 };
 
 export default function ReportPdfExport({ report, logoUrl, correctiveExercises }) {
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+
   const generate = () => {
+    if (exporting) return;
+    setExportError("");
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -461,16 +470,46 @@ export default function ReportPdfExport({ report, logoUrl, correctiveExercises }
       doc.text(`Pagina ${p}/${pageCount}`, pageW - margin, pageH - 20, { align: "right" });
     }
 
-    const fn = `report_${(report.exercise_name || "esercizio").toLowerCase().replace(/\s+/g, "_")}.pdf`;
-    doc.save(fn);
+    const slug = (report.exercise_name || "esercizio")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "esercizio";
+    const filename = `report_${slug}.pdf`;
+
+    if (!Capacitor.isNativePlatform()) {
+      doc.save(filename);
+      return;
+    }
+
+    setExporting(true);
+    const base64 = doc.output("datauristring").split(",")[1];
+    Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache })
+      .then(({ uri }) => Share.share({
+        title: filename,
+        url: uri,
+        dialogTitle: "Salva o condividi il report PDF",
+      }))
+      .catch((error) => {
+        if (error?.name !== "AbortError") {
+          setExportError(error?.message || "Impossibile esportare il PDF.");
+        }
+      })
+      .finally(() => setExporting(false));
   };
 
   return (
-    <button
-      onClick={generate}
-      className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-sm px-5 py-3 rounded-xl transition-colors border border-zinc-700"
-    >
-      <FileDown className="w-4 h-4" /> Esporta PDF
-    </button>
+    <div className="flex flex-col items-start gap-1.5">
+      <button
+        onClick={generate}
+        disabled={exporting}
+        className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-60 text-white font-semibold text-sm px-5 py-3 rounded-xl transition-colors border border-zinc-700"
+      >
+        {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+        {exporting ? "Preparazione PDF…" : "Esporta PDF"}
+      </button>
+      {exportError && <p role="alert" className="max-w-xs text-xs text-destructive">{exportError}</p>}
+    </div>
   );
 }
