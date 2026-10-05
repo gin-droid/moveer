@@ -14,7 +14,7 @@ Le chiavi `service_role`, AI, Stripe e provider email sono segreti server-side: 
 
 Secrets necessari per le funzioni:
 
-- `GEMINI_API_KEY` per analisi video, mentore e suggerimenti correttivi; `GEMINI_MODEL` è opzionale e predefinito a `gemini-2.5-flash`.
+- `GEMINI_API_KEY` per analisi video, mentore e suggerimenti correttivi; `GEMINI_MODEL` è opzionale e predefinito a `gemini-3.8-flash`, con fallback a `gemini-3.7-flash` e `gemini-3.5-flash` in caso di sovraccarico temporaneo.
 - `APP_ORIGIN` per i redirect del checkout e l'origine web consentita.
 - `BREVO_API_KEY` e `EMAIL_FROM` per notifiche atleta e segnalazioni inviate dalle Edge Functions; `EMAIL_FROM_NAME` è opzionale e predefinito a `moVeerAI`.
 - `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID` e `STRIPE_WEBHOOK_SECRET` per gli abbonamenti Pro.

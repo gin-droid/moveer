@@ -74,33 +74,50 @@ export async function generateGeminiText(contents: unknown[], systemInstruction?
       type: turn.role === 'model' ? 'model_output' : 'user_input',
       content: toInteractionContent(turn.parts),
     }));
-  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
-    },
-    body: JSON.stringify({
-      model,
-      input,
-      store: false,
-      ...(systemInstruction ? { system_instruction: systemInstruction } : {}),
-      generation_config: { temperature: 0.35 },
-      ...(jsonResponse ? { response_format: [{ type: 'text', mime_type: 'application/json' }] } : {}),
-    }),
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error?.message || `Errore Interactions API HTTP ${response.status}`);
-  const text = typeof result.output_text === 'string'
-    ? result.output_text
-    : (Array.isArray(result.steps) ? result.steps : [])
-      .filter((step: { type?: string }) => step.type === 'model_output')
-      .flatMap((step: { content?: Array<{ type?: string; text?: string }> }) => step.content || [])
-      .filter((item: { type?: string; text?: string }) => item.type === 'text' && typeof item.text === 'string')
-      .map((item: { text: string }) => item.text)
-      .join('');
-  if (!text) throw new Error('Risposta Gemini vuota');
-  return text;
+  const models = model === 'gemini-3.8-flash'
+    ? [model, 'gemini-3.7-flash', 'gemini-3.5-flash']
+    : [model];
+
+  for (const [index, currentModel] of models.entries()) {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        model: currentModel,
+        input,
+        store: false,
+        ...(systemInstruction ? { system_instruction: systemInstruction } : {}),
+        generation_config: { temperature: 0.35 },
+        ...(jsonResponse ? { response_format: [{ type: 'text', mime_type: 'application/json' }] } : {}),
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = result.error?.message || `Errore Interactions API HTTP ${response.status}`;
+      const temporaryCapacityError = [408, 429, 500, 502, 503, 504].includes(response.status) ||
+        /high demand|overload(?:ed)?|temporarily unavailable|capacity/i.test(message);
+      if (temporaryCapacityError && index < models.length - 1) {
+        console.warn(`Gemini ${currentModel} temporarily unavailable; trying fallback model.`);
+        continue;
+      }
+      throw new Error(message);
+    }
+    const text = typeof result.output_text === 'string'
+      ? result.output_text
+      : (Array.isArray(result.steps) ? result.steps : [])
+        .filter((step: { type?: string }) => step.type === 'model_output')
+        .flatMap((step: { content?: Array<{ type?: string; text?: string }> }) => step.content || [])
+        .filter((item: { type?: string; text?: string }) => item.type === 'text' && typeof item.text === 'string')
+        .map((item: { text: string }) => item.text)
+        .join('');
+    if (!text) throw new Error('Risposta Gemini vuota');
+    return text;
+  }
+
+  throw new Error('Nessun modello Gemini disponibile');
 }
 
 export function parseGeminiJson(text: string) {
