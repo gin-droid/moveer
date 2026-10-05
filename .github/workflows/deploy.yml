@@ -17,14 +17,41 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
     steps:
       - name: Checkout codice
         uses: actions/checkout@v4
 
+      - name: Verifica variabili frontend
+        run: |
+          missing=0
+          for name in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY VITE_SITE_URL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Configura $name in Settings > Secrets and variables > Actions > Variables"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Configura Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installa dipendenze
+        run: npm ci
+
+      - name: Genera build frontend
+        run: npm run build
+
       - name: Configura GitHub Pages per Actions
         uses: actions/configure-pages@v5
 
-      - name: Verifica build PWA generata localmente
+      - name: Verifica build PWA
         run: |
           test -s dist/index.html
           test -s dist/manifest.json
