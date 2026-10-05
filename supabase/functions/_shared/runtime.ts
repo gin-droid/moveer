@@ -48,21 +48,26 @@ export async function generateGeminiText(contents: unknown[], systemInstruction?
   const model = !configuredModel || configuredModel === 'gemini-2.5-flash'
     ? 'gemini-3.8-flash'
     : configuredModel;
+  type GeminiImage = { mimeType?: string; mime_type?: string; data?: string };
   type GeminiPart = {
     text?: string;
-    inlineData?: { mimeType?: string; data?: string };
-    inline_data?: { mime_type?: string; mimeType?: string; data?: string };
+    inlineData?: GeminiImage;
+    inline_data?: GeminiImage;
   };
   type GeminiTurn = { role?: string; parts?: GeminiPart[] };
+  type InteractionContent =
+    | { type: 'text'; text: string }
+    | { type: 'image'; mime_type: string; data: string };
   const turns = contents as GeminiTurn[];
-  const toInteractionContent = (parts: GeminiPart[] = []) => parts.flatMap((part) => {
+  const toInteractionContent = (parts: GeminiPart[] = []): InteractionContent[] => parts.flatMap<InteractionContent>((part) => {
     if (typeof part.text === 'string') return [{ type: 'text', text: part.text }];
     const image = part.inlineData || part.inline_data;
     if (image?.data) {
+      const mimeType = (typeof image.mimeType === 'string' ? image.mimeType : undefined) ||
+        (typeof image.mime_type === 'string' ? image.mime_type : undefined) || 'image/jpeg';
       return [{
         type: 'image',
-        mime_type: ('mimeType' in image ? image.mimeType : undefined) ||
-          ('mime_type' in image ? image.mime_type : undefined) || 'image/jpeg',
+        mime_type: mimeType,
         data: image.data,
       }];
     }

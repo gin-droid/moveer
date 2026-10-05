@@ -39,16 +39,31 @@ DIFETTI: ${JSON.stringify(issues)}
 CATALOGO: ${JSON.stringify(exercises)}`;
     const result = parseGeminiJson(await generateGeminiText([{ role: 'user', parts: [{ text: prompt }] }]));
     const validExercises = new Map(exercises.map((exercise) => [exercise.id, exercise]));
-    const suggestions = (Array.isArray(result.suggestions) ? result.suggestions : [])
+    type CorrectiveSuggestion = {
+      exercise_id: string;
+      target_issue?: unknown;
+      why?: unknown;
+      sets_reps?: unknown;
+    };
+    const candidates: unknown[] = Array.isArray(result.suggestions) ? result.suggestions : [];
+    const suggestions = candidates
+      .filter((item): item is CorrectiveSuggestion =>
+        typeof item === 'object' && item !== null && !Array.isArray(item) &&
+        'exercise_id' in item && typeof item.exercise_id === 'string'
+      )
       .filter((item) => validExercises.has(item.exercise_id))
       .slice(0, 5)
-      .map((item) => ({
-        exercise_id: item.exercise_id,
-        exercise_name: validExercises.get(item.exercise_id).name,
-        target_issue: String(item.target_issue || '').slice(0, 300),
-        why: String(item.why || '').slice(0, 500),
-        sets_reps: String(item.sets_reps || '').slice(0, 80),
-      }));
+      .flatMap((item) => {
+        const exercise = validExercises.get(item.exercise_id);
+        if (!exercise) return [];
+        return [{
+          exercise_id: item.exercise_id,
+          exercise_name: exercise.name,
+          target_issue: String(item.target_issue || '').slice(0, 300),
+          why: String(item.why || '').slice(0, 500),
+          sets_reps: String(item.sets_reps || '').slice(0, 80),
+        }];
+      });
 
     return json({ suggestions });
   } catch (error) {

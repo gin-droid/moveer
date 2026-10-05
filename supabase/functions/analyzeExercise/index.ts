@@ -90,7 +90,11 @@ Genera un JSON in italiano con score intero 0-100, summary (2-3 frasi), issues_d
       throw new Error('Risposta Gemini incompleta');
     }
 
-    const criticalDepthFrame = depthAnalysis?.keyFrames.reduce((best, candidate) => {
+    type DepthKeyFrame = NonNullable<typeof depthAnalysis>['keyFrames'][number];
+    const criticalDepthFrame = depthAnalysis?.keyFrames.reduce<{
+      frame: DepthKeyFrame;
+      deviation: number;
+    } | null>((best, candidate) => {
       const pairs = [
         [candidate.angles.kneeAngleDeg, checkpoints.optimalAngles.kneeFlex],
         [candidate.angles.hipAngleDeg, checkpoints.optimalAngles.hipFlex],

@@ -13,19 +13,9 @@ import Vision
  * Registra frame sincronizzati (RGB JPEG + joints 3D + depth stats) e
  * li restituisce al JS tramite stopRecording().
  *
- * NOTA: questo file va compilato in Xcode. Richiede iOS 14+ e, per la
+ * NOTA: questo file va compilato in Xcode. Richiede iOS 15+ e, per la
  * profondità LiDAR, un dispositivo con sensore LiDAR (iPhone 12 Pro+).
  */
-  public let identifier = "DepthScannerPlugin"
-  public let jsName = "DepthScanner"
-  public let pluginMethods: [CAPPluginMethod] = [
-    CAPPluginMethod(name: "isAvailable", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "recordVideo", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "startRecording", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "stopRecording", returnType: CAPPluginReturnPromise),
-    CAPPluginMethod(name: "cancelRecording", returnType: CAPPluginReturnPromise)
-  ]
-
 @objc(DepthScannerPlugin)
 public class DepthScannerPlugin: CAPPlugin, CAPBridgedPlugin, ARSessionDelegate {
   public let identifier = "DepthScannerPlugin"

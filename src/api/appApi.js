@@ -10,6 +10,16 @@ const authRedirectUrl = (path) => {
   return `${origin}${appPath(path)}`;
 };
 
+const safeFileName = (name = 'file') => {
+  const clean = String(name)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(-80);
+  return clean || 'file';
+};
+
 const entityTables = {
   AnalysisReport: 'analysis_reports',
   Athlete: 'athletes',
@@ -189,7 +199,7 @@ const auth = {
 const integrations = {
   Core: {
     async UploadPrivateFile({ file }) {
-      const path = `${crypto.randomUUID()}-${file.name}`;
+      const path = `${crypto.randomUUID()}-${safeFileName(file.name)}`;
       const { error } = await requireSupabase().storage.from('analysis-media').upload(path, file, {
         contentType: file.type || 'application/octet-stream',
       });
@@ -203,7 +213,7 @@ const integrations = {
       return { signed_url: data.signedUrl };
     },
     async UploadPublicFile({ file }) {
-      const path = `${crypto.randomUUID()}-${file.name}`;
+      const path = `${crypto.randomUUID()}-${safeFileName(file.name)}`;
       const storage = requireSupabase().storage.from('public-assets');
       const { error } = await storage.upload(path, file, { contentType: file.type || 'application/octet-stream' });
       if (error) throw error;
