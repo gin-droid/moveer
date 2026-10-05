@@ -75,7 +75,7 @@ export async function generateGeminiText(contents: unknown[], systemInstruction?
       content: toInteractionContent(turn.parts),
     }));
   const models = model === 'gemini-3.8-flash'
-    ? [model, 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']
+    ? [model, 'gemini-3.7-flash', 'gemini-3.5-flash']
     : [model];
 
   for (const [index, currentModel] of models.entries()) {
