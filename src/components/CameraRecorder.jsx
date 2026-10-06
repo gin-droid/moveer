@@ -373,14 +373,18 @@ export default function CameraRecorder({ onRecorded, onClose }) {
       </div>
 
       {/* Video preview */}
-      <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black">
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          className="h-full w-full object-contain"
-          style={{ transform: facing === "user" ? "scaleX(-1)" : undefined }}
-        />
+      <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black px-3 py-3">
+        <div
+          className="relative aspect-[3/4] max-w-full overflow-hidden rounded-xl border border-white/10 bg-black shadow-xl"
+          style={{ height: "min(100%, 58dvh)" }}
+        >
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            className="absolute inset-0 h-full w-full object-contain"
+            style={{ transform: facing === "user" ? "scaleX(-1)" : undefined }}
+          />
 
         {/* Recording indicator */}
         {(recording || paused) && (
@@ -478,8 +482,8 @@ export default function CameraRecorder({ onRecorded, onClose }) {
           </div>
         )}
 
-        {(depthStarting || depthScanning || depthFinalizing) && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-background/95 px-6 text-center backdrop-blur-sm">
+          {(depthStarting || depthScanning || depthFinalizing) && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-background/95 px-6 text-center backdrop-blur-sm">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-sm font-semibold text-foreground">
               {depthStarting ? "Avvio sensore depth…" : depthFinalizing ? "Elaborazione frame depth…" : "Scansione depth in corso"}
@@ -498,8 +502,9 @@ export default function CameraRecorder({ onRecorded, onClose }) {
                 </button>
               </>
             )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Controls */}
@@ -513,7 +518,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
               {recording ? (
                 <button
                   onClick={pauseRecording}
-                  className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
                   aria-label="Pausa"
                   title="Pausa"
                 >
@@ -523,7 +528,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
               ) : (
                 <button
                   onClick={resumeRecording}
-                  className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
                   aria-label="Riprendi registrazione"
                   title="Riprendi registrazione"
                 >
@@ -533,7 +538,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
               )}
               <button
                 onClick={stopRecording}
-                className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-full bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20 transition-colors hover:bg-destructive/90"
+                className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-full bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20 transition-colors hover:bg-destructive/90"
                 aria-label="Stop"
                 title="Stop"
               >
@@ -545,7 +550,7 @@ export default function CameraRecorder({ onRecorded, onClose }) {
             <button
               onClick={startRecording}
               disabled={!ready || finalizing}
-              className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/20 ring-4 ring-primary/10 transition-colors hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-50 disabled:shadow-none"
+              className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/20 ring-4 ring-primary/10 transition-colors hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-50 disabled:shadow-none"
               aria-label="REC"
               title="REC"
             >

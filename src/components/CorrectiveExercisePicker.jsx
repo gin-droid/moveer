@@ -3,6 +3,17 @@ import { Link } from "react-router-dom";
 import { appApi } from "@/api/appApi";
 import { Loader2, Dumbbell, Check, ExternalLink } from "lucide-react";
 
+async function getFunctionErrorMessage(error) {
+  const response = error?.context;
+  if (response && typeof response.clone === "function") {
+    try {
+      const body = await response.clone().json();
+      if (typeof body?.error === "string" && body.error) return body.error;
+    } catch {}
+  }
+  return error?.message || "La generazione degli esercizi correttivi non è riuscita.";
+}
+
 const normalize = (s) => ({
   exercise_id: s.exercise_id,
   name: s.exercise_name,
@@ -15,19 +26,20 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
   const [suggestions, setSuggestions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [saving, setSaving] = useState(false);
 
   const persist = async (ids, sugg) => {
     const arr = (sugg || []).filter((s) => ids.has(s.exercise_id)).map(normalize);
     setSaving(true);
+    setSaveError("");
     try {
       await appApi.entities.AnalysisReport.update(report.id, {
         selected_corrective_exercises: arr,
       });
-      onSelectionChange?.(arr);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      setSaveError(err.message || "Impossibile sincronizzare la selezione con il report.");
     } finally {
       setSaving(false);
     }
@@ -43,11 +55,12 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
       setLoading(true);
       setError("");
       try {
-        const res = await appApi.functions.invoke("suggestCorrectiveExercises", {
+        const { data, error: functionError } = await appApi.functions.invoke("suggestCorrectiveExercises", {
           reportId: report.id,
         });
-        if (res.data?.error) throw new Error(res.data.error);
-        const sugg = res.data?.suggestions || [];
+        if (functionError) throw new Error(await getFunctionErrorMessage(functionError));
+        if (data?.error) throw new Error(data.error);
+        const sugg = data?.suggestions || [];
         if (cancelled) return;
         setSuggestions(sugg);
         const persisted = report.selected_corrective_exercises || [];
@@ -76,7 +89,9 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
     if (next.has(id)) next.delete(id);
     else next.add(id);
     setSelectedIds(next);
-    persist(next, suggestions || []);
+    const currentSuggestions = suggestions || [];
+    onSelectionChange?.(currentSuggestions.filter((s) => next.has(s.exercise_id)).map(normalize));
+    persist(next, currentSuggestions);
   };
 
   if (loading) {
@@ -107,6 +122,7 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
         difetti rilevati. Seleziona quali includere nel report PDF.
         {saving && <span className="ml-1 text-primary">· salvataggio…</span>}
       </p>
+      {saveError && <p className="text-xs text-destructive" role="alert">{saveError}</p>}
       <div className="grid sm:grid-cols-2 gap-3">
         {suggestions.map((s) => {
           const checked = selectedIds.has(s.exercise_id);

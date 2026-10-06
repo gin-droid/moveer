@@ -41,7 +41,12 @@ export async function consumeQuota(client: SupabaseClient, kind: 'analysis' | 'm
   return data as { allowed: boolean; blocked: boolean; used: number; limit: number; plan: string };
 }
 
-export async function generateGeminiText(contents: unknown[], systemInstruction?: string, jsonResponse = true) {
+export async function generateGeminiText(
+  contents: unknown[],
+  systemInstruction?: string,
+  jsonResponse = true,
+  jsonSchema?: unknown,
+) {
   const apiKey = Deno.env.get('GEMINI_API_KEY');
   if (!apiKey) throw new Error('GEMINI_API_KEY non configurata nei secrets Supabase');
   const configuredModel = (Deno.env.get('GEMINI_MODEL') || '').trim().replace(/^models\//, '');
@@ -96,7 +101,13 @@ export async function generateGeminiText(contents: unknown[], systemInstruction?
         store: false,
         ...(systemInstruction ? { system_instruction: systemInstruction } : {}),
         generation_config: { temperature: 0.35 },
-        ...(jsonResponse ? { response_format: [{ type: 'text', mime_type: 'application/json' }] } : {}),
+        ...(jsonResponse ? {
+          response_format: [{
+            type: 'text',
+            mime_type: 'application/json',
+            ...(jsonSchema ? { schema: jsonSchema } : {}),
+          }],
+        } : {}),
       }),
     });
     const result = await response.json().catch(() => ({}));

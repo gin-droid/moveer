@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
     const [{ data: entitlement, error: entitlementError }, { data: report, error: reportError }] = await Promise.all([
       auth.client.from('user_entitlements').select('plan, blocked').eq('user_id', auth.user.id).maybeSingle(),
-      auth.client.from('analysis_reports').select('id, exercise_name, macro_category, issues_detected')
+      auth.client.from('analysis_reports').select('id, exercise_name, macro_category, issues_detected, corrections, corrective_exercises')
         .eq('id', reportId).maybeSingle(),
     ]);
     if (entitlementError) throw entitlementError;
@@ -29,15 +29,48 @@ Deno.serve(async (req) => {
     if (!issues.length) return json({ suggestions: [], reason: 'no_issues' });
 
     const { data: exercises, error: exerciseError } = await auth.client.from('exercises')
-      .select('id, name, macro_category, muscle_groups, description')
-      .in('macro_category', correctiveCategories).order('created_at', { ascending: false }).limit(150);
+      .select('id, name, macro_category, subcategory, muscle_groups, description')
+      .in('macro_category', correctiveCategories).order('created_at', { ascending: false });
     if (exerciseError) throw exerciseError;
     if (!exercises?.length) return json({ suggestions: [], reason: 'no_candidates' });
 
-    const prompt = `Per l'esercizio "${report.exercise_name}" (${report.macro_category || 'generale'}), seleziona al massimo 5 esercizi del catalogo che correggano i difetti elencati. Restituisci JSON {"suggestions":[{"exercise_id":"id esatto","exercise_name":"nome","target_issue":"difetto","why":"motivazione","sets_reps":"serie e ripetizioni"}]}. Se nessun esercizio è pertinente, restituisci un array vuoto.
-DIFETTI: ${JSON.stringify(issues)}
-CATALOGO: ${JSON.stringify(exercises)}`;
-    const result = parseGeminiJson(await generateGeminiText([{ role: 'user', parts: [{ text: prompt }] }]));
+    const corrections = Array.isArray(report.corrections) ? report.corrections : [];
+    const reportExercises = Array.isArray(report.corrective_exercises) ? report.corrective_exercises : [];
+    const prompt = `Sei un esperto di biomeccanica e riabilitazione sportiva. Collega i difetti del report a esercizi correttivi realmente presenti nel catalogo.
+ESERCIZIO ANALIZZATO: ${report.exercise_name} (${report.macro_category || 'generale'})
+DIFETTI RILEVATI: ${JSON.stringify(issues)}
+CORREZIONI TECNICHE DEL REPORT: ${JSON.stringify(corrections)}
+ESERCIZI GIÀ INDICATI DAL REPORT: ${JSON.stringify(reportExercises)}
+CATALOGO CORRETTIVO COMPLETO (id, nome, categoria, sottocategoria, muscoli e descrizione): ${JSON.stringify(exercises)}
+Seleziona fino a 5 esercizi pertinenti ai difetti e alle correzioni, considerando gruppi muscolari e descrizione. Usa esclusivamente gli exercise_id presenti nel catalogo; non inventare o modificare gli ID. Per ogni elemento restituisci exercise_id, target_issue, why e sets_reps. Se nessun esercizio del catalogo è pertinente, restituisci suggestions vuoto.`;
+    const responseSchema = {
+      type: 'object',
+      properties: {
+        suggestions: {
+          type: 'array',
+          maxItems: 5,
+          items: {
+            type: 'object',
+            properties: {
+              exercise_id: { type: 'string', enum: exercises.map((exercise) => exercise.id) },
+              target_issue: { type: 'string' },
+              why: { type: 'string' },
+              sets_reps: { type: 'string' },
+            },
+            required: ['exercise_id', 'target_issue', 'why', 'sets_reps'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['suggestions'],
+      additionalProperties: false,
+    };
+    const result = parseGeminiJson(await generateGeminiText(
+      [{ role: 'user', parts: [{ text: prompt }] }],
+      undefined,
+      true,
+      responseSchema,
+    ));
     const validExercises = new Map(exercises.map((exercise) => [exercise.id, exercise]));
     type CorrectiveSuggestion = {
       exercise_id: string;
