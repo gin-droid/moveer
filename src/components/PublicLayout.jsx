@@ -6,7 +6,7 @@ export default function PublicLayout() {
   return (
     <div className="min-h-screen min-h-[100dvh] bg-background text-foreground flex flex-col">
       <header className="border-b border-border bg-sidebar pt-safe">
-        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-[26rem] mx-auto w-full px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center justify-center">
             <img
               src={`${import.meta.env.BASE_URL}IMG_8121.JPG`}
@@ -25,13 +25,13 @@ export default function PublicLayout() {
       </header>
 
       <main className="flex-1">
-        <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
+        <div className="max-w-[26rem] mx-auto w-full px-4 py-8 sm:py-12">
           <Outlet />
         </div>
       </main>
 
       <footer className="border-t border-border bg-sidebar pb-safe">
-        <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+        <div className="max-w-[26rem] mx-auto w-full px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <span>© {new Date().getFullYear()} moVeerAI — Analisi postura e tecnica</span>
           <nav className="flex items-center gap-4">
             <Link to="/gestione" className="hover:text-foreground transition-colors">Link utili</Link>

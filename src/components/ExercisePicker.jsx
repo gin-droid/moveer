@@ -59,7 +59,7 @@ export default function ExercisePicker({ exercises, selectedId, onSelect }) {
       </div>
 
       {/* Results */}
-      <div className="h-[35vh] min-h-[220px] max-h-[320px] overflow-y-auto overscroll-contain [scrollbar-width:thin]">
+      <div className="max-h-[168px] overflow-y-auto overscroll-contain [scrollbar-width:thin]">
         {filtered.length === 0 ? (
           <div className="flex h-full items-center justify-center px-4 py-8 text-center text-sm text-muted-foreground">
             Nessun esercizio trovato.

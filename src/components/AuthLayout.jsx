@@ -4,7 +4,7 @@ import React from "react";
 export default function AuthLayout({ title, subtitle, footer, children }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 pt-safe pb-safe pl-safe pr-safe">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-[24rem]">
         <div className="text-center mb-10">
           <img
             src={`${import.meta.env.BASE_URL}IMG_8121.JPG`}

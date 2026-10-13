@@ -181,7 +181,7 @@ export default function AppLayout() {
       {/* Main */}
       <main className="flex-1 md:ml-64 pt-[calc(4rem+env(safe-area-inset-top))] md:pt-0 pb-28 md:pb-0 min-h-screen min-h-[100dvh]">
         <header className="hidden md:flex sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border">
-          <div className="max-w-5xl w-full mx-auto px-6 lg:px-8 h-14 flex items-center">
+          <div className="max-w-[26rem] w-full mx-auto px-4 h-14 flex items-center">
             {showBack ? (
               <button
                 onClick={() => (isDetail ? navigate(-1) : navigate("/"))}
@@ -195,7 +195,7 @@ export default function AppLayout() {
             )}
           </div>
         </header>
-        <div className="max-w-md md:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 overflow-x-hidden">
+        <div className="max-w-[26rem] w-full mx-auto px-4 py-6 md:py-10 overflow-x-hidden">
           {isMobile ? (
             <div
                 key={location.pathname}
