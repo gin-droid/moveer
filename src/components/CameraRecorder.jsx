@@ -356,20 +356,36 @@ export default function CameraRecorder({ onRecorded, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background text-foreground">
       {/* Header */}
-      <div className="z-10 flex min-h-[3.5rem] shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 py-2 pt-safe">
+      <div
+        className="z-10 flex min-h-[3.5rem] shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 pb-2"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      >
         <div className="flex items-center gap-2.5 text-foreground">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15">
             <Camera className="w-4 h-4 text-primary" />
           </div>
           <span className="font-display text-base font-semibold">Registrazione</span>
         </div>
-        <button
-          onClick={closeRecorder}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
-          aria-label="Chiudi"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {ready && hasMultipleCams && !recording && !paused && !recorded && (
+            <button
+              onClick={flipCamera}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+              aria-label="Cambia fotocamera"
+              title="Cambia fotocamera"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+          )}
+          <button
+            onClick={closeRecorder}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+            aria-label="Chiudi fotocamera"
+            title="Chiudi fotocamera"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Video preview */}
@@ -395,17 +411,6 @@ export default function CameraRecorder({ onRecorded, onClose }) {
             <span className={`w-2.5 h-2.5 rounded-full ${paused ? "bg-amber-400" : "bg-rose-500 animate-pulse"}`} />
             <span className="text-white text-sm font-mono">{paused ? "PAUSA" : "REC"} {fmt(seconds)}</span>
           </div>
-        )}
-
-        {/* Flip button */}
-        {ready && hasMultipleCams && !recording && !paused && !recorded && (
-          <button
-            onClick={flipCamera}
-            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/70 text-white backdrop-blur transition-colors hover:bg-black/90"
-            aria-label="Cambia fotocamera"
-          >
-            <RotateCcw className="w-5 h-5" />
-          </button>
         )}
 
         {/* Starting / error overlay */}
