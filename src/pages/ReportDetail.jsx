@@ -73,19 +73,19 @@ export default function ReportDetail() {
   if (!report) return <div className="text-zinc-500 text-sm">Report non trovato.</div>;
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-sm space-y-5 sm:space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-[24rem] space-y-4 sm:space-y-5">
       {/* Header */}
-      <div className="rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-900/40 p-6 md:p-8">
+      <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-900/40 p-4 sm:p-5">
         {canShowLogo && (
           <div className="mb-4 flex justify-end">
             <img src={user.logo_url} alt="Logo" className="max-h-16 max-w-[160px] object-contain opacity-90" />
           </div>
         )}
-        <div className="flex flex-col md:flex-row md:items-center gap-6">
+        <div className="flex flex-col gap-4">
           <ScoreRing score={report.score} big />
           <div className="flex-1">
             <div className="text-[11px] uppercase tracking-widest text-emerald-300/80">{report.macro_category} / {report.subcategory}</div>
-            <h1 className="mt-1 font-display text-2xl md:text-3xl font-semibold text-white tracking-tight">{report.exercise_name}</h1>
+            <h1 className="mt-1 font-display text-xl sm:text-2xl font-semibold text-white tracking-tight">{report.exercise_name}</h1>
             <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{report.summary}</p>
           </div>
         </div>
