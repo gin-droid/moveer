@@ -232,9 +232,9 @@ export default function Exercises() {
           Nessun esercizio trovato.
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
           {filtered.map((e) => (
-            <div key={e.id} className="group rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden hover:border-emerald-500/40 transition-colors flex flex-col min-h-[170px]">
+            <div key={e.id} className="group mx-auto w-full max-w-[24rem] rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden hover:border-emerald-500/40 transition-colors flex flex-col min-h-[170px]">
               <div className="p-4 flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] uppercase tracking-widest text-emerald-300/80">{e.macro_category}</span>
