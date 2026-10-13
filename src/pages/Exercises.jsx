@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, ChevronRight, Video, X } from "lucide-react";
+import { Check, ChevronRight, Search, SlidersHorizontal, Video, X } from "lucide-react";
 import PullToRefresh from "@/components/PullToRefresh";
 import { useAuth } from "@/lib/AuthContext";
 import { loadPreferredExercises } from "@/lib/exercisePreferences";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 export default function Exercises() {
   const { user } = useAuth();
@@ -16,6 +17,8 @@ export default function Exercises() {
   const [activeMuscle, setActiveMuscle] = useState("Tutti");
   const [activeEquip, setActiveEquip] = useState("Tutti");
   const [query, setQuery] = useState("");
+  const [extraFilterSearch, setExtraFilterSearch] = useState("");
+  const [extraFiltersOpen, setExtraFiltersOpen] = useState(false);
 
   const loadExercises = async () => {
     setLoading(true);
@@ -73,6 +76,18 @@ export default function Exercises() {
   }, [exercises, activeMacro, activeSub, activeDiff, activeMuscle, activeEquip, query]);
 
   const hasActiveFilters = activeMacro !== "Tutti" || activeSub !== "Tutti" || activeDiff !== "Tutti" || activeMuscle !== "Tutti" || activeEquip !== "Tutti" || query !== "";
+  const extraFilterGroups = [
+    { key: "subcategory", label: "Sottocategoria", options: subs.slice(1), value: activeSub, setValue: setActiveSub },
+    { key: "muscle", label: "Gruppo muscolare", options: muscles.slice(1), value: activeMuscle, setValue: setActiveMuscle },
+    { key: "equipment", label: "Attrezzatura", options: equipments.slice(1), value: activeEquip, setValue: setActiveEquip },
+  ];
+  const activeExtraFilterCount = extraFilterGroups.filter((group) => group.value !== "Tutti").length;
+  const normalizedExtraSearch = extraFilterSearch.trim().toLocaleLowerCase("it");
+  const matchingExtraOptions = extraFilterGroups.flatMap((group) =>
+    group.options
+      .filter((option) => option.toLocaleLowerCase("it").includes(normalizedExtraSearch))
+      .map((option) => ({ ...group, option }))
+  );
 
   const resetFilters = () => {
     setActiveMacro("Tutti");
@@ -128,21 +143,6 @@ export default function Exercises() {
         ))}
       </div>
 
-      {/* Sub chips */}
-      <div className="flex flex-wrap gap-2 -mt-2 pb-1">
-        {subs.map((s) => (
-          <button
-            key={s}
-            onClick={() => setActiveSub(s)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-              activeSub === s ? "bg-zinc-200 text-zinc-900" : "bg-zinc-900/40 border border-zinc-800 text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-
       {/* Difficulty chips */}
       <div className="flex flex-wrap gap-2 -mt-2 pb-1">
         {difficulties.map((d) => (
@@ -158,39 +158,111 @@ export default function Exercises() {
         ))}
       </div>
 
-      {/* Muscle group chips */}
-      {muscles.length > 1 && (
-        <div className="flex flex-wrap gap-2 -mt-2 pb-1">
-          {muscles.map((m) => (
-            <button
-              key={m}
-              onClick={() => setActiveMuscle(m)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                activeMuscle === m ? "bg-zinc-200 text-zinc-900" : "bg-zinc-900/40 border border-zinc-800 text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
+      {/* Additional searchable filters */}
+      {(subs.length > 1 || muscles.length > 1 || equipments.length > 1) && (
+        <button
+          type="button"
+          onClick={() => setExtraFiltersOpen(true)}
+          className="inline-flex w-full items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-300 transition-colors hover:border-zinc-600 hover:text-white"
+        >
+          <span className="inline-flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-emerald-300" />
+            Altri filtri
+          </span>
+          <span className="text-xs text-zinc-500">
+            {activeExtraFilterCount > 0 ? `${activeExtraFilterCount} attivi` : "Sottocategoria, muscoli, attrezzatura"}
+          </span>
+        </button>
       )}
 
-      {/* Equipment chips */}
-      {equipments.length > 1 && (
-        <div className="flex flex-wrap gap-2 -mt-2 pb-1">
-          {equipments.map((eq) => (
+      <Sheet open={extraFiltersOpen} onOpenChange={setExtraFiltersOpen}>
+        <SheetContent side="bottom" className="flex max-h-[82vh] max-h-[82dvh] flex-col gap-0 rounded-t-2xl border-zinc-800 bg-zinc-950 p-0 text-white">
+          <SheetHeader className="border-b border-zinc-800 px-5 pb-3 pt-5 text-left">
+            <SheetTitle className="text-white">Altri filtri</SheetTitle>
+          </SheetHeader>
+          <div className="border-b border-zinc-800 px-4 py-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                value={extraFilterSearch}
+                onChange={(event) => setExtraFilterSearch(event.target.value)}
+                placeholder="Cerca sottocategoria, muscolo o attrezzatura…"
+                aria-label="Cerca altri filtri"
+                className="h-11 w-full rounded-xl border border-zinc-800 bg-zinc-900/60 pl-10 pr-10 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-emerald-500/50"
+              />
+              {extraFilterSearch && (
+                <button
+                  type="button"
+                  onClick={() => setExtraFilterSearch("")}
+                  aria-label="Cancella ricerca filtri"
+                  className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+            {extraFilterGroups.map((group) => {
+              const matchingOptions = group.options.filter((option) =>
+                option.toLocaleLowerCase("it").includes(normalizedExtraSearch)
+              );
+              if (group.options.length === 0 || (normalizedExtraSearch && matchingOptions.length === 0)) return null;
+              return (
+                <section key={group.key} className="mb-4 last:mb-0">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">{group.label}</h3>
+                  <div className="divide-y divide-zinc-800 overflow-hidden rounded-xl border border-zinc-800">
+                    <button
+                      type="button"
+                      onClick={() => group.setValue("Tutti")}
+                      aria-pressed={group.value === "Tutti"}
+                      className="flex min-h-11 w-full items-center justify-between gap-3 bg-zinc-900/40 px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-900"
+                    >
+                      Tutti
+                      {group.value === "Tutti" && <Check className="h-4 w-4 text-emerald-300" />}
+                    </button>
+                    {matchingOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => group.setValue(option)}
+                        aria-pressed={group.value === option}
+                        className="flex min-h-11 w-full items-center justify-between gap-3 bg-zinc-900/40 px-3 py-2 text-left text-sm text-zinc-300 hover:bg-zinc-900"
+                      >
+                        <span className="truncate">{option}</span>
+                        {group.value === option && <Check className="h-4 w-4 shrink-0 text-emerald-300" />}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+            {normalizedExtraSearch && matchingExtraOptions.length === 0 && (
+              <p className="py-8 text-center text-sm text-zinc-500">Nessun filtro corrispondente.</p>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-zinc-800 px-4 py-3 pb-safe">
             <button
-              key={eq}
-              onClick={() => setActiveEquip(eq)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                activeEquip === eq ? "bg-zinc-200 text-zinc-900" : "bg-zinc-900/40 border border-zinc-800 text-zinc-400 hover:text-zinc-200"
-              }`}
+              type="button"
+              onClick={() => {
+                setActiveSub("Tutti");
+                setActiveMuscle("Tutti");
+                setActiveEquip("Tutti");
+              }}
+              className="text-sm text-zinc-400 hover:text-white"
             >
-              {eq}
+              Azzera selezioni
             </button>
-          ))}
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={() => setExtraFiltersOpen(false)}
+              className="rounded-lg bg-emerald-400 px-4 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-300"
+            >
+              Mostra {filtered.length} esercizi
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Result count + reset */}
       {!loading && !loadError && (
