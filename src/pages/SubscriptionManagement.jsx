@@ -162,7 +162,7 @@ export default function SubscriptionManagement() {
       <section className="border-y border-zinc-800 py-5">
         <h2 className="mb-1 text-base font-semibold text-white">Assegna un piano via email</h2>
         <p className="mb-4 text-xs text-zinc-500">L’indirizzo deve appartenere a un account registrato. L’assegnazione manuale non modifica pagamenti o rinnovi Stripe.</p>
-        <form onSubmit={handleGrantPlan} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
+        <form onSubmit={handleGrantPlan} className="space-y-3">
           <input
             type="email"
             required
@@ -173,13 +173,29 @@ export default function SubscriptionManagement() {
             aria-label="Email dell’utente"
             className="h-11 min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-white outline-none focus:border-primary"
           />
-          <select value={plan} onChange={(event) => setPlan(event.target.value)} aria-label="Piano da assegnare" className="h-11 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-white">
-            {PLANS.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-          </select>
-          <button disabled={granting} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-            {granting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Assegna piano
-          </button>
+          <div className="space-y-3">
+            <div role="group" aria-label="Piano da assegnare" className="grid w-full grid-cols-3 overflow-hidden rounded-md border border-zinc-700 bg-zinc-950">
+              {PLANS.map((item, index) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={plan === item.id}
+                  onClick={() => setPlan(item.id)}
+                  className={`h-11 min-w-0 px-2 text-xs font-medium transition-colors ${
+                    plan === item.id
+                      ? "bg-primary text-primary-foreground"
+                      : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                  } ${index < PLANS.length - 1 ? "border-r border-zinc-800" : ""}`}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
+            <button disabled={granting} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">
+              {granting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Assegna piano
+            </button>
+          </div>
         </form>
       </section>
 
