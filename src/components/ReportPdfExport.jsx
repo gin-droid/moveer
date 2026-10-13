@@ -417,7 +417,7 @@ export default function ReportPdfExport({ report, logoUrl, correctiveExercises }
     }
 
     // ---- Corrective exercises ----
-    const corrective = (correctiveExercises && correctiveExercises.length > 0)
+    const corrective = Array.isArray(correctiveExercises)
       ? correctiveExercises
       : (report.corrective_exercises || []);
     if (corrective.length > 0) {

@@ -37,6 +37,7 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
     try {
       await appApi.entities.AnalysisReport.update(report.id, {
         selected_corrective_exercises: arr,
+        corrective_selection_saved: true,
       });
     } catch (err) {
       setSaveError(err.message || "Impossibile sincronizzare la selezione con il report.");
@@ -64,10 +65,9 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
         if (cancelled) return;
         setSuggestions(sugg);
         const persisted = report.selected_corrective_exercises || [];
-        const ids =
-          persisted.length > 0
-            ? new Set(persisted.map((s) => s.exercise_id))
-            : new Set(sugg.map((s) => s.exercise_id));
+        const ids = report.corrective_selection_saved
+          ? new Set(persisted.map((s) => s.exercise_id))
+          : new Set(sugg.map((s) => s.exercise_id));
         setSelectedIds(ids);
         const arr = sugg.filter((s) => ids.has(s.exercise_id)).map(normalize);
         onSelectionChange?.(arr);

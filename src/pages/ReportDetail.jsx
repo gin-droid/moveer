@@ -36,7 +36,7 @@ export default function ReportDetail() {
         cacheReport(r);
         const isPro = u && (u.plan === "pro" || u.plan === "coach");
         setSelectedCorrective(
-          isPro && (r.selected_corrective_exercises || []).length > 0
+          isPro && r.corrective_selection_saved
             ? r.selected_corrective_exercises
             : r.corrective_exercises || []
         );

@@ -52,7 +52,7 @@ Seleziona fino a 5 esercizi pertinenti ai difetti e alle correzioni, considerand
           items: {
             type: 'object',
             properties: {
-              exercise_id: { type: 'string', enum: exercises.map((exercise) => exercise.id) },
+              exercise_id: { type: 'string' },
               target_issue: { type: 'string' },
               why: { type: 'string' },
               sets_reps: { type: 'string' },
