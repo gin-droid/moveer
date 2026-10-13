@@ -48,7 +48,7 @@ export default function BodyDiagram({ diagram, gender = "maschio" }) {
 
   // Analisi articolazione/arto più sollecitati sulla vista frontale
   const { joint: topJoint, limb: topLimb } = analyzeFrontStress(diagram);
-  const topJointId = view === "front" && topJoint ? topJoint.id : null;
+  const topJointIds = view === "front" && topJoint ? topJoint.ids || [topJoint.id] : [];
 
   return (
     <div className="space-y-4">
@@ -108,7 +108,7 @@ export default function BodyDiagram({ diagram, gender = "maschio" }) {
         title={view === "front" ? "Vista frontale" : "Vista laterale"}
         silhouette={view}
         gender={gender}
-        highlightJointId={topJointId}
+        highlightJointIds={topJointIds}
       />
 
       {/* Legenda stress */}
@@ -142,7 +142,7 @@ function Legend({ color, label }) {
   );
 }
 
-function DiagramView({ view, title, silhouette, gender, highlightJointId }) {
+function DiagramView({ view, title, silhouette, gender, highlightJointIds = [] }) {
   if (!view) {
     return (
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
@@ -244,7 +244,7 @@ function DiagramView({ view, title, silhouette, gender, highlightJointId }) {
         {/* giunzioni */}
         {joints.map((j, i) => {
           const col = stressColor(j.stress || 0);
-          const isTop = highlightJointId && j.id === highlightJointId;
+          const isTop = highlightJointIds.includes(j.id);
           return (
             <g key={`j-${i}`}>
               {isTop && (

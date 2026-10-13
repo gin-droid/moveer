@@ -65,7 +65,7 @@ export default function ReportPdfExport({ report, logoUrl, correctiveExercises }
       y += 24;
     };
 
-    const drawDiagram = (view, viewName, ox, oy, size, gender, highlightJointId) => {
+    const drawDiagram = (view, viewName, ox, oy, size, gender, highlightJointIds = []) => {
       if (!view) return;
       const joints = view.joints || [];
       const segments = view.segments || [];
@@ -143,7 +143,7 @@ export default function ReportPdfExport({ report, logoUrl, correctiveExercises }
       // joints
       joints.forEach((j) => {
         const col = sc(j.stress || 0);
-        const isTop = highlightJointId && j.id === highlightJointId;
+        const isTop = highlightJointIds.includes(j.id);
         if (isTop) {
           // anello di evidenziazione attorno all'articolazione più sollecitata
           doc.setDrawColor(251, 113, 133);
@@ -245,14 +245,14 @@ export default function ReportPdfExport({ report, logoUrl, correctiveExercises }
       const viewName = useFront ? "front" : "side";
       // Analisi stress sulla vista frontale
       const { joint: topJoint, limb: topLimb } = analyzeFrontStress(report.body_diagram);
-      const highlightId = useFront && topJoint ? topJoint.id : null;
+      const highlightIds = useFront && topJoint ? topJoint.ids || [topJoint.id] : [];
       const dStartX = margin + (maxW - dSize) / 2;
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(82, 82, 91);
       doc.text(useFront ? "VISTA FRONTALE" : "VISTA LATERALE", dStartX + dSize / 2, y, { align: "center" });
       y += 6;
-      drawDiagram(viewData, viewName, dStartX, y, dSize, g, highlightId);
+      drawDiagram(viewData, viewName, dStartX, y, dSize, g, highlightIds);
       y += dSize + 10;
       // legenda
       const legY = y;

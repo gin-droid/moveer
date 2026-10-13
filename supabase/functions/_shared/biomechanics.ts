@@ -413,20 +413,11 @@ function computeFront(view: View | undefined, profile: PatternProfile): View | u
     if (j) j.stress = (j.stress || 0) + Math.abs(j.x - 50) * G.lateralSpine;
   });
 
-  // 7. Curvatura della colonna: deviazione del collo dalla linea spalla-anca
-  ['l', 'r'].forEach((side) => {
-    const shoulder = map[`shoulder_${side}`], hip = map[`hip_${side}`], neck = map.neck;
-    if (!shoulder || !hip || !neck) return;
-    const dx = hip.x - shoulder.x;
-    const dy = hip.y - shoulder.y;
-    const len2 = dx * dx + dy * dy;
-    if (len2 < 0.01) return;
-    const t = ((neck.x - shoulder.x) * dx + (neck.y - shoulder.y) * dy) / len2;
-    const projX = shoulder.x + t * dx;
-    const projY = shoulder.y + t * dy;
-    const dev = dist({ x: neck.x, y: neck.y }, { x: projX, y: projY });
-    neck.stress = (neck.stress || 0) + dev * G.spineCurvature;
-  });
+  // 7. Inclinazione cervicale frontale rispetto all'asse testa-collo.
+  const head = map.head, neck = map.neck;
+  if (head && neck) {
+    neck.stress = (neck.stress || 0) + Math.abs(head.x - neck.x) * G.spineCurvature;
+  }
 
   joints.forEach((j) => { j.stress = Math.round(clamp(j.stress || 0)); });
   return { ...view, joints };

@@ -7,8 +7,35 @@ const LIMB_GROUPS = [
   { id: "braccio_dx", label: "Braccio destro", joints: ["shoulder_r", "elbow_r", "wrist_r"] },
   { id: "gamba_sx", label: "Gamba sinistra", joints: ["hip_l", "knee_l", "ankle_l"] },
   { id: "gamba_dx", label: "Gamba destra", joints: ["hip_r", "knee_r", "ankle_r"] },
-  { id: "colonna", label: "Colonna cervicale", joints: ["head", "neck"] },
 ];
+
+const BILATERAL_JOINTS = [
+  { ids: ["knee_l", "knee_r"], label: "Ginocchia (pari stress)" },
+  { ids: ["hip_l", "hip_r"], label: "Anche (pari stress)" },
+  { ids: ["ankle_l", "ankle_r"], label: "Caviglie (pari stress)" },
+  { ids: ["shoulder_l", "shoulder_r"], label: "Spalle (pari stress)" },
+  { ids: ["elbow_l", "elbow_r"], label: "Gomiti (pari stress)" },
+  { ids: ["wrist_l", "wrist_r"], label: "Polsi (pari stress)" },
+];
+
+function describeJointTie(joints) {
+  const jointIds = new Set(joints.map((joint) => joint.id));
+  const bilateralPair = BILATERAL_JOINTS.find(
+    (pair) => pair.ids.length === joints.length && pair.ids.every((id) => jointIds.has(id))
+  );
+  if (bilateralPair) return bilateralPair.label;
+  if (joints.length === 2) {
+    return `${joints.map((joint) => joint.label || joint.id).join(" / ")} (pari stress)`;
+  }
+  return `Più articolazioni (${joints.length}) (pari stress)`;
+}
+
+function describeLimbTie(limbs) {
+  const groupIds = new Set(limbs.map((limb) => limb.id.replace(/_(sx|dx)$/, "")));
+  if (groupIds.size === 1 && groupIds.has("gamba")) return "Gambe (pari stress)";
+  if (groupIds.size === 1 && groupIds.has("braccio")) return "Braccia (pari stress)";
+  return "Arti diversi (pari stress)";
+}
 
 /**
  * Restituisce l'articolazione con stress massimo nella vista fornita.
@@ -19,9 +46,14 @@ export function getMostStressedJoint(view) {
   if (!view || !Array.isArray(view.joints)) return null;
   const joints = view.joints.filter((j) => (j.stress || 0) > 0);
   if (!joints.length) return null;
-  return joints.reduce((max, j) =>
-    (j.stress || 0) > (max.stress || 0) ? j : max
-  );
+  const maxStress = Math.max(...joints.map((joint) => joint.stress || 0));
+  const topJoints = joints.filter((joint) => (joint.stress || 0) === maxStress);
+  if (topJoints.length === 1) return topJoints[0];
+  return {
+    ...topJoints[0],
+    ids: topJoints.map((joint) => joint.id),
+    label: describeJointTie(topJoints),
+  };
 }
 
 /**
@@ -44,7 +76,15 @@ export function getMostStressedLimb(view) {
     .filter((l) => l.totalStress > 0)
     .sort((a, b) => b.totalStress - a.totalStress);
 
-  return ranked.length ? ranked[0] : null;
+  if (!ranked.length) return null;
+  const maxStress = ranked[0].totalStress;
+  const topLimbs = ranked.filter((limb) => limb.totalStress === maxStress);
+  if (topLimbs.length === 1) return topLimbs[0];
+  return {
+    ...topLimbs[0],
+    ids: topLimbs.map((limb) => limb.id),
+    label: describeLimbTie(topLimbs),
+  };
 }
 
 /**
