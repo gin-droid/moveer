@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, Link, useLocation, useOutlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Dumbbell, Video, FileText, Activity, TrendingUp,
+  LayoutDashboard, Dumbbell, Video, FileText, TrendingUp,
   Users as UsersIcon, PlayCircle, User as UserIcon, ArrowLeft, Menu, Sparkles, UserCheck, CreditCard,
   Info, MessageSquareWarning,
 } from "lucide-react";
@@ -25,7 +25,7 @@ const secondaryItems = [
   { to: "/confronta", label: "Progressi", icon: TrendingUp },
   { to: "/mentore", label: "Mentore", icon: Sparkles },
   { to: "/abbonamento", label: "Abbonamento", icon: CreditCard },
-  { to: "/utenti", label: "Utenti", icon: UsersIcon },
+  { to: "/gestione-abbonamenti", label: "Abbonamenti", icon: UsersIcon },
   { to: "/about", label: "Cos'è", icon: Info },
   { action: "feedback", label: "Inviaci una segnalazione", icon: MessageSquareWarning },
 ];
@@ -42,7 +42,7 @@ export default function AppLayout() {
   const isAdmin = user?.role === "admin";
   const visibleSecondary = isAdmin
     ? secondaryItems
-    : secondaryItems.filter((i) => i.to !== "/utenti");
+    : secondaryItems.filter((i) => i.to !== "/gestione-abbonamenti");
   const allItems = [...primaryItems, ...visibleSecondary];
 
   const navigate = useNavigate();
@@ -97,14 +97,12 @@ export default function AppLayout() {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar fixed inset-y-0 left-0 z-30">
         <div className="px-6 py-7">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <Activity className="w-5 h-5 text-primary-foreground" strokeWidth={2.5} />
-            </div>
-            <div className="leading-tight">
-              <div className="font-display font-semibold tracking-tight text-white">moVeerAI</div>
-              <div className="text-[11px] text-muted-foreground uppercase tracking-[0.2em]">Postura &amp; Tecnica</div>
-            </div>
+          <Link to="/" className="flex w-full justify-center">
+            <img
+              src={`${import.meta.env.BASE_URL}IMG_8121.JPG`}
+              alt="moVeerAI — Analisi movimento, correzione postura e AI fitness"
+              className="h-auto w-full max-w-[208px] object-contain object-center"
+            />
           </Link>
         </div>
         <nav className="flex-1 px-3 space-y-1">
@@ -151,7 +149,7 @@ export default function AppLayout() {
 
       {/* Mobile top bar */}
       <header className="md:hidden fixed top-0 inset-x-0 z-30 bg-sidebar backdrop-blur border-b border-sidebar-border pt-safe">
-        <div className="flex items-center justify-between px-4 h-12">
+        <div className="relative flex items-center justify-between px-4 h-16">
           {showBack ? (
             <button
               onClick={() => (isDetail ? navigate(-1) : navigate("/"))}
@@ -162,11 +160,12 @@ export default function AppLayout() {
               <span className="font-display font-semibold text-white text-sm">{pageTitle}</span>
             </button>
           ) : (
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Activity className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
-              </div>
-              <span className="font-display font-semibold text-white">moVeerAI</span>
+            <Link to="/" className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center">
+              <img
+                src={`${import.meta.env.BASE_URL}IMG_8121.JPG`}
+                alt="moVeerAI"
+                className="h-[60px] w-[110px] object-contain object-center"
+              />
             </Link>
           )}
           <button
@@ -180,7 +179,7 @@ export default function AppLayout() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 md:ml-64 pt-[calc(3rem+env(safe-area-inset-top))] md:pt-0 pb-28 md:pb-0 min-h-screen min-h-[100dvh]">
+      <main className="flex-1 md:ml-64 pt-[calc(4rem+env(safe-area-inset-top))] md:pt-0 pb-28 md:pb-0 min-h-screen min-h-[100dvh]">
         <header className="hidden md:flex sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border">
           <div className="max-w-5xl w-full mx-auto px-6 lg:px-8 h-14 flex items-center">
             {showBack ? (

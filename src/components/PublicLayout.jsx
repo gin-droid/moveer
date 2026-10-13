@@ -1,5 +1,4 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { Activity } from "lucide-react";
 
 export default function PublicLayout() {
   const isAboutPage = useLocation().pathname === "/about";
@@ -8,11 +7,12 @@ export default function PublicLayout() {
     <div className="min-h-screen min-h-[100dvh] bg-background text-foreground flex flex-col">
       <header className="border-b border-border bg-sidebar pt-safe">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Activity className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
-            </div>
-            <span className="font-display font-semibold text-white">moVeerAI</span>
+          <Link to="/" className="flex items-center justify-center">
+            <img
+              src={`${import.meta.env.BASE_URL}IMG_8121.JPG`}
+              alt="moVeerAI"
+              className="h-11 w-[82px] object-contain object-center"
+            />
           </Link>
           {!isAboutPage && (
             <nav className="flex items-center gap-4 sm:gap-5 text-sm">

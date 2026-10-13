@@ -14,6 +14,7 @@ const groups = [
     icon: Activity,
     links: [
       { label: "Apri l'app", detail: "Dashboard e analisi", url: "https://app.moveer.eu/" },
+      { label: "Gestione abbonamenti", detail: "Piani e account utenti (accesso admin)", url: "https://app.moveer.eu/gestione-abbonamenti" },
       { label: "Lista d'attesa", detail: "Sito pubblico", url: "https://www.moveer.eu/" },
     ],
   },

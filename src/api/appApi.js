@@ -134,7 +134,7 @@ const auth = {
     if (!user) return null;
     const { data: profile, error } = await client.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) throw error;
-    return normalizeRow({ ...profile, id: user.id, email: user.email });
+    return normalizeRow({ ...profile, id: user.id, email: user.email, banned_until: user.banned_until });
   },
   async loginViaEmailPassword(email, password) {
     const { error } = await requireSupabase().auth.signInWithPassword({ email, password });

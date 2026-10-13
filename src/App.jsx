@@ -17,6 +17,7 @@ const Reports = lazy(() => import('@/pages/Reports'));
 const ReportDetail = lazy(() => import('@/pages/ReportDetail'));
 const Compare = lazy(() => import('@/pages/Compare'));
 const Users = lazy(() => import('@/pages/Users'));
+const SubscriptionManagement = lazy(() => import('@/pages/SubscriptionManagement'));
 const Athletes = lazy(() => import('@/pages/Athletes'));
 const AthleteDetail = lazy(() => import('@/pages/AthleteDetail'));
 const Mentor = lazy(() => import('@/pages/Mentor'));
@@ -74,6 +75,17 @@ const AuthenticatedApp = () => {
           </div>
         </div>
       );
+    } else if (authError.type === 'user_suspended') {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center bg-background p-6">
+          <div className="max-w-sm space-y-4 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-2xl">⏸</div>
+            <h1 className="font-display text-2xl font-semibold text-white">Account sospeso</h1>
+            <p className="text-sm leading-relaxed text-muted-foreground">L’accesso è stato sospeso da un amministratore. Per assistenza contatta info@moveer.ai</p>
+            <button onClick={() => { window.location.href = appPath('/login'); }} className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Esci</button>
+          </div>
+        </div>
+      );
     } else if (authError.type === 'auth_required') {
       // Redirect to login automatically
       navigateToLogin();
@@ -104,6 +116,7 @@ const AuthenticatedApp = () => {
           <Route path="/report/:id" element={<ReportDetail />} />
           <Route path="/confronta" element={<Compare />} />
           <Route path="/utenti" element={<Users />} />
+          <Route path="/gestione-abbonamenti" element={<SubscriptionManagement />} />
           <Route path="/atleti" element={<Athletes />} />
           <Route path="/atleti/:id" element={<AthleteDetail />} />
           <Route path="/mentore" element={<Mentor />} />

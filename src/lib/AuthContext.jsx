@@ -80,9 +80,12 @@ export const AuthProvider = ({ children }) => {
         isBlocked = !!currentUser.blocked;
       }
       if (isBlocked) {
+        const isSuspended = currentUser.banned_until && new Date(currentUser.banned_until).getTime() > Date.now();
         setAuthError({
-          type: 'user_blocked',
-          message: 'Il tuo account è stato bloccato da un amministratore.'
+          type: isSuspended ? 'user_suspended' : 'user_blocked',
+          message: isSuspended
+            ? 'Il tuo account è stato sospeso da un amministratore.'
+            : 'Il tuo account è stato bloccato da un amministratore.'
         });
         setIsAuthenticated(false);
         setIsLoadingAuth(false);
