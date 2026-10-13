@@ -373,7 +373,10 @@ export default function CameraRecorder({ onRecorded, onClose }) {
       </div>
 
       {/* Video preview */}
-      <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black px-3 py-3">
+      <div
+        className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black px-3 py-3"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      >
         <div
           className="relative aspect-[3/4] max-w-full overflow-hidden rounded-xl border border-white/10 bg-black shadow-xl"
           style={{ height: "min(100%, 58dvh)" }}
