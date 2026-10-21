@@ -118,12 +118,12 @@ export default function About() {
         >
           Inizia ad analizzare
         </Link>
-        <Link
-          to="/contact"
+        <a
+          href="mailto:info@moveer.ai"
           className="inline-flex items-center justify-center gap-2 border border-border bg-card hover:bg-sidebar-accent text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition-colors"
         >
           Contattaci
-        </Link>
+        </a>
       </div>
     </div>
   );
