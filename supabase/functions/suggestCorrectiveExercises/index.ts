@@ -1,4 +1,4 @@
-import { authenticate, generateGeminiText, json, parseGeminiJson } from '../_shared/runtime.ts';
+import { adminClient, authenticate, generateGeminiText, json, parseGeminiJson } from '../_shared/runtime.ts';
 
 const correctiveCategories = ['Riabilitazione', 'Mobilità', 'Posturali', 'Corpo Libero', 'Funzionale'];
 
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
     const [{ data: entitlement, error: entitlementError }, { data: report, error: reportError }] = await Promise.all([
       auth.client.from('user_entitlements').select('plan, blocked').eq('user_id', auth.user.id).maybeSingle(),
-      auth.client.from('analysis_reports').select('id, exercise_name, macro_category, issues_detected, corrections, corrective_exercises')
+      auth.client.from('analysis_reports').select('id, exercise_name, macro_category, issues_detected, corrections, corrective_exercises, corrective_suggestions')
         .eq('id', reportId).maybeSingle(),
     ]);
     if (entitlementError) throw entitlementError;
@@ -24,6 +24,9 @@ Deno.serve(async (req) => {
       return json({ error: 'Funzionalità disponibile solo per i piani Pro e Coach' }, 403);
     }
     if (!report) return json({ error: 'Report non trovato' }, 404);
+    if (Array.isArray(report.corrective_suggestions)) {
+      return json({ suggestions: report.corrective_suggestions, cached: true });
+    }
 
     const issues = Array.isArray(report.issues_detected) ? report.issues_detected : [];
     if (!issues.length) return json({ suggestions: [], reason: 'no_issues' });
@@ -97,6 +100,22 @@ Seleziona fino a 5 esercizi pertinenti ai difetti e alle correzioni, considerand
           sets_reps: String(item.sets_reps || '').slice(0, 80),
         }];
       });
+
+    const { data: cachedRows, error: cacheError } = await adminClient.from('analysis_reports')
+      .update({ corrective_suggestions: suggestions })
+      .eq('id', report.id)
+      .is('corrective_suggestions', null)
+      .select('id');
+    if (cacheError) {
+      console.error('suggestCorrectiveExercises cache:', cacheError);
+    } else if (!cachedRows?.length) {
+      // Another request cached its list first: return that one so every client agrees.
+      const { data: stored } = await adminClient.from('analysis_reports')
+        .select('corrective_suggestions').eq('id', report.id).maybeSingle();
+      if (Array.isArray(stored?.corrective_suggestions)) {
+        return json({ suggestions: stored.corrective_suggestions, cached: true });
+      }
+    }
 
     return json({ suggestions });
   } catch (error) {

@@ -22,6 +22,14 @@ const normalize = (s) => ({
   why: s.why || "",
 });
 
+const denormalize = (s) => ({
+  exercise_id: s.exercise_id,
+  exercise_name: s.name,
+  target_issue: s.target || "",
+  sets_reps: s.sets_reps || "",
+  why: s.why || "",
+});
+
 export default function CorrectiveExercisePicker({ report, onSelectionChange }) {
   const [suggestions, setSuggestions] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,10 +69,18 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
         });
         if (functionError) throw new Error(await getFunctionErrorMessage(functionError));
         if (data?.error) throw new Error(data.error);
-        const sugg = data?.suggestions || [];
+        const persisted = report.selected_corrective_exercises || [];
+        const sugg = [...(data?.suggestions || [])];
+        if (report.corrective_selection_saved) {
+          // Reports saved before suggestions were cached may reference exercises
+          // missing from the stored list: keep them visible and selected.
+          const known = new Set(sugg.map((s) => s.exercise_id));
+          persisted
+            .filter((s) => s?.exercise_id && !known.has(s.exercise_id))
+            .forEach((s) => sugg.push(denormalize(s)));
+        }
         if (cancelled) return;
         setSuggestions(sugg);
-        const persisted = report.selected_corrective_exercises || [];
         const ids = report.corrective_selection_saved
           ? new Set(persisted.map((s) => s.exercise_id))
           : new Set(sugg.map((s) => s.exercise_id));

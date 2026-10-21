@@ -54,6 +54,22 @@ export default function ReportDetail() {
   const isProOrCoach = user && (user.plan === "pro" || user.plan === "coach");
   const canShowLogo = isProOrCoach && !!user.logo_url;
 
+  const lockCorrectiveSelection = () => {
+    if (!isProOrCoach || report.corrective_selection_saved) return;
+    const selection = selectedCorrective || [];
+    const updated = {
+      ...report,
+      selected_corrective_exercises: selection,
+      corrective_selection_saved: true,
+    };
+    setReport(updated);
+    cacheReport(updated);
+    appApi.entities.AnalysisReport.update(report.id, {
+      selected_corrective_exercises: selection,
+      corrective_selection_saved: true,
+    }).catch((err) => console.error("Salvataggio selezione esercizi correttivi:", err));
+  };
+
   const handleDelete = async () => {
     setDeleting(true);
     try {
@@ -191,6 +207,7 @@ export default function ReportDetail() {
           report={report}
           logoUrl={canShowLogo ? user.logo_url : null}
           correctiveExercises={selectedCorrective}
+          onExport={lockCorrectiveSelection}
         />
         <button
           onClick={() => setConfirmOpen(true)}

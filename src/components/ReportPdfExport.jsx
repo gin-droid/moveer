@@ -13,13 +13,14 @@ const sevColors = {
   Grave: [251, 113, 133],
 };
 
-export default function ReportPdfExport({ report, logoUrl, correctiveExercises }) {
+export default function ReportPdfExport({ report, logoUrl, correctiveExercises, onExport }) {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
   const generate = () => {
     if (exporting) return;
     setExportError("");
+    onExport?.();
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
