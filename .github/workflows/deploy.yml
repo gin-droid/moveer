@@ -60,7 +60,7 @@ jobs:
           test -s dist/moveerai-icon-512.png
 
       - name: Fallback per le route SPA
-        run: cp dist/index.html dist/404.html
+        run: node scripts/spa-routes.mjs
 
       - name: Carica artifact Pages
         uses: actions/upload-pages-artifact@v3
