@@ -10,14 +10,19 @@ Applicazione React/Vite con backend Supabase: Auth, PostgreSQL con Row Level Sec
 4. Applica la migrazione SQL dal Supabase SQL Editor oppure collega il progetto con `npx supabase link --project-ref <project-ref>` e lancia `npm run supabase:db:push`.
 5. Avvia il frontend con `npm run dev`.
 
-Le chiavi `service_role`, AI, Stripe e provider email sono segreti server-side: non inserirle in variabili `VITE_*` né nel repository. Configurale nei secrets delle Edge Functions Supabase.
+Le chiavi `service_role`, AI, RevenueCat e provider email sono segreti server-side: non inserirle in variabili `VITE_*` né nel repository. Configurale nei secrets delle Edge Functions Supabase. Le chiavi SDK RevenueCat `appl_...` e `goog_...` sono invece chiavi pubbliche app-specific e vanno configurate solo nell'ambiente di build.
 
 Secrets necessari per le funzioni:
 
 - `GEMINI_API_KEY` per analisi video, mentore e suggerimenti correttivi; `GEMINI_MODEL` è opzionale e predefinito a `gemini-3.8-flash`, con fallback a `gemini-3.7-flash` e `gemini-3.5-flash` in caso di sovraccarico temporaneo.
 - `APP_ORIGIN` per i redirect del checkout e l'origine web consentita.
 - `BREVO_API_KEY` e `EMAIL_FROM` per notifiche atleta e segnalazioni inviate dalle Edge Functions; `EMAIL_FROM_NAME` è opzionale e predefinito a `moVeerAI`.
-- `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID` e `STRIPE_WEBHOOK_SECRET` per gli abbonamenti Pro.
+- `REVENUECAT_SECRET_API_KEY` per la verifica server-side degli entitlement e `REVENUECAT_WEBHOOK_AUTH` per autenticare i webhook RevenueCat.
+
+Variabili frontend per gli acquisti nativi, da inserire in `.env.local` (non sono segreti):
+
+- `VITE_REVENUECAT_IOS_API_KEY` e `VITE_REVENUECAT_ANDROID_API_KEY`: chiavi SDK pubbliche delle app configurate in RevenueCat.
+- `VITE_REVENUECAT_PRO_MONTHLY_PRODUCT_ID`, `VITE_REVENUECAT_PRO_ANNUAL_PRODUCT_ID`, `VITE_REVENUECAT_COACH_MONTHLY_PRODUCT_ID` e `VITE_REVENUECAT_COACH_ANNUAL_PRODUCT_ID`: identificativi prodotto in App Store Connect/Google Play, collegati nell'offerta RevenueCat corrente.
 
 Imposta i valori nel progetto collegato dalle impostazioni Secrets Supabase o con `npx supabase secrets set`. Supabase Auth SMTP usa la SMTP key Brevo nel dashboard Auth; le Edge Functions usano invece la API key Brevo (`BREVO_API_KEY`). Non usare placeholder nel deployment.
 
@@ -33,7 +38,11 @@ where email = 'admin@your-domain.example';
 
 La migrazione iniziale crea profili, entitlements, esercizi, atleti, report, conversazioni e bucket Storage con policy RLS. Per usare email OTP e reset password configura URL di redirect e template in Authentication > URL Configuration. Per Google OAuth configura il provider sia in Supabase sia nel relativo pannello Google.
 
-Dopo aver collegato il progetto, pubblica le funzioni con `npm run supabase:functions:deploy`; configura il webhook Stripe sull'endpoint `handleStripeWebhook` e seleziona almeno gli eventi checkout completato e cancellazione subscription.
+Per configurare gli acquisti, crea in RevenueCat le app iOS e Android, collega i prodotti store e crea gli entitlement `pro` e `coach`. Aggiungi un'offerta corrente con i quattro prodotti mensili/annuali indicati in `.env.example`; gli ID devono corrispondere esattamente ai prodotti negli store. Imposta le due chiavi SDK pubbliche nell'ambiente frontend e configura nei secrets Supabase `REVENUECAT_SECRET_API_KEY` (API v1 secret) e `REVENUECAT_WEBHOOK_AUTH` (token casuale lungo).
+
+Pubblica le Edge Functions con `npm run supabase:functions:deploy`. In RevenueCat configura un webhook POST a `https://<project-ref>.supabase.co/functions/v1/revenuecatWebhook` e imposta l'header Authorization a `Bearer <REVENUECAT_WEBHOOK_AUTH>`; invia gli eventi di acquisto, rinnovo, cambio prodotto e scadenza. `revenuecatWebhook` ha la verifica JWT Supabase disabilitata e verifica il token RevenueCat; `syncStoreEntitlement` richiede invece una sessione utente. La verifica delle ricevute resta server-side tramite RevenueCat.
+
+La pagina Abbonamento vende e ripristina gli acquisti nativamente tramite StoreKit e Google Play Billing. La gestione e la cancellazione dei rinnovi avvengono nelle impostazioni dell'App Store o di Google Play; sul web l'acquisto non è disponibile. Non sono richiesti checkout, customer portal o credenziali Stripe.
 
 Per SMTP Auth con Brevo usa `smtp-relay.brevo.com`, porta `587`, lo SMTP login mostrato in Brevo e la SMTP key come password. Verifica prima il dominio mittente e usa un mittente autorizzato in `EMAIL_FROM`.
 

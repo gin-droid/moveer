@@ -365,4 +365,76 @@ Interventi sulla pipeline di analisi per renderla più efficace:
 
 ---
 
-*Documento aggiornato il 28 settembre 2026.*
+---
+
+## 32. Sicurezza, quote e abbonamenti Stripe (29 settembre 2026)
+
+- Introdotte quote mensili per analisi e richieste al Mentore, con contatori e blocco lato server al raggiungimento dei limiti.
+- Implementato il flusso di abbonamento Pro con checkout Stripe e webhook per sincronizzare pagamenti e stato dell'abbonamento.
+- Rafforzati i controlli server-side su entitlements e piano, oltre ai flussi email, messaggistica del Mentore e checkout.
+- Aggiunte funzioni per amministrazione utenti, modifica piano, cancellazione account, segnalazioni e notifiche agli atleti.
+
+## 33. Migrazione del backend a Supabase (4 ottobre 2026)
+
+- Migrato il backend runtime da Base44 a Supabase: Auth, PostgreSQL con RLS, Storage ed Edge Functions; la facciata applicativa è in `src/api/appApi.js`.
+- Aggiunti schema e policy SQL in `supabase/migrations/` e funzioni Edge per analisi, Mentore, quote, suggerimenti, notifiche, amministrazione e abbonamenti.
+- Base44 è mantenuto come riferimento legacy e per gli script di importazione catalogo/media; non è una dipendenza runtime dell'app attuale.
+- Configurazione locale, secrets, migrazioni e pubblicazione delle funzioni sono descritti nel `README.md`; le chiavi segrete restano lato server.
+
+## 34. Pubblicazione PWA e acquisizione depth nativa (4 ottobre 2026)
+
+- Preparata la PWA e la pubblicazione web tramite GitHub Pages sul dominio configurato; aggiunta la pagina Gestione con collegamenti utili.
+- Consolidata l'app Capacitor per Android e iOS e corretta l'integrazione del plugin nativo di acquisizione profondità.
+- Il flusso corrente registra prima il video RGB; nell'app nativa può poi avviare una scansione depth facoltativa di 10 secondi. Le due acquisizioni non sono sincronizzate; se la scansione non è disponibile o fallisce, il video resta analizzabile. Il browser non espone LiDAR/ToF.
+- Aggiornato il runtime Gemini e resa più robusta la gestione dei frame e del fallback tecnico.
+
+## 35. Miglioramenti report, amministrazione e layout (6-14 ottobre 2026)
+
+- Sincronizzati con il catalogo gli esercizi correttivi e aggiunta la selezione manuale/persistente nel report; affinata la selezione dei difetti articolari da evidenziare.
+- Aggiunta gestione amministrativa degli abbonamenti e del logo del brand.
+- Migliorati impaginazione PDF, pagine report e schede esercizio; larghezza dei contenuti resa più uniforme (24 rem) e filtri del catalogo ampliati.
+- Ottimizzata la registrazione video su iPhone rispettando safe area e notch, con controlli riposizionati per evitare sovrapposizioni.
+- Migliorati i flussi di autenticazione e la gestione degli overload temporanei del provider IA.
+
+## 36. Stato del repository al 14 ottobre 2026
+
+- Il codice corrente comprende frontend React/Vite, PWA, shell Capacitor, backend Supabase e migrazioni SQL; la scheda software è stata riallineata a questa architettura.
+- Nel working tree, oltre ai commit registrati, risultano modifiche locali non ancora committate a deploy GitHub Pages, configurazione, README, plugin iOS, runtime condiviso e schermate Login/Register. In particolare, Login e Register includono pulsanti Google; queste modifiche locali non sono presentate come una release verificata.
+- Versione npm dichiarata: `0.0.0`; non è indicato un numero di versione commerciale.
+
+---
+
+---
+
+## 37. Migrazione pagamenti a Apple App Store e Google Play (14 ottobre 2026)
+
+- Rimosso Stripe dal checkout, dal portale abbonamenti, dalle Edge Functions attive, dalle dipendenze frontend e dalla configurazione locale.
+- Integrato RevenueCat Capacitor per StoreKit e Google Play Billing, con acquisto e ripristino nativi per Pro e Coach, mensile e annuale.
+- Aggiunta sincronizzazione server-side degli entitlement `pro` e `coach` tramite verifica RevenueCat e webhook autenticato; le modifiche amministrative restano gestite da Supabase.
+- La gestione e la cancellazione dei rinnovi avvengono nelle impostazioni dello store. La pagina web non avvia acquisti.
+- Per l'attivazione servono chiavi SDK pubbliche per app, prodotti e offerta RevenueCat configurati, oltre ai secrets server-side documentati nel `README.md`.
+
+---
+
+---
+
+## 38. Configurazione store in attesa dei dati account (15 ottobre 2026)
+
+- Verificato lo stato Supabase dopo la migrazione: `user_entitlements` contiene `billing_provider`, `store_product_id` e `subscription_expires_at`; `profiles.stripe_customer_id` è stato rimosso.
+- Pubblicate `revenuecatWebhook`, `syncStoreEntitlement`, `changePlan` e `adminManageUsers`; rimossi dal progetto remoto gli endpoint Stripe Checkout, portale e webhook.
+- Le chiavi RevenueCat, gli ID prodotto Apple/Google e le offerte reali non risultano ancora configurati; non è stata eseguita una transazione test su App Store Sandbox o Google Play.
+- Aggiunto un prompt Claude per configurare progressivamente Apple App Store Connect, Google Play Console, RevenueCat e Supabase, senza condividere secrets in chat.
+- Eventuali abbonamenti Stripe esistenti non sono stati migrati o annullati automaticamente e vanno verificati nel relativo account Stripe.
+
+---
+
+## 39. Rafforzamento sicurezza RLS e pulizia del working tree (21 ottobre 2026)
+
+- Verificato che il frontend contenga solo chiavi pubbliche (anon Supabase, SDK RevenueCat); nessun segreto server-side nel bundle.
+- Nuova migrazione `20261021230000_harden_rls_policies.sql`: policy separate per operazione, permessi a livello di colonna, nessun accesso anonimo; report e messaggi del Mentore sono scritti solo dalle Edge Functions con service role; il rilascio della quota è riservato al server.
+- Bucket `public-assets` limitato a PNG, JPEG e WebP fino a 2 MB (niente SVG).
+- Ripristinate le versioni committate di runtime Gemini (con fallback 3.8 → 3.7 → 3.5 flash), workflow di deploy, plugin iOS depth e schermate Login/Register senza Google: le modifiche locali precedenti erano obsolete.
+
+---
+
+*Documento aggiornato il 21 ottobre 2026.*

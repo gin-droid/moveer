@@ -3,10 +3,10 @@
 ================================================================
 
 NOME SOFTWARE
-  moVeer (iOS)
+  moVeerAI (Web/PWA, iOS e Android)
 
 DESCRIZIONE IDENTIFICATIVA
-  Applicazione mobile di analisi biomeccanica basata sull'intelligenza
+  Applicazione web e mobile di analisi biomeccanica basata sull'intelligenza
   artificiale. MoVeer analizza video di esecuzione di esercizi fisici,
   valuta tecnica e postura dell'atleta, individua errori di esecuzione
   e genera un report dettagliato con punteggio, diagramma corporeo
@@ -32,8 +32,8 @@ LINGUAGGIO DI PROGRAMMAZIONE
   Wearable:  Web Bluetooth API per fascia cardio esterna (GATT service
              0x180D); libreria wearableSensors.js per parsing e
              aggregazione dati fisiologici
-  Piattaforma: frontend web sul dominio proprietario + backend Supabase;
-               shell native iOS/Android da configurare separatamente
+  Piattaforma: frontend web/PWA sul dominio configurato + backend Supabase;
+               app iOS/Android tramite Capacitor
 
 DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
   URL di pubblicazione:  configurato con VITE_SITE_URL
@@ -42,33 +42,35 @@ DATA E LUOGO DI PRIMA INSTALLAZIONE / PUBBLICAZIONE
   Sviluppatore:           Account proprietario moVeerAI
 
 VERSIONE CORRENTE
-  Versione: 1.5
-  Data ultimo aggiornamento scheda: 2026-10-01
+  Versione applicazione: non dichiarata (package.json riporta 0.0.0)
+  Data ultimo aggiornamento scheda: 2026-10-15
 
 ================================================================
 NOTE TECNICHE
   - Architettura single-page application (SPA) con routing lato client
   - Layout responsive mobile-first con safe-area iOS (notch/home indicator)
-  - Autenticazione gestita da Supabase Auth (email/password, Google OAuth, OTP)
-  - Tabelle PostgreSQL: exercises, analysis_reports, athletes, profiles,
-    user_entitlements, mentor_conversations, mentor_messages
+  - Autenticazione gestita da Supabase Auth; provider e metodi dipendono dalla
+    configurazione del progetto (email/OTP e OAuth)
+  - Database PostgreSQL con RLS: profiles, user_entitlements, exercises,
+    athletes, analysis_reports, mentor_conversations e mentor_messages
   - Catalogo previsto: 691 esercizi, 14 macro-categorie; export dati non
     incluso nel repository e da importare nel progetto Supabase
-  - Funzioni Edge: analyzeExercise (analisi IA con supporto depth 3D
-    e dati wearable), deleteOwnAccount, sendUserReport (inoltro
-    segnalazioni utenti via email agli admin), notifyAthleteReport
-    (notifica email automatica all'atleta a nuovo report pronto, solo
-    piani a pagamento Pro/Coach), suggestCorrectiveExercises (suggerisce
-    esercizi di correzione mirati dal catalogo in base ai difetti di
-    postura rilevati nel report)
+  - Backend attivo: Supabase Auth, PostgreSQL con RLS, Storage ed Edge
+    Functions; Base44 e i relativi file restano solo come archivio e supporto
+    alla migrazione/importazione, non come dipendenza runtime
+  - Funzioni Edge: analisi (analyzeExercise), mentore (sendMentorMessage),
+    quote mensili, suggerimenti correttivi, notifiche e segnalazioni email,
+    gestione account/admin e sincronizzazione abbonamenti RevenueCat
   - Agente AI Mentore: chat conversazionale con accesso RLS al catalogo
     e ai report, guida tecnica
     personalizzata sull'esecuzione degli esercizi
   - Integrazione sensori wearable: fascia cardio Bluetooth esterna,
     dati fisiologici (frequenza cardiaca) correlati alla qualità tecnica
   - Export report in PDF (jsPDF) con diagramma corporeo SVG
-  - Acquisizione video: CameraRecorder RGB (web); import depth JSON
-    LiDAR/ToF, visualizzazione 3D nei report; plugin Android incompleto
+  - Flusso nativo: registrazione video RGB e scansione depth opzionale
+    separata (10 secondi), non sincronizzata col video; iOS ARKit/LiDAR,
+    Android ARCore Depth API e ML Kit; il video resta utilizzabile se la
+    scansione non e' disponibile o fallisce
   - Salvataggio video registrati sul dispositivo (download locale)
   - Calcolo biomeccanico deterministico dello stress articolare basato su
     profili di movimento pattern-specifici (incluso pattern ciclismo)
@@ -108,3 +110,39 @@ NOTE TECNICHE
     LLM; componente CorrectiveExerciseSuggestions integrato in
     ReportDetail con card cliccabili che linkano al dettaglio esercizio
   ================================================================
+
+AGGIORNAMENTO TECNICO AL 15 OTTOBRE 2026
+  - Il frontend attivo e' React 18 + Vite; le app mobili usano Capacitor.
+    Il progetto include shell native Android e iOS e una PWA per il web.
+  - Supabase e' il backend attivo. Le migrazioni SQL definiscono schema,
+    policy RLS, quote mensili, identificativi di origine esercizi,
+    genere profilo e persistenza della selezione degli esercizi correttivi.
+  - Sono presenti Edge Functions per analisi, mentore, quote, suggerimenti,
+    notifiche, segnalazioni, operazioni amministrative e acquisti in-app
+    verificati da RevenueCat.
+  - Abbonamenti Pro e Coach mensili/annuali tramite Apple App Store e Google
+    Play; acquisti e ripristini sono nativi, entitlement sincronizzati lato
+    server da webhook RevenueCat e verifica API autenticata.
+  - L'analisi combina frame RGB e, solo nell'app nativa quando supportato,
+    una scansione 3D facoltativa avviata dopo la registrazione video.
+  - Il catalogo documentato comprende 691 esercizi in 14 macro-categorie;
+    il dataset completo non e' incluso nel repository e va importato nel
+    progetto Supabase seguendo le istruzioni del README.
+  - Avvio e configurazione sono descritti in README.md. Le chiavi locali
+    (.env.local) e i secret server-side non fanno parte della distribuzione.
+  - Il pacchetto npm ha versione tecnica 0.0.0: non e' stato dichiarato un
+    numero di release commerciale.
+  - Pagamenti: integrazione RevenueCat Capacitor con StoreKit e Google Play
+    Billing. Stripe e' stato rimosso dal codice runtime, dallo schema locale
+    e dalle Edge Functions pubblicate; le vecchie iscrizioni Stripe non sono
+    state migrate automaticamente.
+  - Stato di attivazione: schema Supabase migrato e funzioni revenuecatWebhook,
+    syncStoreEntitlement, changePlan e adminManageUsers pubblicate. Acquisti
+    store non ancora collaudati o attivi: mancano le chiavi RevenueCat,
+    gli identificativi prodotto reali e la configurazione di app/offerta
+    in RevenueCat e nei rispettivi store.
+  - Piani previsti: Pro e Coach, ciascuno mensile e annuale; entitlement
+    RevenueCat: pro e coach. La pagina legge prezzi localizzati dallo store,
+    consente l'acquisto e il ripristino su app nativa; sul web non vende.
+  - Le istruzioni di setup e il prompt Claude sono in README.md e
+    PROMPT_CONFIGURAZIONE_PAGAMENTI_STORE.md.

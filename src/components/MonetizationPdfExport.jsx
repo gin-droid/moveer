@@ -103,7 +103,7 @@ export default function MonetizationPdfExport() {
     addText("• Il piano Freemium serve come funnel: attira utenti senza costi e li converte verso Pro/Coach.", 11);
     addText("• Il piano Pro è il punto di equilibrio: prezzo accessibile che copre i costi con pochi abbonati.", 11);
     addText("• Le soglie di pareggio sono stime storiche basate sui costi Base44 e degli store.", 11);
-    addText("• I costi Supabase, AI, email, dominio e commissioni Stripe non sono ancora stimati.", 11);
+    addText("• I costi Supabase, AI, email, dominio e commissioni degli store non sono ancora stimati.", 11);
     addText("• I prezzi possono essere registrati su Google Play e App Store Connect come abbonamenti in-app.", 11);
     y += 8;
 

@@ -1,46 +1,77 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { appApi } from "@/api/appApi";
 import { PLANS } from "@/lib/monetizationData";
-import { Check, X, CreditCard, Users, Video, Sparkles, Loader2, ShieldCheck } from "lucide-react";
+import {
+  Check,
+  X,
+  CreditCard,
+  Users,
+  Video,
+  Sparkles,
+  Loader2,
+  ShieldCheck,
+  ExternalLink,
+  RotateCcw,
+} from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  configureStorePurchases,
+  isNativeStoreAvailable,
+  purchaseStorePackage,
+  restoreStorePurchases,
+  storeManagementUrl,
+} from "@/lib/storePurchases";
+
+async function invokePaymentFunction(name, body = {}) {
+  const { data, error } = await appApi.functions.invoke(name, body);
+  if (error) {
+    let message = error.message || "Operazione non riuscita.";
+    try {
+      const responseBody = await error.context?.json();
+      if (responseBody?.error) message = responseBody.error;
+    } catch {
+      // Keep the Functions error when the response has no JSON body.
+    }
+    throw new Error(message);
+  }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
 
 export default function Subscription() {
   const [me, setMe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [switchingTo, setSwitchingTo] = useState(null);
+  const [storePackages, setStorePackages] = useState({});
+  const [storeError, setStoreError] = useState("");
+  const [storeSyncPending, setStoreSyncPending] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState("monthly");
+  const [restoring, setRestoring] = useState(false);
+  const isNative = isNativeStoreAvailable();
   const { toast } = useToast();
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    const load = async () => {
       try {
-        const u = await appApi.auth.me();
-        setMe(u);
-      } catch (e) {
-        /* ignore */
+        const user = await appApi.auth.me();
+        if (cancelled) return;
+        setMe(user);
+        if (isNative && user?.id) {
+          const availablePackages = await configureStorePurchases(user.id);
+          if (!cancelled) setStorePackages(availablePackages);
+          const result = await invokePaymentFunction("syncStoreEntitlement");
+          if (!cancelled) setMe((current) => ({ ...current, plan: result.plan }));
+        }
+      } catch (error) {
+        if (!cancelled) setStoreError(error.message || "Impossibile caricare gli acquisti dello store.");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    })();
-  }, []);
-
-  const [params] = useSearchParams();
-
-  useEffect(() => {
-    const status = params.get("status");
-    if (status === "success") {
-      toast({
-        title: "Pagamento completato",
-        description: "Il tuo piano Pro è attivo. Benvenuto!",
-      });
-      appApi.auth.me().then(setMe).catch(() => {});
-    } else if (status === "cancel") {
-      toast({
-        title: "Pagamento annullato",
-        description: "Nessun addebito è stato effettuato.",
-      });
-    }
-  }, [params]);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [isNative]);
 
   const currentPlanId = me?.plan || "freemium";
   const currentPlan = PLANS.find((p) => p.id === currentPlanId) || PLANS[0];
@@ -50,37 +81,39 @@ export default function Subscription() {
   const mentorUsed = (me?.mentor_query_month === monthKey ? me?.mentor_query_count : 0) || 0;
   const mentorLimit = currentPlan.limits.mentorQueriesPerMonth;
 
-  const handleCheckout = async (planId) => {
+  const syncStorePlan = async () => {
+    const result = await invokePaymentFunction("syncStoreEntitlement");
+    setMe((current) => ({ ...current, plan: result.plan }));
+    setStoreSyncPending(false);
+    return result.plan;
+  };
+
+  const handlePurchase = async (planId) => {
+    const storePackage = storePackages[planId]?.[billingPeriod];
+    if (!storePackage) {
+      setStoreError("Questo prodotto non è disponibile nell’offerta attiva dello store.");
+      return;
+    }
     setSwitchingTo(planId);
     try {
-      const isFramed = window.self !== window.top;
-      const checkoutTab = isFramed ? window.open("", "_blank") : null;
-      if (isFramed && !checkoutTab) throw new Error("Consenti i popup per continuare al checkout.");
-      if (checkoutTab) checkoutTab.opener = null;
-
+      await purchaseStorePackage(storePackage);
       try {
-        const res = await appApi.functions.invoke("createCheckoutSession", {
-          planId,
-          userId: me?.id,
-          userEmail: me?.email,
+        const plan = await syncStorePlan();
+        toast({
+          title: "Abbonamento attivato",
+          description: `Il piano ${PLANS.find((item) => item.id === plan)?.name || plan} è attivo.`,
         });
-        if (res.data?.error) throw new Error(res.data.error);
-        const url = res.data?.url;
-        if (!url) throw new Error("URL di checkout non disponibile.");
-
-        if (checkoutTab) {
-          checkoutTab.location.replace(url);
-        } else {
-          window.location.assign(url);
-        }
       } catch (error) {
-        checkoutTab?.close();
-        throw error;
+        setStoreSyncPending(true);
+        toast({
+          title: "Acquisto ricevuto",
+          description: "Lo store ha confermato l’acquisto. L’attivazione dell’account è in sincronizzazione.",
+        });
       }
-    } catch (err) {
+    } catch (error) {
       toast({
-        title: "Errore",
-        description: err.message || "Impossibile avviare il checkout. Riprova.",
+        title: "Acquisto non completato",
+        description: error.message || "Lo store non ha completato l’acquisto.",
         variant: "destructive",
       });
     } finally {
@@ -88,33 +121,30 @@ export default function Subscription() {
     }
   };
 
-  const handleSwitch = async (planId) => {
-    if (planId === currentPlanId) return;
-    if (planId === "pro") {
-      return handleCheckout(planId);
-    }
-    setSwitchingTo(planId);
+  const handleRestore = async () => {
+    setRestoring(true);
     try {
-      // Free downgrades and admin changes use changePlan directly.
-      // Paid upgrades (pro) go through Stripe Checkout via handleCheckout.
-      const res = await appApi.functions.invoke("changePlan", { planId });
-      if (res.data?.error) throw new Error(res.data.error);
-      const newPlan = res.data?.plan || planId;
-      setMe({ ...me, plan: newPlan });
-      const plan = PLANS.find((p) => p.id === newPlan);
+      await restoreStorePurchases();
+      const plan = await syncStorePlan();
       toast({
-        title: "Piano aggiornato",
-        description: `Ora sei sul piano ${plan.name}.`,
+        title: plan === "freemium" ? "Nessun acquisto attivo" : "Acquisti ripristinati",
+        description: plan === "freemium"
+          ? "Non risultano abbonamenti attivi per questo account store."
+          : `Il piano ${PLANS.find((item) => item.id === plan)?.name || plan} è stato ripristinato.`,
       });
-    } catch (err) {
+    } catch (error) {
       toast({
-        title: "Errore",
-        description: err.message || "Impossibile cambiare piano. Riprova.",
+        title: "Ripristino non riuscito",
+        description: error.message || "Impossibile ripristinare gli acquisti.",
         variant: "destructive",
       });
     } finally {
-      setSwitchingTo(null);
+      setRestoring(false);
     }
+  };
+
+  const handleManageSubscription = () => {
+    window.open(storeManagementUrl(), "_blank", "noopener,noreferrer");
   };
 
   if (loading) {
@@ -151,8 +181,10 @@ export default function Subscription() {
               <div className="text-2xl font-display font-bold text-white">Gratis</div>
             ) : (
               <>
-                <div className="text-2xl font-display font-bold text-white">€{currentPlan.priceMonthly}<span className="text-sm text-muted-foreground">/mese</span></div>
-                <div className="text-xs text-muted-foreground">€{currentPlan.priceYearly}/anno</div>
+                <div className="text-2xl font-display font-bold text-white">
+                  {storePackages[currentPlanId]?.[billingPeriod]?.product.priceString || (isNative ? "" : `€${billingPeriod === "annual" ? currentPlan.priceYearly : currentPlan.priceMonthly}`)}
+                  <span className="text-sm text-muted-foreground">/{billingPeriod === "annual" ? "anno" : "mese"}</span>
+                </div>
               </>
             )}
           </div>
@@ -169,6 +201,29 @@ export default function Subscription() {
             <div className="text-[11px] text-muted-foreground">query Mentore usate</div>
           </div>
         </div>
+        {isNative && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleRestore}
+              disabled={restoring}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+            >
+              {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              Ripristina acquisti
+            </button>
+            {currentPlanId !== "freemium" && (
+              <button
+                type="button"
+                onClick={handleManageSubscription}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border px-3 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Gestisci nello store
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* All plans */}
@@ -176,29 +231,53 @@ export default function Subscription() {
         <h2 className="font-display text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-primary" /> Piani disponibili
         </h2>
+        {isNative && (
+          <div role="group" aria-label="Periodo di fatturazione" className="mb-4 inline-grid grid-cols-2 rounded-md border border-border p-1">
+            {[{ id: "monthly", label: "Mensile" }, { id: "annual", label: "Annuale" }].map((period) => (
+              <button
+                key={period.id}
+                type="button"
+                aria-pressed={billingPeriod === period.id}
+                onClick={() => setBillingPeriod(period.id)}
+                className={`min-h-9 rounded px-4 text-sm font-medium ${billingPeriod === period.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                {period.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {!isNative && <p className="mb-4 text-sm text-muted-foreground">Gli acquisti sono disponibili nell’app nativa per iOS e Android.</p>}
+        {storeError && isNative && <p role="alert" className="mb-4 text-sm text-destructive">{storeError}</p>}
+        {storeSyncPending && <p role="status" className="mb-4 text-sm text-muted-foreground">Acquisto confermato dallo store; sincronizzazione dell’account in corso. Usa “Ripristina acquisti” se il piano non si aggiorna.</p>}
         <div className="grid gap-4 md:grid-cols-3">
           {PLANS.map((plan) => (
             <PlanCard
               key={plan.id}
               plan={plan}
+              storePackage={storePackages[plan.id]?.[billingPeriod]}
+              billingPeriod={billingPeriod}
+              isNative={isNative}
               isCurrent={plan.id === currentPlanId}
+              hasActiveStoreSubscription={currentPlanId !== "freemium"}
               isSwitching={switchingTo === plan.id}
-              onSwitch={() => handleSwitch(plan.id)}
+              onSwitch={() => handlePurchase(plan.id)}
             />
           ))}
         </div>
       </div>
 
       <p className="text-xs text-muted-foreground text-center leading-relaxed">
-        Gli abbonamenti a pagamento sono gestiti tramite Stripe.
-        Puoi annullare in qualsiasi momento dal tuo account Stripe.
+        Gli acquisti e i rinnovi sono gestiti da Apple App Store o Google Play. Puoi gestire o annullare l’abbonamento nelle impostazioni dello store.
       </p>
     </div>
   );
 }
 
-function PlanCard({ plan, isCurrent, isSwitching, onSwitch }) {
+function PlanCard({ plan, storePackage, billingPeriod, isNative, isCurrent, hasActiveStoreSubscription, isSwitching, onSwitch }) {
   const isPro = plan.id === "pro";
+  const price = storePackage?.product.priceString || (isNative
+    ? "Prezzo non disponibile"
+    : `€${billingPeriod === "annual" ? plan.priceYearly : plan.priceMonthly}`);
   return (
     <div className={`relative rounded-2xl border p-5 flex flex-col ${
       isCurrent ? "border-primary bg-primary/5" : isPro ? "border-primary/40 bg-primary/5" : "border-border bg-card"
@@ -217,9 +296,8 @@ function PlanCard({ plan, isCurrent, isSwitching, onSwitch }) {
           <div className="text-3xl font-display font-bold text-white">Gratis</div>
         ) : (
           <div>
-            <span className="text-3xl font-display font-bold text-white">€{plan.priceMonthly}</span>
-            <span className="text-sm text-muted-foreground">/mese</span>
-            <div className="text-xs text-muted-foreground mt-1">€{plan.priceYearly}/anno</div>
+            <span className="text-3xl font-display font-bold text-white">{price}</span>
+            <span className="text-sm text-muted-foreground">/{billingPeriod === "annual" ? "anno" : "mese"}</span>
           </div>
         )}
       </div>
@@ -265,7 +343,7 @@ function PlanCard({ plan, isCurrent, isSwitching, onSwitch }) {
       {/* Action */}
       <button
         onClick={onSwitch}
-        disabled={isCurrent || isSwitching}
+        disabled={isCurrent || isSwitching || !isNative || !storePackage || hasActiveStoreSubscription || plan.id === "freemium"}
         className={`w-full inline-flex items-center justify-center gap-2 font-semibold text-sm px-4 py-3 rounded-xl transition-colors ${
           isCurrent
             ? "bg-muted text-muted-foreground cursor-default"
@@ -279,7 +357,10 @@ function PlanCard({ plan, isCurrent, isSwitching, onSwitch }) {
             <Check className="w-4 h-4" /> Piano attuale
           </>
         ) : (
-          "Passa a questo piano"
+          !isNative ? "Disponibile nell’app mobile"
+            : hasActiveStoreSubscription ? "Gestisci nello store"
+              : !storePackage ? "Non disponibile nello store"
+                : "Abbonati"
         )}
       </button>
     </div>

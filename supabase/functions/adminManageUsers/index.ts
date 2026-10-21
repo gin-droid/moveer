@@ -88,7 +88,13 @@ Deno.serve(async (req) => {
       await getManagedUser(user.id, auth.user.id);
 
       const { error: entitlementError } = await adminClient.from('user_entitlements')
-        .upsert({ user_id: user.id, plan }, { onConflict: 'user_id' });
+        .upsert({
+          user_id: user.id,
+          plan,
+          billing_provider: plan === 'freemium' ? null : 'admin',
+          store_product_id: null,
+          subscription_expires_at: null,
+        }, { onConflict: 'user_id' });
       if (entitlementError) throw entitlementError;
       const { error: profileError } = await adminClient.from('profiles')
         .update({ plan }).eq('id', user.id);

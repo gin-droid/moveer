@@ -166,3 +166,13 @@ L'implementazione web restituisce `available: false`. In Capacitor, `CameraRecor
 - La mappa di profondità non equivale a un modello di forze articolari: i punteggi restano indicatori di deviazione cinematica, non misure cliniche o di carico interno.
 
 La compilazione iOS per simulatore è stata verificata. Per produrre un APK servono Android SDK e Android Studio; per distribuire su iPhone serve il profilo di firma Apple associato al Team Xcode.
+
+---
+
+## Nota piattaforme e acquisti store (15 ottobre 2026)
+
+Le shell Capacitor 8 includono anche `@revenuecat/purchases-capacitor` 13.7.0 per acquisti nativi con StoreKit e Google Play Billing. La configurazione dei pagamenti non modifica il flusso depth: il video RGB resta la registrazione principale e la scansione LiDAR/ToF resta facoltativa.
+
+L'integrazione store in codice supporta Pro/Coach, mensile/annuale, acquisto e ripristino; l'identità RevenueCat è il UUID dell'utente Supabase. Il backend sincronizza l'entitlement tramite API RevenueCat e webhook autenticato. Al 15 ottobre 2026 le Edge Functions e la migrazione Supabase sono pubblicate, ma il percorso non è ancora attivabile: mancano chiavi SDK pubbliche, ID prodotto reali e configurazione di app/prodotti/offering nei dashboard Apple, Google e RevenueCat.
+
+Per la procedura operativa seguire `PROMPT_CONFIGURAZIONE_PAGAMENTI_STORE.md` e `../README.md`. Non inserire secret API key, token webhook, credenziali Apple/Google o chiavi private nella chat o nei file versionati.

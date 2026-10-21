@@ -125,7 +125,7 @@ export async function syncPlanToUser(base44: any, userId: string, plan: string) 
 
 /**
  * Set the user's plan on the trusted UserEntitlement entity and sync the display cache.
- * Used by the Stripe webhook (after confirmed payment) and changePlan (admin / free downgrade).
+ * Legacy Base44 plan helper; current store entitlements are synchronized by Supabase functions.
  */
 export async function setPlan(base44: any, userId: string, plan: string) {
   const entitlement = await getOrCreateEntitlement(base44, userId);

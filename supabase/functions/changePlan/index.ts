@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     if (!validPlans.includes(planId)) return json({ error: 'Piano non valido' }, 400);
 
     const { data: profile, error: profileError } = await auth.client.from('profiles')
-      .select('role').eq('id', auth.user.id).maybeSingle();
+      .select('role,plan').eq('id', auth.user.id).maybeSingle();
     if (profileError) throw profileError;
     const isAdmin = profile?.role === 'admin';
     if (!isAdmin && planId !== 'freemium') {
@@ -22,9 +22,21 @@ Deno.serve(async (req) => {
         code: 'payment_verification_required',
       }, 402);
     }
+    if (!isAdmin && ['pro', 'coach'].includes(profile?.plan) && planId === 'freemium') {
+      return json({
+        error: 'Gestisci la cancellazione dell’abbonamento nelle impostazioni dello store.',
+        code: 'store_management_required',
+      }, 409);
+    }
 
     const { error: entitlementError } = await adminClient.from('user_entitlements')
-      .upsert({ user_id: auth.user.id, plan: planId }, { onConflict: 'user_id' });
+      .upsert({
+        user_id: auth.user.id,
+        plan: planId,
+        billing_provider: isAdmin && planId !== 'freemium' ? 'admin' : null,
+        store_product_id: null,
+        subscription_expires_at: null,
+      }, { onConflict: 'user_id' });
     if (entitlementError) throw entitlementError;
     const { error: updateError } = await adminClient.from('profiles')
       .update({ plan: planId }).eq('id', auth.user.id);

@@ -20,6 +20,6 @@ Start with `README.md` for local setup, environment variables, Supabase migratio
 
 - Use `npm run dev` for the frontend and `npx supabase` for local database/function workflows.
 - Keep ownership and authorization in RLS or Edge Functions; never trust client-supplied user IDs, plan, or blocked status.
-- `VITE_*` variables are public. Keep service-role, Gemini, email, and Stripe keys in Supabase secrets.
+- `VITE_*` variables are public. Keep service-role, Gemini, email, and RevenueCat secret API/webhook keys in Supabase secrets.
 - The exercise catalog data is not present in this repository; do not invent or fabricate imported records.
 - Run the relevant checks from `package.json` before finishing code changes.

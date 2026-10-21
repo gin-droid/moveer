@@ -1,4 +1,4 @@
-import { authenticate, consumeQuota, generateGeminiText, json } from '../_shared/runtime.ts';
+import { adminClient, authenticate, consumeQuota, generateGeminiText, json } from '../_shared/runtime.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return json({ ok: true });
@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     }
     quotaConsumed = true;
 
-    const { data: userMessage, error: insertError } = await auth.client.from('mentor_messages')
+    const { data: userMessage, error: insertError } = await adminClient.from('mentor_messages')
       .insert({ conversation_id: conversationId, role: 'user', content: text })
       .select('id').single();
     if (insertError) throw insertError;
@@ -49,7 +49,7 @@ Report recenti dell'utente: ${JSON.stringify(reports || [])}`;
     }));
     const answer = await generateGeminiText(contents, systemInstruction, false);
 
-    const { error: answerError } = await auth.client.from('mentor_messages').insert({
+    const { error: answerError } = await adminClient.from('mentor_messages').insert({
       conversation_id: conversationId,
       role: 'assistant',
       content: answer.slice(0, 12000),
@@ -60,8 +60,17 @@ Report recenti dell'utente: ${JSON.stringify(reports || [])}`;
 
     return json({ allowed: true, used: quota.used, limit: quota.limit, plan: quota.plan });
   } catch (error) {
-    if (userMessageId) await auth.client.from('mentor_messages').delete().eq('id', userMessageId);
-    if (quotaConsumed) await auth.client.rpc('release_monthly_quota', { p_kind: 'mentor' });
+    if (userMessageId) {
+      const { error: cleanupError } = await adminClient.from('mentor_messages').delete().eq('id', userMessageId);
+      if (cleanupError) console.error('sendMentorMessage message cleanup:', cleanupError);
+    }
+    if (quotaConsumed) {
+      const { error: releaseError } = await adminClient.rpc('release_monthly_quota_for_user', {
+        p_user_id: auth.user.id,
+        p_kind: 'mentor',
+      });
+      if (releaseError) console.error('sendMentorMessage quota release:', releaseError);
+    }
     console.error('sendMentorMessage:', error);
     return json({ error: error instanceof Error ? error.message : 'Errore del mentore' }, 500);
   }

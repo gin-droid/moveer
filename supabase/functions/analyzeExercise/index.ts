@@ -1,4 +1,4 @@
-import { authenticate, consumeQuota, generateGeminiText, json, parseGeminiJson } from '../_shared/runtime.ts';
+import { adminClient, authenticate, consumeQuota, generateGeminiText, json, parseGeminiJson } from '../_shared/runtime.ts';
 import { computeJointStress, getPatternCheckpoints } from '../_shared/biomechanics.ts';
 import { analyzeDepthData, projectDepthFrameToBodyDiagram, summarizeDepthAngles } from '../_shared/depth3d.ts';
 
@@ -139,12 +139,18 @@ Genera un JSON in italiano con score intero 0-100, summary (2-3 frasi), issues_d
       wearable_data: wearableData,
     };
 
-    const { data: report, error } = await auth.client.from('analysis_reports')
+    const { data: report, error } = await adminClient.from('analysis_reports')
       .insert(reportPayload).select('*').single();
     if (error) throw error;
     return json({ report: { ...report, created_date: report.created_at, created_by_id: report.user_id } });
   } catch (error) {
-    if (quotaConsumed) await auth.client.rpc('release_monthly_quota', { p_kind: 'analysis' });
+    if (quotaConsumed) {
+      const { error: releaseError } = await adminClient.rpc('release_monthly_quota_for_user', {
+        p_user_id: auth.user.id,
+        p_kind: 'analysis',
+      });
+      if (releaseError) console.error('analyzeExercise quota release:', releaseError);
+    }
     console.error('analyzeExercise:', error);
     return json({ error: error instanceof Error ? error.message : 'Errore durante l’analisi' }, 500);
   }

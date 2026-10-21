@@ -11,8 +11,8 @@ export default function LogoUploader({ currentLogo, onSaved }) {
 
   const handleFile = async (file) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Formato non supportato", description: "Carica un'immagine (PNG, JPG, SVG).", variant: "destructive" });
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      toast({ title: "Formato non supportato", description: "Carica un'immagine PNG, JPG o WebP.", variant: "destructive" });
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
@@ -59,7 +59,7 @@ export default function LogoUploader({ currentLogo, onSaved }) {
         <div className="flex-1 min-w-0">
           <p className="text-xs text-muted-foreground leading-relaxed mb-2">
             Il tuo logo appare nell'intestazione dei report e dei PDF esportati.
-            Formati: PNG, JPG, SVG. Massimo 2 MB.
+            Formati: PNG, JPG, WebP. Massimo 2 MB.
           </p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -84,7 +84,7 @@ export default function LogoUploader({ currentLogo, onSaved }) {
           <input
             ref={inputRef}
             type="file"
-            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            accept="image/png,image/jpeg,image/webp"
             className="hidden"
             onChange={(e) => handleFile(e.target.files?.[0])}
           />

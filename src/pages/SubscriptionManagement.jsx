@@ -161,7 +161,7 @@ export default function SubscriptionManagement() {
 
       <section className="border-y border-zinc-800 py-5">
         <h2 className="mb-1 text-base font-semibold text-white">Assegna un piano via email</h2>
-        <p className="mb-4 text-xs text-zinc-500">L’indirizzo deve appartenere a un account registrato. L’assegnazione manuale non modifica pagamenti o rinnovi Stripe.</p>
+        <p className="mb-4 text-xs text-zinc-500">L’indirizzo deve appartenere a un account registrato. L’assegnazione manuale non modifica acquisti o rinnovi gestiti dagli store.</p>
         <form onSubmit={handleGrantPlan} className="space-y-3">
           <input
             type="email"
