@@ -1,4 +1,6 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
+import AppErrorBoundary from '@/components/AppErrorBoundary';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -8,28 +10,28 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import AppLayout from '@/components/AppLayout';
-const Home = lazy(() => import('@/pages/Home'));
-const Exercises = lazy(() => import('@/pages/Exercises'));
-const ExerciseDetail = lazy(() => import('@/pages/ExerciseDetail'));
-const Demos = lazy(() => import('@/pages/Demos'));
-const Analyze = lazy(() => import('@/pages/Analyze'));
-const Reports = lazy(() => import('@/pages/Reports'));
-const ReportDetail = lazy(() => import('@/pages/ReportDetail'));
-const Compare = lazy(() => import('@/pages/Compare'));
-const Users = lazy(() => import('@/pages/Users'));
-const SubscriptionManagement = lazy(() => import('@/pages/SubscriptionManagement'));
-const Athletes = lazy(() => import('@/pages/Athletes'));
-const AthleteDetail = lazy(() => import('@/pages/AthleteDetail'));
-const Mentor = lazy(() => import('@/pages/Mentor'));
-const Monetization = lazy(() => import('@/pages/Monetization'));
-const Subscription = lazy(() => import('@/pages/Subscription'));
-const About = lazy(() => import('@/pages/About'));
-const ManagementLinks = lazy(() => import('@/pages/ManagementLinks'));
+const Home = lazyWithRetry(() => import('@/pages/Home'));
+const Exercises = lazyWithRetry(() => import('@/pages/Exercises'));
+const ExerciseDetail = lazyWithRetry(() => import('@/pages/ExerciseDetail'));
+const Demos = lazyWithRetry(() => import('@/pages/Demos'));
+const Analyze = lazyWithRetry(() => import('@/pages/Analyze'));
+const Reports = lazyWithRetry(() => import('@/pages/Reports'));
+const ReportDetail = lazyWithRetry(() => import('@/pages/ReportDetail'));
+const Compare = lazyWithRetry(() => import('@/pages/Compare'));
+const Users = lazyWithRetry(() => import('@/pages/Users'));
+const SubscriptionManagement = lazyWithRetry(() => import('@/pages/SubscriptionManagement'));
+const Athletes = lazyWithRetry(() => import('@/pages/Athletes'));
+const AthleteDetail = lazyWithRetry(() => import('@/pages/AthleteDetail'));
+const Mentor = lazyWithRetry(() => import('@/pages/Mentor'));
+const Monetization = lazyWithRetry(() => import('@/pages/Monetization'));
+const Subscription = lazyWithRetry(() => import('@/pages/Subscription'));
+const About = lazyWithRetry(() => import('@/pages/About'));
+const ManagementLinks = lazyWithRetry(() => import('@/pages/ManagementLinks'));
 import PublicLayout from '@/components/PublicLayout';
-const Login = lazy(() => import('@/pages/Login'));
-const Register = lazy(() => import('@/pages/Register'));
-const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
+const Login = lazyWithRetry(() => import('@/pages/Login'));
+const Register = lazyWithRetry(() => import('@/pages/Register'));
+const ForgotPassword = lazyWithRetry(() => import('@/pages/ForgotPassword'));
+const ResetPassword = lazyWithRetry(() => import('@/pages/ResetPassword'));
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Navigate } from 'react-router-dom';
 import { appPath } from '@/lib/appPath';
@@ -138,7 +140,9 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router basename={Router === BrowserRouter ? import.meta.env.BASE_URL : undefined}>
           <ScrollToTop />
-          <AuthenticatedApp />
+          <AppErrorBoundary>
+            <AuthenticatedApp />
+          </AppErrorBoundary>
         </Router>
         <Toaster />
       </QueryClientProvider>

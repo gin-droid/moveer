@@ -16,5 +16,16 @@ export default defineConfig({
   },
   build: {
     outDir: process.env.APP_BUILD_OUT_DIR || 'dist',
+    rollupOptions: {
+      output: {
+        // Stable vendor chunks stay cached across app deploys.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('/@supabase/') || id.includes('/iceberg-js/')) return 'vendor-supabase';
+          if (/\/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom)\//.test(id)) return 'vendor-react';
+          return undefined;
+        },
+      },
+    },
   },
 });

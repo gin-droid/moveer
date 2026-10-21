@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { appApi } from "@/api/appApi";
 import { AlertTriangle, Lightbulb, Dumbbell, CheckCircle2, Sparkles, Video, Activity, Trash2, Loader2 } from "lucide-react";
@@ -6,7 +7,7 @@ import ReportPdfExport from "@/components/ReportPdfExport";
 import CorrectiveExercisePicker from "@/components/CorrectiveExercisePicker";
 import { cacheReport, getCachedReport } from "@/lib/reportCache";
 import BodyDiagram from "@/components/BodyDiagram";
-const DepthAnalysisPanel = lazy(() => import("@/components/DepthAnalysisPanel"));
+const DepthAnalysisPanel = lazyWithRetry(() => import("@/components/DepthAnalysisPanel"));
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/components/ui/use-toast";
 

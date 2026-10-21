@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { appApi } from '@/api/appApi';
 import { isSupabaseConfigured, supabase } from '@/api/supabaseClient';
 
@@ -13,6 +13,8 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings] = useState(null);
+  const loadedUserIdRef = useRef(null);
+  const pendingCheckRef = useRef(null);
 
   const updateUser = (values) => {
     setUser((currentUser) => currentUser ? { ...currentUser, ...values } : currentUser);
@@ -24,11 +26,14 @@ export const AuthProvider = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
+        loadedUserIdRef.current = null;
         setUser(null);
         setIsAuthenticated(false);
         setAuthChecked(true);
         setIsLoadingAuth(false);
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      } else if (event === 'SIGNED_IN' && session.user?.id !== loadedUserIdRef.current) {
+        // supabase-js also emits SIGNED_IN whenever the tab becomes visible again:
+        // reload only when the signed-in user actually changed, so pages keep their state.
         window.setTimeout(() => checkUserAuth(), 0);
       }
     });
@@ -63,22 +68,33 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const checkUserAuth = async () => {
+  const checkUserAuth = () => {
+    if (!pendingCheckRef.current) {
+      pendingCheckRef.current = loadUserAuth().finally(() => { pendingCheckRef.current = null; });
+    }
+    return pendingCheckRef.current;
+  };
+
+  const loadUserAuth = async () => {
     try {
-      // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await appApi.auth.me();
-      let isBlocked = false;
-      let entitlement = null;
-      try {
-        const entitlements = await appApi.entities.UserEntitlement.filter(
-          { user_id: currentUser.id }, '-created_date', 1
-        );
-        entitlement = entitlements?.[0] || null;
-        isBlocked = !!entitlement?.blocked;
-      } catch {
-        isBlocked = !!currentUser.blocked;
+      const { data: { session } } = await supabase.auth.getSession();
+      const sessionUserId = session?.user?.id;
+      const [currentUser, entitlementResult] = await Promise.all([
+        appApi.auth.me(),
+        sessionUserId
+          ? appApi.entities.UserEntitlement.filter({ user_id: sessionUserId }, '-created_date', 1)
+            .then((rows) => ({ entitlement: rows?.[0] || null, failed: false }), () => ({ entitlement: null, failed: true }))
+          : Promise.resolve({ entitlement: null, failed: true }),
+      ]);
+      if (!currentUser) {
+        const missingSession = new Error('Sessione scaduta');
+        // @ts-ignore
+        missingSession.status = 401;
+        throw missingSession;
       }
+      const entitlement = currentUser.id === sessionUserId ? entitlementResult.entitlement : null;
+      const isBlocked = entitlementResult.failed ? !!currentUser.blocked : !!entitlement?.blocked;
       if (isBlocked) {
         const isSuspended = currentUser.banned_until && new Date(currentUser.banned_until).getTime() > Date.now();
         setAuthError({
@@ -92,17 +108,26 @@ export const AuthProvider = ({ children }) => {
         setAuthChecked(true);
         return;
       }
+      loadedUserIdRef.current = currentUser.id;
+      setAuthError(null);
       setUser({ ...currentUser, plan: entitlement?.plan || currentUser.plan });
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
     } catch (error) {
       console.error('User auth check failed:', error);
+      loadedUserIdRef.current = null;
+      setUser(null);
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);
-      
-      if (error.status === 401 || error.status === 403) setAuthError({ type: 'auth_required', message: 'Sessione scaduta' });
+
+      const status = error?.status;
+      if (status === 401 || status === 403 || error?.name === 'AuthSessionMissingError') {
+        // Drop the invalid local session so the login page does not loop on it.
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+        setAuthError({ type: 'auth_required', message: 'Sessione scaduta' });
+      }
     }
   };
 
