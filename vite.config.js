@@ -10,9 +10,13 @@ export default defineConfig({
   base: process.env.APP_BASE_PATH || '/',
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: {
-      '@': path.resolve(projectRoot, 'src'),
-    },
+    alias: [
+      { find: '@', replacement: path.resolve(projectRoot, 'src') },
+      {
+        find: /^(html2canvas|canvg|dompurify)$/,
+        replacement: path.resolve(projectRoot, 'src/lib/jspdfOptionalStub.js'),
+      },
+    ],
   },
   build: {
     outDir: process.env.APP_BUILD_OUT_DIR || 'dist',
