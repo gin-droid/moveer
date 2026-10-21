@@ -33,11 +33,13 @@ export default function PublicLayout() {
       <footer className="border-t border-border bg-sidebar pb-safe">
         <div className="max-w-[26rem] mx-auto w-full px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <span>© {new Date().getFullYear()} moVeerAI — Analisi postura e tecnica</span>
-          <nav className="flex items-center gap-4">
-            <Link to="/gestione" className="hover:text-foreground transition-colors">Link utili</Link>
-            <Link to="/about" className="hover:text-foreground transition-colors">Cos'è</Link>
-            <Link to="/login" className="hover:text-foreground transition-colors">Accedi</Link>
-          </nav>
+          {!isAboutPage && (
+            <nav className="flex items-center gap-4">
+              <Link to="/gestione" className="hover:text-foreground transition-colors">Link utili</Link>
+              <Link to="/about" className="hover:text-foreground transition-colors">Cos'è</Link>
+              <Link to="/login" className="hover:text-foreground transition-colors">Accedi</Link>
+            </nav>
+          )}
         </div>
       </footer>
     </div>

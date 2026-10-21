@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Video, Activity, Dumbbell, Shield, Target, Users, ArrowLeft } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -109,21 +109,6 @@ export default function About() {
           Crediamo che una tecnica corretta sia la base di ogni risultato duraturo e che la tecnologia possa
           dare a chiunque gli strumenti per allenarsi in modo più sicuro ed efficace.
         </p>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Link
-          to="/login"
-          className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm px-5 py-3 rounded-xl transition-colors"
-        >
-          Inizia ad analizzare
-        </Link>
-        <a
-          href="mailto:info@moveer.ai"
-          className="inline-flex items-center justify-center gap-2 border border-border bg-card hover:bg-sidebar-accent text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition-colors"
-        >
-          Contattaci
-        </a>
       </div>
     </div>
   );
