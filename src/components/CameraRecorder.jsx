@@ -118,7 +118,6 @@ export default function CameraRecorder({ onRecorded, onClose }) {
       }
       stopStream();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

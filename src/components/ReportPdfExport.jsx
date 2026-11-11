@@ -191,7 +191,7 @@ export default function ReportPdfExport({ report, logoUrl, correctiveExercises, 
         doc.setFillColor(255, 255, 255);
         doc.roundedRect(logoX - 4, logoY - 4, logoW + 8, logoH + 8, 4, 4, "F");
         doc.addImage(logoUrl, "PNG", logoX, logoY, logoW, logoH, undefined, "FAST");
-      } catch (e) {
+      } catch {
         // logo non caricabile: ignora
       }
     }

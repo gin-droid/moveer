@@ -23,6 +23,13 @@ Variabili frontend per gli acquisti nativi, da inserire in `.env.local` (non son
 
 - `VITE_REVENUECAT_IOS_API_KEY` e `VITE_REVENUECAT_ANDROID_API_KEY`: chiavi SDK pubbliche delle app configurate in RevenueCat.
 - `VITE_REVENUECAT_PRO_MONTHLY_PRODUCT_ID`, `VITE_REVENUECAT_PRO_ANNUAL_PRODUCT_ID`, `VITE_REVENUECAT_COACH_MONTHLY_PRODUCT_ID` e `VITE_REVENUECAT_COACH_ANNUAL_PRODUCT_ID`: identificativi prodotto in App Store Connect/Google Play, collegati nell'offerta RevenueCat corrente.
+- `VITE_TURNSTILE_SITE_KEY`: chiave pubblica opzionale Cloudflare Turnstile per CAPTCHA su registrazione e richiesta reset password.
+
+## Sicurezza Auth in produzione
+
+Nel Supabase Dashboard, in Authentication > Providers > Email, imposta la lunghezza minima password a 10 e richiedi lettere maiuscole, minuscole e numeri, in linea con i controlli di registrazione e reset dell'app. Attiva Leaked password protection se il piano Supabase lo consente. In Authentication > Bot and Abuse Protection abilita CAPTCHA con Cloudflare Turnstile, configura il secret direttamente nel Dashboard e passa al frontend solo la site key pubblica `VITE_TURNSTILE_SITE_KEY`.
+
+In Authentication > URL Configuration usa `https://app.moveer.eu` come Site URL e limita gli URL di redirect di produzione a `https://app.moveer.eu/**`. Il `supabase/config.toml` locale mantiene `localhost` per lo sviluppo. Abilita l'enrollment e la verifica TOTP MFA nel Dashboard per consentire agli amministratori di attivarla facoltativamente; non rendere obbligatoria la MFA finché l'onboarding amministrativo non è stato verificato.
 
 Imposta i valori nel progetto collegato dalle impostazioni Secrets Supabase o con `npx supabase secrets set`. Supabase Auth SMTP usa la SMTP key Brevo nel dashboard Auth; le Edge Functions usano invece la API key Brevo (`BREVO_API_KEY`). Non usare placeholder nel deployment.
 
@@ -41,6 +48,17 @@ La migrazione iniziale crea profili, entitlements, esercizi, atleti, report, con
 Per configurare gli acquisti, crea in RevenueCat le app iOS e Android, collega i prodotti store e crea gli entitlement `pro` e `coach`. Aggiungi un'offerta corrente con i quattro prodotti mensili/annuali indicati in `.env.example`; gli ID devono corrispondere esattamente ai prodotti negli store. Imposta le due chiavi SDK pubbliche nell'ambiente frontend e configura nei secrets Supabase `REVENUECAT_SECRET_API_KEY` (API v1 secret) e `REVENUECAT_WEBHOOK_AUTH` (token casuale lungo).
 
 Pubblica le Edge Functions con `npm run supabase:functions:deploy`. In RevenueCat configura un webhook POST a `https://<project-ref>.supabase.co/functions/v1/revenuecatWebhook` e imposta l'header Authorization a `Bearer <REVENUECAT_WEBHOOK_AUTH>`; invia gli eventi di acquisto, rinnovo, cambio prodotto e scadenza. `revenuecatWebhook` ha la verifica JWT Supabase disabilitata e verifica il token RevenueCat; `syncStoreEntitlement` richiede invece una sessione utente. La verifica delle ricevute resta server-side tramite RevenueCat.
+
+Le vecchie Edge Functions non più usate dall'app devono essere rimosse anche dai progetti Supabase collegati:
+
+```sh
+npx supabase functions delete adminDeleteUser
+npx supabase functions delete changePlan
+npx supabase functions delete consumeMentorQuery
+npx supabase functions delete createCheckoutSession
+npx supabase functions delete createPortalSession
+npx supabase functions delete handleStripeWebhook
+```
 
 La pagina Abbonamento vende e ripristina gli acquisti nativamente tramite StoreKit e Google Play Billing. La gestione e la cancellazione dei rinnovi avvengono nelle impostazioni dell'App Store o di Google Play; sul web l'acquisto non è disponibile. Non sono richiesti checkout, customer portal o credenziali Stripe.
 

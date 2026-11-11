@@ -6,15 +6,11 @@ import pluginUnusedImports from "eslint-plugin-unused-imports";
 
 export default [
   {
-    ignores: ["ios/DerivedData/**"],
+    ignores: ["ios/**", "android/**", "dist/**", "base44/**", "node_modules/**"],
   },
   {
-    files: [
-      "src/components/**/*.{js,mjs,cjs,jsx}",
-      "src/pages/**/*.{js,mjs,cjs,jsx}",
-      "src/Layout.jsx",
-    ],
-    ignores: ["src/lib/**/*", "src/components/ui/**/*"],
+    files: ["src/**/*.{js,jsx}"],
+    ignores: ["src/components/ui/**"],
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,
     languageOptions: {
@@ -58,6 +54,7 @@ export default [
         { ignore: ["cmdk-input-wrapper", "toast-close"] },
       ],
       "react-hooks/rules-of-hooks": "error",
+      "no-console": ["warn", { allow: ["warn", "error"] }],
     },
   },
 ];

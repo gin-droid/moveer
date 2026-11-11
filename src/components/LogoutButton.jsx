@@ -10,7 +10,7 @@ export default function LogoutButton({ className = "" }) {
     setLoading(true);
     try {
       await appApi.auth.logout(appPath("/login"));
-    } catch (e) {
+    } catch {
       window.location.href = appPath("/login");
     }
   };

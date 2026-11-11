@@ -18,7 +18,7 @@ export default function GenderOnboarding() {
       await appApi.auth.updateMe({ gender: g });
       updateUser({ gender: g });
       setOpen(false);
-    } catch (e) {
+    } catch {
       /* ignore */
     } finally {
       setSaving(false);

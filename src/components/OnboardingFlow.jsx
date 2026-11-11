@@ -32,7 +32,7 @@ export default function OnboardingFlow() {
         preferred_macro_categories: selectedMacros,
         preferred_equipment: selectedEquip,
       });
-    } catch (e) { /* non-blocking */ }
+    } catch { /* non-blocking */ }
     window.location.href = safeReturnTo();
   };
 
