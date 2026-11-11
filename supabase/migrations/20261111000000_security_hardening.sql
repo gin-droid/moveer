@@ -102,7 +102,7 @@ create policy "Users upload prefixed analysis media" on storage.objects
   with check (
     bucket_id = 'analysis-media'
     and owner_id = (select auth.uid())::text
-    and storage.foldername(name)[1] = (select auth.uid())::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 create policy "Users update own analysis media" on storage.objects
   for update to authenticated
@@ -110,7 +110,7 @@ create policy "Users update own analysis media" on storage.objects
   with check (
     bucket_id = 'analysis-media'
     and owner_id = (select auth.uid())::text
-    and storage.foldername(name)[1] = (select auth.uid())::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 create policy "Users delete own analysis media" on storage.objects
   for delete to authenticated
@@ -122,7 +122,7 @@ create policy "Users upload prefixed public assets" on storage.objects
   with check (
     bucket_id = 'public-assets'
     and owner_id = (select auth.uid())::text
-    and storage.foldername(name)[1] = (select auth.uid())::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 create policy "Users manage own public assets" on storage.objects
   for all to authenticated
@@ -130,7 +130,7 @@ create policy "Users manage own public assets" on storage.objects
   with check (
     bucket_id = 'public-assets'
     and owner_id = (select auth.uid())::text
-    and storage.foldername(name)[1] = (select auth.uid())::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
 alter table public.profiles
