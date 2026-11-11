@@ -68,6 +68,8 @@ Per SMTP Auth con Brevo usa `smtp-relay.brevo.com`, porta `587`, lo SMTP login m
 
 Le shell native `android/` e `ios/` sono incluse. Dopo le modifiche web o al plugin, esegui `npm run cap:sync:android` oppure `npm run cap:sync:ios`; apri i progetti con `npx cap open android` e `npx cap open ios`. Android richiede Android Studio, JDK e Android SDK; iOS richiede Xcode completo.
 
+Le icone dell'app web/PWA e delle app Android e iOS usano l'immagine sorgente `assets/app-icon-source.jpg`.
+
 Il video RGB resta la funzione principale e viene registrato per primo con REC, pausa, ripresa e stop. Dopo averlo salvato, nell'app nativa è disponibile una scansione depth facoltativa di 10 secondi: il flusso RGB viene chiuso prima di avviare ARKit o ARCore, che usano la camera. Android usa ARCore Depth API e ML Kit; iOS usa ARKit `sceneDepth` LiDAR e Vision per le pose 3D. La scansione è separata e non sincronizzata col video; se fallisce, il video resta utilizzabile. La PWA/browser non espone i sensori LiDAR/ToF.
 
 Le verifiche locali coprono build web e sync Capacitor, non la compilazione Xcode/Gradle né l'acquisizione su hardware. Testa su iPhone/iPad con LiDAR o dispositivo Android compatibile con ARCore Depth; emulatore e browser non forniscono misure 3D reali.

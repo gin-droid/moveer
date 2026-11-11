@@ -1,12 +1,13 @@
-const CACHE_NAME = "moveerai-shell-v2";
+const CACHE_NAME = "moveerai-shell-v3";
 const MAX_CACHED_ASSETS = 80;
 const APP_BASE_PATH = new URL("./", self.location.href).pathname;
 const APP_SHELL = [
   APP_BASE_PATH,
   `${APP_BASE_PATH}manifest.json`,
-  `${APP_BASE_PATH}favicon.svg`,
+  `${APP_BASE_PATH}moveerai-icon-180.png`,
   `${APP_BASE_PATH}moveerai-icon-192.png`,
   `${APP_BASE_PATH}moveerai-icon-512.png`,
+  `${APP_BASE_PATH}moveerai-icon-maskable-512.png`,
 ];
 
 self.addEventListener("install", (event) => {
