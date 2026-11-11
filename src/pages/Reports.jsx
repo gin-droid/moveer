@@ -44,7 +44,7 @@ export default function Reports() {
     try {
       await appApi.entities.AnalysisReport.delete(id);
       removeCachedReport(id);
-    } catch (err) {
+    } catch {
       setReports(previous); // revert on failure
       toast({
         title: "Eliminazione fallita",

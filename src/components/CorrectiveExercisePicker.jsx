@@ -3,17 +3,6 @@ import { Link } from "react-router-dom";
 import { appApi } from "@/api/appApi";
 import { Loader2, Dumbbell, Check, ExternalLink } from "lucide-react";
 
-async function getFunctionErrorMessage(error) {
-  const response = error?.context;
-  if (response && typeof response.clone === "function") {
-    try {
-      const body = await response.clone().json();
-      if (typeof body?.error === "string" && body.error) return body.error;
-    } catch {}
-  }
-  return error?.message || "La generazione degli esercizi correttivi non è riuscita.";
-}
-
 const normalize = (s) => ({
   exercise_id: s.exercise_id,
   name: s.exercise_name,
@@ -67,7 +56,7 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
         const { data, error: functionError } = await appApi.functions.invoke("suggestCorrectiveExercises", {
           reportId: report.id,
         });
-        if (functionError) throw new Error(await getFunctionErrorMessage(functionError));
+        if (functionError) throw new Error(await appApi.functionErrorMessage(functionError, "La generazione degli esercizi correttivi non è riuscita."));
         if (data?.error) throw new Error(data.error);
         const persisted = report.selected_corrective_exercises || [];
         const sugg = [...(data?.suggestions || [])];
@@ -97,7 +86,6 @@ export default function CorrectiveExercisePicker({ report, onSelectionChange }) 
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [report.id]);
 
   const toggle = (id) => {

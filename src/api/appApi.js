@@ -1,5 +1,16 @@
 import { requireSupabase, supabase } from '@/api/supabaseClient';
 import { appPath } from '@/lib/appPath';
+import { clearReportCache } from '@/lib/reportCache';
+
+export async function functionErrorMessage(error, fallback = 'Operazione non riuscita.') {
+  try {
+    const body = await error?.context?.clone?.().json();
+    if (typeof body?.error === 'string' && body.error) return body.error;
+  } catch {
+    // Fall back to the SDK error when the response has no JSON body.
+  }
+  return error?.message || fallback;
+}
 
 const authRedirectUrl = (path) => {
   const hostname = window.location.hostname;
@@ -109,9 +120,15 @@ const createEntityApi = (entity) => {
     },
     async delete(id) {
       if (entity === 'User') {
-        const { data, error } = await requireSupabase().functions.invoke('adminDeleteUser', { body: { userId: id } });
+        const { data, error } = await requireSupabase().functions.invoke('adminManageUsers', { body: { action: 'delete', userId: id } });
         if (error) throw error;
         return data;
+      }
+      if (entity === 'AnalysisReport') {
+        const { data: report, error: readError } = await requireSupabase().from(table)
+          .select('video_uri').eq('id', id).maybeSingle();
+        if (readError) throw readError;
+        if (report?.video_uri) await removePrivateFiles([report.video_uri]);
       }
       const { error } = await requireSupabase().from(table).delete().eq('id', id);
       if (error) throw error;
@@ -140,8 +157,12 @@ const auth = {
     const { error } = await requireSupabase().auth.signInWithPassword({ email, password });
     if (error) throw error;
   },
-  async register({ email, password }) {
-    const { data, error } = await requireSupabase().auth.signUp({ email, password });
+  async register({ email, password, captchaToken }) {
+    const { data, error } = await requireSupabase().auth.signUp({
+      email,
+      password,
+      options: captchaToken ? { captchaToken } : undefined,
+    });
     if (error) throw error;
     return data;
   },
@@ -154,7 +175,6 @@ const auth = {
     const { error } = await requireSupabase().auth.resend({ type: 'signup', email });
     if (error) throw error;
   },
-  async setToken(_accessToken) {},
   async updateMe(values) {
     const client = requireSupabase();
     const { data: { user }, error: authError } = await client.auth.getUser();
@@ -163,11 +183,10 @@ const auth = {
     const profileValues = normalizePayload('User', values);
     const { error } = await client.from('profiles').update(profileValues).eq('id', user.id);
     if (error) throw error;
-    const { error: metadataError } = await client.auth.updateUser({ data: values });
-    if (metadataError) throw metadataError;
     return this.me();
   },
   async logout(redirectTo) {
+    clearReportCache();
     if (supabase) await supabase.auth.signOut();
     if (typeof redirectTo === 'string' && redirectTo !== window.location.href) {
       const target = redirectTo.startsWith('/') ? appPath(redirectTo) : redirectTo;
@@ -184,9 +203,10 @@ const auth = {
     });
     if (error) throw error;
   },
-  async resetPasswordRequest(email) {
+  async resetPasswordRequest(email, captchaToken) {
     const { error } = await requireSupabase().auth.resetPasswordForEmail(email, {
       redirectTo: authRedirectUrl('/reset-password'),
+      captchaToken,
     });
     if (error) throw error;
   },
@@ -196,10 +216,44 @@ const auth = {
   },
 };
 
+async function removePrivateFiles(fileUris) {
+  const paths = fileUris.map((fileUri) => {
+    try {
+      const url = new URL(fileUri);
+      const marker = '/object/sign/analysis-media/';
+      const offset = url.pathname.indexOf(marker);
+      return offset >= 0 ? decodeURIComponent(url.pathname.slice(offset + marker.length)) : fileUri;
+    } catch {
+      return fileUri;
+    }
+  }).filter(Boolean);
+  if (!paths.length) return;
+  const { error } = await requireSupabase().storage.from('analysis-media').remove(paths);
+  if (error) throw error;
+}
+
+async function removePublicFile(fileUrl) {
+  let path = fileUrl;
+  try {
+    const url = new URL(fileUrl);
+    const marker = '/object/public/public-assets/';
+    const offset = url.pathname.indexOf(marker);
+    if (offset >= 0) path = decodeURIComponent(url.pathname.slice(offset + marker.length));
+  } catch {
+    // Accept a storage object path as well as a public URL.
+  }
+  if (!path) return;
+  const { error } = await requireSupabase().storage.from('public-assets').remove([path]);
+  if (error) throw error;
+}
+
 const integrations = {
   Core: {
     async UploadPrivateFile({ file }) {
-      const path = `${crypto.randomUUID()}-${safeFileName(file.name)}`;
+      const { data: { user }, error: authError } = await requireSupabase().auth.getUser();
+      if (authError) throw authError;
+      if (!user) throw new Error('Sessione non valida');
+      const path = `${user.id}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
       const { error } = await requireSupabase().storage.from('analysis-media').upload(path, file, {
         contentType: file.type || 'application/octet-stream',
       });
@@ -213,11 +267,20 @@ const integrations = {
       return { signed_url: data.signedUrl };
     },
     async UploadPublicFile({ file }) {
-      const path = `${crypto.randomUUID()}-${safeFileName(file.name)}`;
+      const { data: { user }, error: authError } = await requireSupabase().auth.getUser();
+      if (authError) throw authError;
+      if (!user) throw new Error('Sessione non valida');
+      const path = `${user.id}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
       const storage = requireSupabase().storage.from('public-assets');
       const { error } = await storage.upload(path, file, { contentType: file.type || 'application/octet-stream' });
       if (error) throw error;
       return { file_url: storage.getPublicUrl(path).data.publicUrl };
+    },
+    async RemovePrivateFiles({ file_uris }) {
+      await removePrivateFiles(Array.isArray(file_uris) ? file_uris : [file_uris]);
+    },
+    async RemovePublicFile({ file_url }) {
+      await removePublicFile(file_url);
     },
   },
 };
@@ -263,6 +326,7 @@ export const appApi = {
   entities,
   integrations,
   agents,
+  functionErrorMessage,
   functions: {
     invoke: (name, body) => requireSupabase().functions.invoke(name, { body }),
   },

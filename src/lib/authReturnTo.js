@@ -16,7 +16,7 @@ export function safeReturnTo() {
   if (!raw) return appPath("/");
   try {
     const url = new URL(raw, window.location.origin);
-    if (url.origin !== window.location.origin) return "/";
+    if (url.origin !== window.location.origin) return appPath("/");
     // Do not carry deprecated client-bootstrap parameters across authentication.
     for (const p of ["access_token", "clear_access_token", "app_id", "app_base_url", "functions_version", "from_url"]) {
       url.searchParams.delete(p);

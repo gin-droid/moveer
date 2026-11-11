@@ -16,18 +16,10 @@ export default function Users() {
 
   const loadUsers = async () => {
     try {
-      const me = await appApi.auth.me();
-      if (me?.role !== "admin") {
-        setError("Accesso riservato agli amministratori.");
-        setLoading(false);
-        return;
-      }
-      const data = await appApi.entities.User.list("-created_date", 200);
-      // Fetch entitlement records to get the authoritative blocked status
-      const entitlements = await appApi.entities.UserEntitlement.list("-created_date", 500);
-      const entMap = {};
-      for (const e of entitlements) { entMap[e.user_id] = e; }
-      setUsers(data.map((u) => ({ ...u, _entitlement: entMap[u.id] || null })));
+      const { data, error: functionError } = await appApi.functions.invoke("adminManageUsers", { action: "list" });
+      if (functionError) throw new Error(await appApi.functionErrorMessage(functionError));
+      if (data?.error) throw new Error(data.error);
+      setUsers((data?.users || []).map((user) => ({ ...user, _entitlement: user.entitlement || null })));
     } catch (err) {
       setError(err.message || "Errore nel caricamento degli utenti.");
     } finally {
@@ -74,24 +66,20 @@ export default function Users() {
     if (u.role === "admin") return;
     setBlockingId(u.id);
     try {
-      // Write blocked to the trusted UserEntitlement entity (admin-only writes).
-      // The user.blocked field on User is client-writable via updateMe and cannot be trusted.
-      let ent = u._entitlement;
-      if (!ent) {
-        ent = await appApi.entities.UserEntitlement.create({
-          user_id: u.id,
-          plan: "freemium",
-          blocked: false,
-          mentor_query_count: 0,
-          mentor_query_month: "",
-          analysis_count: 0,
-          analysis_month: "",
-        });
-      }
-      await appApi.entities.UserEntitlement.update(ent.id, { blocked: !ent.blocked });
+      const status = u._entitlement?.blocked ? "active" : "blocked";
+      const { data, error } = await appApi.functions.invoke("adminManageUsers", {
+        action: "set-status", userId: u.id, status,
+      });
+      if (error) throw new Error(await appApi.functionErrorMessage(error));
+      if (data?.error) throw new Error(data.error);
       setUsers((prev) =>
         prev.map((x) =>
-          x.id === u.id ? { ...x, _entitlement: { ...ent, blocked: !ent.blocked } } : x
+          x.id === u.id ? {
+            ...x,
+            banned_until: null,
+            entitlement: { ...x._entitlement, blocked: status !== "active" },
+            _entitlement: { ...x._entitlement, blocked: status !== "active" },
+          } : x
         )
       );
     } catch (err) {

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { appApi } from '@/api/appApi';
 import { isSupabaseConfigured, supabase } from '@/api/supabaseClient';
+import { clearReportCache, ensureReportCacheOwner } from '@/lib/reportCache';
 
 /** @type {React.Context<Record<string, any> | null>} */
 const AuthContext = createContext(null);
@@ -9,10 +10,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [appPublicSettings] = useState(null);
   const loadedUserIdRef = useRef(null);
   const pendingCheckRef = useRef(null);
 
@@ -26,6 +25,7 @@ export const AuthProvider = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
+        clearReportCache();
         loadedUserIdRef.current = null;
         setUser(null);
         setIsAuthenticated(false);
@@ -42,7 +42,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
-    setIsLoadingPublicSettings(false);
     setAuthError(null);
     if (!isSupabaseConfigured) {
       setIsLoadingAuth(false);
@@ -93,6 +92,7 @@ export const AuthProvider = ({ children }) => {
         missingSession.status = 401;
         throw missingSession;
       }
+      ensureReportCacheOwner(currentUser.id);
       const entitlement = currentUser.id === sessionUserId ? entitlementResult.entitlement : null;
       const isBlocked = entitlementResult.failed ? !!currentUser.blocked : !!entitlement?.blocked;
       if (isBlocked) {
@@ -151,9 +151,7 @@ export const AuthProvider = ({ children }) => {
       user, 
       isAuthenticated, 
       isLoadingAuth,
-      isLoadingPublicSettings,
       authError,
-      appPublicSettings,
       authChecked,
       logout,
       updateUser,

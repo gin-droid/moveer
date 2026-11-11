@@ -30,7 +30,7 @@ export default function ReportDetail() {
       try {
         u = await appApi.auth.me();
         setUser(u);
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
       try {
         const r = await appApi.entities.AnalysisReport.get(id);
         setReport(r);
@@ -75,7 +75,7 @@ export default function ReportDetail() {
     try {
       await appApi.entities.AnalysisReport.delete(id);
       navigate("/report");
-    } catch (err) {
+    } catch {
       toast({
         title: "Eliminazione fallita",
         description: "Impossibile eliminare il report. Riprova.",

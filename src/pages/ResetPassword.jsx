@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { appPath } from "@/lib/appPath";
+import { getPasswordPolicyError, PASSWORD_MIN_LENGTH } from "@/lib/passwordPolicy";
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
@@ -16,6 +17,11 @@ export default function ResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    const policyError = getPasswordPolicyError(newPassword);
+    if (policyError) {
+      setError(policyError);
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setError("Le password non coincidono");
       return;
@@ -50,6 +56,7 @@ export default function ResetPassword() {
             <Input
               id="password"
               type="password"
+              minLength={PASSWORD_MIN_LENGTH}
               autoComplete="new-password"
               autoFocus
               placeholder="••••••••"
@@ -67,6 +74,7 @@ export default function ResetPassword() {
             <Input
               id="confirm"
               type="password"
+              minLength={PASSWORD_MIN_LENGTH}
               autoComplete="new-password"
               placeholder="••••••••"
               value={confirmPassword}

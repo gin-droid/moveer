@@ -32,8 +32,9 @@ export default function DemoModal({ exercise, onClose }) {
         <div className="aspect-video bg-black">
           {ytId ? (
             <iframe
-              src={`https://www.youtube.com/embed/${ytId}?rel=0`}
+              src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0`}
               title={exercise.name}
+              referrerPolicy="strict-origin-when-cross-origin"
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

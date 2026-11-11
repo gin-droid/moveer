@@ -24,6 +24,10 @@ export default function LogoUploader({ currentLogo, onSaved }) {
       const { file_url } = await appApi.integrations.Core.UploadPublicFile({ file });
       await appApi.auth.updateMe({ logo_url: file_url });
       onSaved?.(file_url);
+      if (currentLogo && currentLogo !== file_url) {
+        await appApi.integrations.Core.RemovePublicFile({ file_url: currentLogo })
+          .catch((removeError) => console.warn("Rimozione del logo precedente non riuscita:", removeError));
+      }
       toast({ title: "Logo aggiornato", description: "Il tuo logo comparirà nei report e nei PDF." });
       if (inputRef.current) inputRef.current.value = "";
     } catch (err) {
@@ -38,6 +42,8 @@ export default function LogoUploader({ currentLogo, onSaved }) {
     try {
       await appApi.auth.updateMe({ logo_url: "" });
       onSaved?.("");
+      await appApi.integrations.Core.RemovePublicFile({ file_url: currentLogo })
+        .catch((removeError) => console.warn("Rimozione del logo non riuscita:", removeError));
       toast({ title: "Logo rimosso" });
     } catch (err) {
       toast({ title: "Rimozione fallita", description: err.message || "Riprova.", variant: "destructive" });

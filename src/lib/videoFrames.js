@@ -10,7 +10,8 @@ export function formatFileSize(bytes) {
 const VIDEO_EXTS = [
   "mp4", "mov", "webm", "m4v", "3gp", "3g2", "ogg", "ogv", "avi", "mkv", "ts", "mpeg", "mpg", "wmv",
 ];
-const IMAGE_EXTS = ["jpg", "jpeg", "png", "webp", "gif", "bmp", "svg"];
+const IMAGE_EXTS = ["jpg", "jpeg", "png", "webp"];
+const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 // HEIC/HEIF are not decodable by canvas in most browsers
 const UNSUPPORTED_EXTS = ["heic", "heif", "heics"];
 
@@ -35,11 +36,34 @@ export function isVideoFile(file) {
 
 export function isImageFile(file) {
   const t = (file.type || "").toLowerCase();
-  if (t.startsWith("image/")) return true;
+  if (t) return IMAGE_MIME_TYPES.includes(t);
   if (!t || t === "application/octet-stream" || t === "binary/octet-stream") {
     return IMAGE_EXTS.includes(getFileExtension(file));
   }
   return false;
+}
+
+export async function normalizeImageFile(file) {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    const scale = Math.min(1, 2048 / Math.max(image.naturalWidth, image.naturalHeight));
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Impossibile elaborare l'immagine.");
+    context.drawImage(image, 0, 0);
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Conversione immagine non riuscita.")), "image/jpeg", 0.9);
+    });
+    const baseName = (file.name || "immagine").replace(/\.[^.]+$/, "");
+    return new File([blob], `${baseName}.jpg`, { type: "image/jpeg", lastModified: Date.now() });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 export function validateMediaFile(file) {
@@ -138,7 +162,7 @@ export async function extractVideoFrames(file, numFrames = 3) {
           canvas.height = Math.max(1, Math.round(h * scale));
           try {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          } catch (e) {
+          } catch {
             if (!done) {
               done = true;
               clearTimeout(to);
@@ -172,7 +196,7 @@ export async function extractVideoFrames(file, numFrames = 3) {
             video.currentTime = t + 0.1 > video.duration ? t - 0.1 : t + 0.1;
           }
           video.currentTime = t;
-        } catch (e) {
+        } catch {
           if (!done) {
             done = true;
             clearTimeout(to);
@@ -194,7 +218,7 @@ export async function extractVideoFrames(file, numFrames = 3) {
           video.addEventListener("durationchange", onDur, { once: true });
           try {
             video.currentTime = 1e101;
-          } catch (e) {
+          } catch {
             res();
           }
           setTimeout(res, 1500);
@@ -219,7 +243,7 @@ export async function extractVideoFrames(file, numFrames = 3) {
         try {
           const frame = await captureAt(timestamps[i], canvas, ctx);
           frames.push(frame);
-        } catch (e) {
+        } catch {
           // skip failed frame, continue with others
         }
       }
@@ -244,7 +268,7 @@ export async function extractVideoFrames(file, numFrames = 3) {
           );
           if (blob)
             frames.push(new File([blob], "frame_0.jpg", { type: "image/jpeg" }));
-        } catch (e) {
+        } catch {
           // ignore
         }
       }

@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { PLANS } from "@/lib/monetizationData";
 import { Send, Sparkles, MessageCircle, Plus, Lock } from "lucide-react";
 import MessageBubble from "@/components/mentor/MessageBubble";
+import { useToast } from "@/components/ui/use-toast";
 
 const AGENT_NAME = "exercise_mentor";
 
@@ -23,6 +24,7 @@ export default function Mentor() {
   const [conversations, setConversations] = useState([]);
   const [queryCount, setQueryCount] = useState(0);
   const scrollRef = useRef(null);
+  const { toast } = useToast();
 
   const planId = user?.plan || "freemium";
   const plan = PLANS.find((p) => p.id === planId) || PLANS[0];
@@ -82,14 +84,7 @@ export default function Mentor() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // L'agente sta elaborando se l'ultimo messaggio è dell'utente (in attesa di risposta)
-  // o se c'è un tool call in corso.
-  const isWaiting = messages.length > 0 && (
-    messages[messages.length - 1].role === "user" ||
-    (messages[messages.length - 1].tool_calls || []).some(
-      (tc) => ["pending", "running", "in_progress"].includes(tc.status)
-    )
-  );
+  const isWaiting = messages.length > 0 && messages[messages.length - 1].role === "user";
 
   const send = async () => {
     const text = input.trim();
@@ -100,18 +95,30 @@ export default function Mentor() {
       // Server-side quota check + message submission in one atomic call.
       // The backend function verifies the quota AND adds the message, so the
       // client cannot bypass the quota by calling addMessage directly.
-      const res = await appApi.functions.invoke("sendMentorMessage", {
+      const { data, error } = await appApi.functions.invoke("sendMentorMessage", {
         conversationId: conversation.id,
         text,
       });
-      if (res.data?.error) throw new Error(res.data.error);
-      if (!res.data?.allowed) {
-        setQueryCount(res.data?.used ?? queryLimit);
+      if (error) {
+        let body = null;
+        try { body = await error.context?.clone?.().json(); } catch { /* no JSON response */ }
+        if (body?.allowed === false) {
+          setQueryCount(body.used ?? queryLimit);
+          return;
+        }
+        setInput(text);
+        toast({ title: "Invio non riuscito", description: await appApi.functionErrorMessage(error, "Il messaggio non è stato inviato."), variant: "destructive" });
         return;
       }
-      setQueryCount(res.data.used);
+      if (data?.error) throw new Error(data.error);
+      if (data?.allowed === false) {
+        setQueryCount(data.used ?? queryLimit);
+        return;
+      }
+      setQueryCount(data.used);
     } catch (err) {
-      console.error(err);
+      setInput(text);
+      toast({ title: "Invio non riuscito", description: err.message || "Il messaggio non è stato inviato.", variant: "destructive" });
     } finally {
       setSending(false);
     }

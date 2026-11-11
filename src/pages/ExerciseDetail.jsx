@@ -76,8 +76,9 @@ export default function ExerciseDetail() {
         {ytId ? (
           <div className="aspect-video rounded-xl overflow-hidden border border-zinc-800 bg-black">
             <iframe
-              src={`https://www.youtube.com/embed/${ytId}?rel=0`}
+              src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0`}
               title={ex.name}
+              referrerPolicy="strict-origin-when-cross-origin"
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

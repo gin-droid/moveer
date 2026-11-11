@@ -10,6 +10,8 @@ import AuthLayout from "@/components/AuthLayout";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import OnboardingFlow from "@/components/OnboardingFlow";
+import { getPasswordPolicyError, PASSWORD_MIN_LENGTH } from "@/lib/passwordPolicy";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 const OTP_LENGTH = 8;
 
@@ -23,20 +25,34 @@ export default function Register() {
   const [otpCode, setOtpCode] = useState("");
   const [gender, setGender] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaVersion, setCaptchaVersion] = useState(0);
+  const captchaSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    const policyError = getPasswordPolicyError(password);
+    if (policyError) {
+      setError(policyError);
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Le password non coincidono");
       return;
     }
+    if (captchaSiteKey && !captchaToken) {
+      setError("Completa la verifica di sicurezza.");
+      return;
+    }
     setLoading(true);
     try {
-      await appApi.auth.register({ email, password });
+      await appApi.auth.register({ email, password, captchaToken: captchaToken || undefined });
       setShowOtp(true);
     } catch (err) {
       setError(err.message || "Registrazione fallita");
+      setCaptchaToken("");
+      setCaptchaVersion((version) => version + 1);
     } finally {
       setLoading(false);
     }
@@ -48,8 +64,7 @@ export default function Register() {
     try {
       const result = await appApi.auth.verifyOtp({ email, otpCode });
       if (result?.access_token) {
-        appApi.auth.setToken(result.access_token);
-        try { await appApi.auth.updateMe({ gender }); } catch (e) { /* non-blocking */ }
+        try { await appApi.auth.updateMe({ gender }); } catch { /* non-blocking */ }
         setShowOnboarding(true);
       }
     } catch (err) {
@@ -175,6 +190,7 @@ export default function Register() {
             <Input
               id="password"
               type="password"
+              minLength={PASSWORD_MIN_LENGTH}
               autoComplete="new-password"
               placeholder="••••••••"
               value={password}
@@ -191,6 +207,7 @@ export default function Register() {
             <Input
               id="confirm"
               type="password"
+              minLength={PASSWORD_MIN_LENGTH}
               autoComplete="new-password"
               placeholder="••••••••"
               value={confirmPassword}
@@ -200,6 +217,14 @@ export default function Register() {
             />
           </div>
         </div>
+        {captchaSiteKey && (
+          <Turnstile
+            key={captchaVersion}
+            siteKey={captchaSiteKey}
+            onSuccess={setCaptchaToken}
+            onExpire={() => setCaptchaToken("")}
+          />
+        )}
         <div className="space-y-2">
           <Label>Genere</Label>
           <div className="grid grid-cols-3 gap-2">
@@ -219,7 +244,7 @@ export default function Register() {
             ))}
           </div>
         </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading || !gender}>
+        <Button type="submit" className="w-full h-12 font-medium" disabled={loading || !gender || (captchaSiteKey && !captchaToken)}>
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

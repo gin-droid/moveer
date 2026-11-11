@@ -6,23 +6,73 @@
 
 const CACHE_KEY = "moVeerAI_report_cache";
 const LIST_KEY = "moVeerAI_report_list";
+const OWNER_KEY = "moVeerAI_report_owner";
+const MAX_CACHED_REPORTS = 50;
+
+function readCacheState() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    if (stored && stored.reports && typeof stored.reports === "object") {
+      return { reports: stored.reports, list: Array.isArray(stored.list) ? stored.list : [] };
+    }
+    const legacyList = JSON.parse(localStorage.getItem(LIST_KEY) || "null");
+    return {
+      reports: stored && typeof stored === "object" ? stored : {},
+      list: Array.isArray(legacyList?.reports) ? legacyList.reports : [],
+    };
+  } catch {
+    return { reports: {}, list: [] };
+  }
+}
+
+function writeCacheState(state) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+  } catch {
+    /* quota superata — ignora */
+  }
+}
+
+function limitCacheState(state) {
+  state.list = state.list.slice(0, MAX_CACHED_REPORTS);
+  const ids = new Set(state.list.map((report) => report.id));
+  state.reports = Object.fromEntries(Object.entries(state.reports).filter(([id]) => ids.has(id)));
+  return state;
+}
+
+export function clearReportCache() {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(LIST_KEY);
+    localStorage.removeItem(OWNER_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function ensureReportCacheOwner(userId) {
+  if (!userId) return;
+  try {
+    if (localStorage.getItem(OWNER_KEY) !== userId) clearReportCache();
+    localStorage.setItem(OWNER_KEY, userId);
+  } catch {
+    /* storage non disponibile */
+  }
+}
 
 export function cacheReport(report) {
   if (!report?.id) return;
-  try {
-    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
-    cache[report.id] = { ...report, _cachedAt: Date.now() };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-  } catch (e) {
-    /* quota superata — ignora */
-  }
+  const state = readCacheState();
+  const cached = { ...report, _cachedAt: Date.now() };
+  state.reports[report.id] = cached;
+  state.list = [cached, ...state.list.filter((item) => item.id !== report.id)];
+  writeCacheState(limitCacheState(state));
 }
 
 export function getCachedReport(id) {
   if (!id) return null;
   try {
-    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
-    return cache[id] || null;
+    return readCacheState().reports[id] || null;
   } catch {
     return null;
   }
@@ -31,31 +81,28 @@ export function getCachedReport(id) {
 export function removeCachedReport(id) {
   if (!id) return;
   try {
-    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
-    delete cache[id];
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-    const list = getCachedReportList().filter((r) => r.id !== id);
-    localStorage.setItem(LIST_KEY, JSON.stringify({ reports: list, _cachedAt: Date.now() }));
-  } catch {
-    /* ignore */
-  }
+    const state = readCacheState();
+    delete state.reports[id];
+    state.list = state.list.filter((report) => report.id !== id);
+    writeCacheState(state);
+  } catch { /* ignore */ }
 }
 
 export function cacheReportList(reports) {
   if (!Array.isArray(reports)) return;
-  try {
-    localStorage.setItem(LIST_KEY, JSON.stringify({ reports, _cachedAt: Date.now() }));
-    // Cache anche ogni report singolarmente per il dettaglio offline
-    reports.forEach((r) => cacheReport(r));
-  } catch (e) {
-    /* quota superata — ignora */
-  }
+  const limitedReports = reports.filter((report) => report?.id).slice(0, MAX_CACHED_REPORTS)
+    .map((report) => ({ ...report, _cachedAt: Date.now() }));
+  const state = {
+    list: limitedReports,
+    reports: Object.fromEntries(limitedReports.map((report) => [report.id, report])),
+  };
+  writeCacheState(state);
 }
 
 export function getCachedReportList() {
   try {
-    const data = JSON.parse(localStorage.getItem(LIST_KEY) || "null");
-    return data?.reports || [];
+    const state = readCacheState();
+    return state.list.length ? state.list : Object.values(state.reports).slice(0, MAX_CACHED_REPORTS);
   } catch {
     return [];
   }

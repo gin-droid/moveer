@@ -1,15 +1,14 @@
 import { Suspense } from 'react';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
+import { appApi } from '@/api/appApi';
 import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import AppLayout from '@/components/AppLayout';
+import AdminRoute from '@/components/AdminRoute';
 const Home = lazyWithRetry(() => import('@/pages/Home'));
 const Exercises = lazyWithRetry(() => import('@/pages/Exercises'));
 const ExerciseDetail = lazyWithRetry(() => import('@/pages/ExerciseDetail'));
@@ -45,18 +44,15 @@ const AppLoading = () => (
 );
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, authError, navigateToLogin } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  if (isLoadingAuth) {
     return <AppLoading />;
   }
 
   // Handle authentication errors
   if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'user_blocked') {
+    if (authError.type === 'user_blocked') {
       return (
         <div className="fixed inset-0 flex items-center justify-center bg-background p-6">
           <div className="max-w-sm text-center space-y-4">
@@ -69,7 +65,7 @@ const AuthenticatedApp = () => {
               Per assistenza contatta info@moveer.ai
             </p>
             <button
-              onClick={() => { window.location.href = appPath('/login'); }}
+              onClick={() => appApi.auth.logout(appPath('/login'))}
               className="inline-flex items-center justify-center bg-primary text-primary-foreground font-semibold text-sm px-5 py-2.5 rounded-xl"
             >
               Esci
@@ -84,7 +80,7 @@ const AuthenticatedApp = () => {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-2xl">⏸</div>
             <h1 className="font-display text-2xl font-semibold text-white">Account sospeso</h1>
             <p className="text-sm leading-relaxed text-muted-foreground">L’accesso è stato sospeso da un amministratore. Per assistenza contatta info@moveer.ai</p>
-            <button onClick={() => { window.location.href = appPath('/login'); }} className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Esci</button>
+            <button onClick={() => appApi.auth.logout(appPath('/login'))} className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Esci</button>
           </div>
         </div>
       );
@@ -105,7 +101,6 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<PublicLayout />}>
         <Route path="/about" element={<About />} />
-        <Route path="/gestione" element={<ManagementLinks />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>
@@ -117,13 +112,16 @@ const AuthenticatedApp = () => {
           <Route path="/report" element={<Reports />} />
           <Route path="/report/:id" element={<ReportDetail />} />
           <Route path="/confronta" element={<Compare />} />
-          <Route path="/utenti" element={<Users />} />
-          <Route path="/gestione-abbonamenti" element={<SubscriptionManagement />} />
           <Route path="/atleti" element={<Athletes />} />
           <Route path="/atleti/:id" element={<AthleteDetail />} />
           <Route path="/mentore" element={<Mentor />} />
-          <Route path="/monetizzazione" element={<Monetization />} />
           <Route path="/abbonamento" element={<Subscription />} />
+          <Route element={<AdminRoute />}>
+            <Route path="/utenti" element={<Users />} />
+            <Route path="/gestione-abbonamenti" element={<SubscriptionManagement />} />
+            <Route path="/monetizzazione" element={<Monetization />} />
+            <Route path="/gestione" element={<ManagementLinks />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
@@ -137,15 +135,13 @@ function App() {
 
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router basename={Router === BrowserRouter ? import.meta.env.BASE_URL : undefined}>
-          <ScrollToTop />
-          <AppErrorBoundary>
-            <AuthenticatedApp />
-          </AppErrorBoundary>
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      <Router basename={Router === BrowserRouter ? import.meta.env.BASE_URL : undefined}>
+        <ScrollToTop />
+        <AppErrorBoundary>
+          <AuthenticatedApp />
+        </AppErrorBoundary>
+      </Router>
+      <Toaster />
     </AuthProvider>
   )
 }

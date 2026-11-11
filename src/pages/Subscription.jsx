@@ -25,14 +25,7 @@ import {
 async function invokePaymentFunction(name, body = {}) {
   const { data, error } = await appApi.functions.invoke(name, body);
   if (error) {
-    let message = error.message || "Operazione non riuscita.";
-    try {
-      const responseBody = await error.context?.json();
-      if (responseBody?.error) message = responseBody.error;
-    } catch {
-      // Keep the Functions error when the response has no JSON body.
-    }
-    throw new Error(message);
+    throw new Error(await appApi.functionErrorMessage(error));
   }
   if (data?.error) throw new Error(data.error);
   return data;
@@ -103,7 +96,7 @@ export default function Subscription() {
           title: "Abbonamento attivato",
           description: `Il piano ${PLANS.find((item) => item.id === plan)?.name || plan} è attivo.`,
         });
-      } catch (error) {
+      } catch {
         setStoreSyncPending(true);
         toast({
           title: "Acquisto ricevuto",

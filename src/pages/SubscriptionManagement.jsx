@@ -18,14 +18,7 @@ import { PLANS } from "@/lib/monetizationData";
 async function invokeAdmin(action, values = {}) {
   const { data, error } = await appApi.functions.invoke("adminManageUsers", { action, ...values });
   if (error) {
-    let message = error.message || "Operazione non riuscita.";
-    try {
-      const body = await error.context?.json();
-      if (body?.error) message = body.error;
-    } catch {
-      // Keep the Functions error message when no JSON response is available.
-    }
-    throw new Error(message);
+    throw new Error(await appApi.functionErrorMessage(error));
   }
   return data;
 }
@@ -53,11 +46,6 @@ export default function SubscriptionManagement() {
     setLoading(true);
     setError("");
     try {
-      const currentUser = await appApi.auth.me();
-      if (currentUser?.role !== "admin") {
-        setError("Accesso riservato agli amministratori.");
-        return;
-      }
       const result = await invokeAdmin("list");
       setUsers(result.users || []);
     } catch (err) {

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   User as UserIcon, Mail, ShieldCheck, Trash2, Loader2, AlertTriangle, ArrowLeft,
-  FileText, ChevronRight, Wallet, ImageIcon,
+  FileText, ChevronRight, Wallet, ImageIcon, Settings,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import TermsContent from "@/components/TermsContent";
@@ -39,7 +39,7 @@ export default function SettingsDrawer({ open, onOpenChange }) {
           setMe(u);
           setGender(u.gender || "");
           setLogoUrl(u.logo_url || "");
-        } catch (e) {
+        } catch {
           /* ignore */
         }
       })();
@@ -54,7 +54,9 @@ export default function SettingsDrawer({ open, onOpenChange }) {
     setDeleting(true);
     setError("");
     try {
-      await appApi.functions.invoke("deleteOwnAccount", {});
+      const { data, error } = await appApi.functions.invoke("deleteOwnAccount", {});
+      if (error) throw new Error(await appApi.functionErrorMessage(error, "Eliminazione account non riuscita."));
+      if (data?.error) throw new Error(data.error);
       setConfirmOpen(false);
       await appApi.auth.logout("/register");
     } catch (err) {
@@ -69,7 +71,7 @@ export default function SettingsDrawer({ open, onOpenChange }) {
     try {
       const updated = await appApi.auth.updateMe({ gender: g });
       setMe(updated || { ...me, gender: g });
-    } catch (e) {
+    } catch {
       /* ignore */
     } finally {
       setSavingGender(false);
@@ -172,16 +174,29 @@ export default function SettingsDrawer({ open, onOpenChange }) {
 
             {/* Monetization — solo admin */}
             {me?.role === "admin" && (
-              <button
-                onClick={() => { onOpenChange(false); navigate("/monetizzazione"); }}
-                className="w-full flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm text-foreground hover:bg-sidebar-accent transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-primary" />
-                  Piano di monetizzazione
-                </span>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => { onOpenChange(false); navigate("/utenti"); }}
+                  className="w-full flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm text-foreground hover:bg-sidebar-accent transition-colors"
+                >
+                  <span className="flex items-center gap-2"><UserIcon className="w-4 h-4 text-primary" /> Gestione utenti e abbonamenti</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={() => { onOpenChange(false); navigate("/gestione"); }}
+                  className="w-full flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm text-foreground hover:bg-sidebar-accent transition-colors"
+                >
+                  <span className="flex items-center gap-2"><Settings className="w-4 h-4 text-primary" /> Gestione collegamenti</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={() => { onOpenChange(false); navigate("/monetizzazione"); }}
+                  className="w-full flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm text-foreground hover:bg-sidebar-accent transition-colors"
+                >
+                  <span className="flex items-center gap-2"><Wallet className="w-4 h-4 text-primary" /> Piano di monetizzazione</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
             )}
 
             {/* Terms of Use */}

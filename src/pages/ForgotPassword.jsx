@@ -6,19 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, ArrowLeft, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaVersion, setCaptchaVersion] = useState(0);
+  const captchaSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await appApi.auth.resetPasswordRequest(email);
+      await appApi.auth.resetPasswordRequest(email, captchaToken || undefined);
     } catch {
       // Always show success regardless
+      setCaptchaToken("");
+      setCaptchaVersion((version) => version + 1);
     } finally {
       setLoading(false);
       setSent(true);
@@ -59,7 +65,15 @@ export default function ForgotPassword() {
               />
             </div>
           </div>
-          <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+          {captchaSiteKey && (
+            <Turnstile
+              key={captchaVersion}
+              siteKey={captchaSiteKey}
+              onSuccess={setCaptchaToken}
+              onExpire={() => setCaptchaToken("")}
+            />
+          )}
+          <Button type="submit" className="w-full h-12 font-medium" disabled={loading || (captchaSiteKey && !captchaToken)}>
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

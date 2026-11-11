@@ -8,6 +8,12 @@ const STORAGE_KEY = "moVeerAI_accent_color";
 const DEFAULT_HSL = "76 100% 58%"; // lime (default attuale)
 
 export const DEFAULT_ACCENT = DEFAULT_HSL;
+const HSL_PATTERN = /^(\d{1,3}) (\d{1,3})% (\d{1,3})%$/;
+
+function isValidHsl(value) {
+  const match = typeof value === "string" && value.match(HSL_PATTERN);
+  return !!match && Number(match[1]) <= 360 && Number(match[2]) <= 100 && Number(match[3]) <= 100;
+}
 
 /** Palette di colori che si abbinano bene al tema nero. */
 export const ACCENT_COLORS = [
@@ -26,7 +32,7 @@ const DARK_FG = "0 0% 4%"; // primary-foreground resta near-black per contrasto
 
 /** Applica il colore ai CSS variable del tema (live). */
 export function applyAccentColor(hsl) {
-  if (!hsl || typeof document === "undefined") return;
+  if (!isValidHsl(hsl) || typeof document === "undefined") return;
   const root = document.documentElement;
   root.style.setProperty("--primary", hsl);
   root.style.setProperty("--primary-foreground", DARK_FG);
@@ -42,7 +48,8 @@ export function applyAccentColor(hsl) {
 /** Legge il colore salvato localmente (offline-first). */
 export function getStoredAccentColor() {
   try {
-    return localStorage.getItem(STORAGE_KEY) || DEFAULT_HSL;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return isValidHsl(stored) ? stored : DEFAULT_HSL;
   } catch {
     return DEFAULT_HSL;
   }
@@ -50,6 +57,7 @@ export function getStoredAccentColor() {
 
 /** Salva in localStorage + applica immediatamente. */
 export function setStoredAccentColor(hsl) {
+  if (!isValidHsl(hsl)) return;
   try {
     localStorage.setItem(STORAGE_KEY, hsl);
   } catch { /* ignore */ }

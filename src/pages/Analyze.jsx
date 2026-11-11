@@ -2,25 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { appApi } from "@/api/appApi";
 import { Video, Upload, Loader2, ChevronRight, Sparkles, Camera, X } from "lucide-react";
-import { validateMediaFile, extractVideoFrames, formatFileSize, isVideoFile } from "@/lib/videoFrames";
+import { validateMediaFile, extractVideoFrames, formatFileSize, isVideoFile, normalizeImageFile } from "@/lib/videoFrames";
 import ExercisePicker from "@/components/ExercisePicker";
 import CameraRecorder from "@/components/CameraRecorder";
 import WearableConnector from "@/components/WearableConnector";
 import BottomSelectDrawer from "@/components/BottomSelectDrawer";
 import { analyzeDepthData } from "../../supabase/functions/_shared/depth3d";
-
-async function getFunctionErrorMessage(error) {
-  const response = error?.context;
-  if (response && typeof response.clone === "function") {
-    try {
-      const body = await response.clone().json();
-      if (typeof body?.error === "string" && body.error) return body.error;
-    } catch {
-      // Fall back to the Supabase error message when the response is not JSON.
-    }
-  }
-  return error?.message || "La funzione di analisi non è raggiungibile.";
-}
 
 export default function Analyze() {
   const [params] = useSearchParams();
@@ -43,11 +30,13 @@ export default function Analyze() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await appApi.entities.Exercise.list("-created_date", 500);
+        const [data, aths] = await Promise.all([
+          appApi.entities.Exercise.list("-created_date", 500),
+          appApi.entities.Athlete.list("-created_date", 500),
+        ]);
         setExercises(data);
         const pre = params.get("exercise");
         if (pre) setSelectedId(pre);
-        const aths = await appApi.entities.Athlete.list("-created_date", 500);
         setAthletes(aths);
         const preAth = params.get("athlete");
         if (preAth) setSelectedAthleteId(preAth);
@@ -92,6 +81,7 @@ export default function Analyze() {
 
     setAnalyzing(true);
     setProgressMsg("Preparazione dei frame…");
+    let frameUris = [];
     try {
       let frameFiles = [];
       if (file && isVideoFile(file)) {
@@ -101,24 +91,25 @@ export default function Analyze() {
           throw new Error("Impossibile estrarre frame dal video. Prova con un formato MP4/H.264 più leggero.");
         }
       } else if (file) {
-        frameFiles = [file];
+        frameFiles = [await normalizeImageFile(file)];
       }
 
       if (frameFiles.length > 0) setProgressMsg("Caricamento dei frame…");
       // Upload frames to PRIVATE storage, then create short-lived signed URLs
       // for the LLM vision call (expire in 10 min — long enough for the analysis).
-      const frameUris = frameFiles.length ? (
-        await Promise.all(
-          frameFiles.map((ff) =>
+      if (frameFiles.length) {
+        const uploadResults = await Promise.allSettled(frameFiles.map((ff) =>
             appApi.integrations.Core.UploadPrivateFile({ file: ff }).then((result) => {
               if (!result?.file_uri) throw new Error("Storage non ha restituito il percorso del frame.");
               return result.file_uri;
             }).catch((uploadError) => {
               throw new Error(`Caricamento frame non riuscito: ${uploadError.message || "errore Storage"}`);
             })
-          )
-        )
-      ) : [];
+          ));
+        frameUris = uploadResults.filter((result) => result.status === "fulfilled").map((result) => result.value);
+        const failedUpload = uploadResults.find((result) => result.status === "rejected");
+        if (failedUpload) throw failedUpload.reason;
+      }
       if (frameFiles.length > 0 && frameUris.length === 0) {
         throw new Error("Errore nel caricamento dei frame. Riprova.");
       }
@@ -138,16 +129,6 @@ export default function Analyze() {
         throw new Error("Errore nel caricamento dei frame. Riprova.");
       }
 
-      const isVideo = Boolean(file && isVideoFile(file));
-      const VIDEO_STORE_CAP = 50 * 1024 * 1024;
-      let videoUploadPromise = Promise.resolve(null);
-      if (isVideo && file.size <= VIDEO_STORE_CAP) {
-        videoUploadPromise = appApi.integrations.Core
-          .UploadPrivateFile({ file })
-          .then((r) => r.file_uri || null)
-          .catch(() => null);
-      }
-
       setProgressMsg("Analisi biomeccanica in corso…");
       const { data, error: functionError } = await appApi.functions.invoke("analyzeExercise", {
         exerciseName: selected.name,
@@ -159,26 +140,15 @@ export default function Analyze() {
         wearableData: wearableData || null,
         athleteId: selectedAthleteId || null,
       });
-      if (functionError) throw new Error(await getFunctionErrorMessage(functionError));
+      if (functionError) throw new Error(await appApi.functionErrorMessage(functionError, "La funzione di analisi non è raggiungibile."));
       if (data?.error) throw new Error(data.error);
       const report = data?.report;
       if (!report?.id) throw new Error("Risposta non valida dalla funzione di analisi.");
 
-      try {
-        const videoUri = await videoUploadPromise;
-        if (videoUri) {
-          await appApi.entities.AnalysisReport.update(report.id, { video_uri: videoUri });
-        }
-      } catch {
-        /* non-blocking */
-      }
-
       if (selectedAthleteId) {
         appApi.functions.invoke("notifyAthleteReport", {
           athleteId: selectedAthleteId,
-          exerciseName: selected.name,
           reportId: report.id,
-          score: report.score,
         }).catch(() => {});
       }
 
@@ -186,6 +156,10 @@ export default function Analyze() {
     } catch (err) {
       setError(err.message || "Errore durante l'analisi.");
     } finally {
+      if (frameUris.length) {
+        await appApi.integrations.Core.RemovePrivateFiles({ file_uris: frameUris })
+          .catch((cleanupError) => console.warn("Pulizia frame non riuscita:", cleanupError));
+      }
       setAnalyzing(false);
       setProgressMsg("");
     }
