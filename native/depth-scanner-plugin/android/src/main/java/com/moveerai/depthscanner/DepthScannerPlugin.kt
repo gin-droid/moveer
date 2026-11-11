@@ -94,7 +94,7 @@ class DepthScannerPlugin : Plugin() {
                     .build()
             )
 
-            maxDurationSec = call.getDouble("maxDurationSec", 30.0)
+            maxDurationSec = call.getDouble("maxDurationSec") ?: 30.0
             synchronized(frames) {
                 frames.clear()
                 frameUrls.clear()
@@ -232,13 +232,13 @@ class DepthScannerPlugin : Plugin() {
         var depthImage: Image? = null
         var cameraImage: Image? = null
         try {
-            depthImage = frame.acquireDepthImage16()
+            depthImage = frame.acquireDepthImage16Bits()
             cameraImage = frame.acquireCameraImage()
             val joints3D = detectPoseAndFuseDepth(frame, cameraImage, depthImage)
             if (joints3D.size < 6) return
             val entry = JSObject()
             entry.put("timestamp", elapsed)
-            entry.put("joints3D", joints3D.toJSArray())
+            entry.put("joints3D", toJSArray(joints3D))
             entry.put("depthRangeMm", computeDepthStats(depthImage))
             synchronized(frames) { frames.add(entry) }
         } catch (e: Exception) {
