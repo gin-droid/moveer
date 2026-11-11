@@ -66,7 +66,7 @@ Per SMTP Auth con Brevo usa `smtp-relay.brevo.com`, porta `587`, lo SMTP login m
 
 ## App Android e iOS
 
-Le shell native `android/` e `ios/` sono incluse. Dopo le modifiche web o al plugin, esegui `npm run cap:sync:android` oppure `npm run cap:sync:ios`; apri i progetti con `npx cap open android` e `npx cap open ios`. Android richiede Android Studio, JDK e Android SDK; iOS richiede Xcode completo.
+Le shell native `android/` e `ios/` sono incluse. Dopo le modifiche web o al plugin, esegui `npm run cap:sync:android` oppure `npm run cap:sync:ios`; apri i progetti con `npx cap open android` e `npx cap open ios`. Android richiede Android Studio, JDK 21 e Android SDK; iOS richiede Xcode completo.
 
 Le icone dell'app web/PWA e delle app Android e iOS usano l'immagine sorgente `assets/app-icon-source.jpg`.
 
