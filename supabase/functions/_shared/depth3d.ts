@@ -135,15 +135,21 @@ export function computeFrameAngles(frame: DepthFrame, coordinateSystem: DepthDat
   const kneeLeft = includedAngle(joints, 'hip_l', 'knee_l', 'ankle_l');
   const kneeRight = includedAngle(joints, 'hip_r', 'knee_r', 'ankle_r');
   const kneeAngle = average(kneeLeft, kneeRight) ?? includedAngle(joints, 'hip_l', 'knee_l', 'ankle_l');
-  const hipLeft = angleBetween(base, joints.hip_l, joints.knee_l);
-  const hipRight = angleBetween(base, joints.hip_r, joints.knee_r);
+  const hipMidpoint = midpoint(vectors.hip_l, vectors.hip_r);
+  const torsoReference = vectors.spine_chest || base;
+  const torsoAxis = torsoReference && hipMidpoint ? sub(torsoReference, hipMidpoint) : null;
+  const hipProximal = (hip?: Vec3): Vec3 | undefined => hip && torsoAxis
+    ? { x: hip.x + torsoAxis.x, y: hip.y + torsoAxis.y, z: hip.z + torsoAxis.z }
+    : base;
+  const hipLeft = angleBetween(hipProximal(vectors.hip_l), joints.hip_l, joints.knee_l);
+  const hipRight = angleBetween(hipProximal(vectors.hip_r), joints.hip_r, joints.knee_r);
   const elbowLeft = includedAngle(joints, 'shoulder_l', 'elbow_l', 'wrist_l');
   const elbowRight = includedAngle(joints, 'shoulder_r', 'elbow_r', 'wrist_r');
   const shoulderAngles = (['l', 'r'] as const).map((side) => {
     const shoulder = vectors[`shoulder_${side}`];
     const elbow = vectors[`elbow_${side}`];
     if (!base || !shoulder || !elbow) return null;
-    const trunkAxis = sub(shoulder, base);
+    const trunkAxis = torsoAxis || sub(shoulder, base);
     const armAxis = sub(elbow, shoulder);
     const included = vectorAngle(trunkAxis, armAxis);
     return included == null ? null : 180 - included;

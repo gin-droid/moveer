@@ -1,4 +1,15 @@
-import { adminClient, authenticate, json } from '../_shared/runtime.ts';
+import { deleteUserStorage } from '../_shared/accounts.ts';
+import {
+  adminClient,
+  authenticate,
+  enforceRateLimit,
+  handle,
+  HttpError,
+  isUuid,
+  json,
+  readJson,
+  requireAdmin,
+} from '../_shared/runtime.ts';
 
 const validPlans = new Set(['freemium', 'pro', 'coach']);
 const userPageSize = 1000;
@@ -17,37 +28,39 @@ async function listAuthUsers() {
 async function findAuthUserByEmail(email: string) {
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail) return null;
+  const escapedEmail = normalizedEmail.replace(/[\\%_]/g, '\\$&');
+  const { data: profile, error } = await adminClient.from('profiles')
+    .select('id').ilike('email', escapedEmail).limit(1).maybeSingle();
+  if (error) throw error;
+  if (profile) {
+    const { data } = await adminClient.auth.admin.getUserById(profile.id);
+    if (data.user) return data.user;
+  }
   const users = await listAuthUsers();
   return users.find((user) => user.email?.toLowerCase() === normalizedEmail) || null;
 }
 
 async function getManagedUser(userId: string, adminId: string) {
-  if (!userId) throw new Error('userId obbligatorio');
-  if (userId === adminId) throw new Error('Non puoi modificare il tuo account da questa pagina');
+  if (!isUuid(userId)) throw new HttpError(400, 'Identificativo utente non valido');
+  if (userId === adminId) throw new HttpError(403, 'Non puoi modificare il tuo account da questa pagina');
 
   const { data, error } = await adminClient.auth.admin.getUserById(userId);
-  if (error) throw error;
-  if (!data.user) throw new Error('Utente non trovato');
+  if (error || !data.user) throw new HttpError(404, 'Utente non trovato');
 
   const { data: profile, error: profileError } = await adminClient.from('profiles')
     .select('role').eq('id', userId).maybeSingle();
   if (profileError) throw profileError;
-  if (profile?.role === 'admin') throw new Error('Gli account amministratore non possono essere modificati da questa pagina');
+  if (profile?.role === 'admin') throw new HttpError(403, 'Gli account amministratore non possono essere modificati da questa pagina');
   return data.user;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return json({ ok: true });
-
-  try {
+Deno.serve(handle('adminManageUsers', async (req) => {
     const auth = await authenticate(req);
-    if (!auth) return json({ error: 'Unauthorized' }, 401);
-    const { data: profile, error: profileError } = await auth.client.from('profiles')
-      .select('role').eq('id', auth.user.id).maybeSingle();
-    if (profileError) throw profileError;
-    if (profile?.role !== 'admin') return json({ error: 'Permessi amministratore richiesti' }, 403);
+    if (!auth) throw new HttpError(401, 'Accesso richiesto');
+    await requireAdmin(auth);
+    await enforceRateLimit(`adminManageUsers:${auth.user.id}`, 120, 60);
 
-    const body = await req.json();
+    const body = await readJson(req);
     const action = String(body.action || '').trim();
 
     if (action === 'list') {
@@ -126,20 +139,21 @@ Deno.serve(async (req) => {
         await adminClient.auth.admin.updateUserById(userId, { ban_duration: previousBanDuration });
         throw entitlementError;
       }
+      if (status !== 'active') {
+        const { error: sessionsError } = await adminClient.rpc('revoke_user_sessions', { p_user_id: userId });
+        if (sessionsError) throw sessionsError;
+      }
       return json({ id: userId, status });
     }
 
     if (action === 'delete') {
       const userId = String(body.userId || '').trim();
       await getManagedUser(userId, auth.user.id);
+      await deleteUserStorage(userId);
       const { error } = await adminClient.auth.admin.deleteUser(userId);
       if (error) throw error;
       return json({ id: userId, ok: true });
     }
 
     return json({ error: 'Operazione non valida' }, 400);
-  } catch (error) {
-    console.error('adminManageUsers:', error);
-    return json({ error: error instanceof Error ? error.message : 'Errore gestione utenti' }, 500);
-  }
-});
+}));

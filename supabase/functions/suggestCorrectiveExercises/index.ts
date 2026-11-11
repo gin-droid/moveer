@@ -1,16 +1,14 @@
-import { adminClient, authenticate, generateGeminiText, json, parseGeminiJson } from '../_shared/runtime.ts';
+import { adminClient, authenticate, enforceRateLimit, generateGeminiText, handle, HttpError, isUuid, json, parseGeminiJson, readJson } from '../_shared/runtime.ts';
 
 const correctiveCategories = ['Riabilitazione', 'Mobilità', 'Posturali', 'Corpo Libero', 'Funzionale'];
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return json({ ok: true });
+Deno.serve(handle('suggestCorrectiveExercises', async (req) => {
   const auth = await authenticate(req);
-  if (!auth) return json({ error: 'Unauthorized' }, 401);
+  if (!auth) throw new HttpError(401, 'Accesso richiesto');
 
-  try {
-    const body = await req.json();
+    const body = await readJson(req);
     const reportId = String(body.reportId || '').trim();
-    if (!reportId) return json({ error: 'reportId obbligatorio' }, 400);
+    if (!isUuid(reportId)) throw new HttpError(400, 'Identificativo report non valido');
 
     const [{ data: entitlement, error: entitlementError }, { data: report, error: reportError }] = await Promise.all([
       auth.client.from('user_entitlements').select('plan, blocked').eq('user_id', auth.user.id).maybeSingle(),
@@ -27,6 +25,7 @@ Deno.serve(async (req) => {
     if (Array.isArray(report.corrective_suggestions)) {
       return json({ suggestions: report.corrective_suggestions, cached: true });
     }
+    await enforceRateLimit(`suggestCorrectiveExercises:${auth.user.id}`, 30, 60 * 60);
 
     const issues = Array.isArray(report.issues_detected) ? report.issues_detected : [];
     if (!issues.length) return json({ suggestions: [], reason: 'no_issues' });
@@ -118,8 +117,4 @@ Seleziona fino a 5 esercizi pertinenti ai difetti e alle correzioni, considerand
     }
 
     return json({ suggestions });
-  } catch (error) {
-    console.error('suggestCorrectiveExercises:', error);
-    return json({ error: error instanceof Error ? error.message : 'Errore nei suggerimenti' }, 500);
-  }
-});
+}));

@@ -1,4 +1,4 @@
-import { adminClient } from './runtime.ts';
+import { adminClient, fetchWithTimeout } from './runtime.ts';
 
 type RevenueCatEntitlement = {
   expires_date?: string | null;
@@ -28,9 +28,9 @@ export async function syncStoreEntitlement(userId: string) {
   const apiKey = Deno.env.get('REVENUECAT_SECRET_API_KEY');
   if (!apiKey) throw new Error('REVENUECAT_SECRET_API_KEY non configurata nei secrets Supabase');
 
-  const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
+  const response = await fetchWithTimeout(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
     headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' },
-  });
+  }, 30_000);
   const result = await response.json().catch(() => ({})) as RevenueCatSubscriberResponse & { message?: string };
   if (!response.ok || !result.subscriber) {
     throw new Error(result.message || `RevenueCat API HTTP ${response.status}`);

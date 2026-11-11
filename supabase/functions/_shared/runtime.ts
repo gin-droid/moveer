@@ -19,7 +19,13 @@ export class HttpError extends Error {
 
 function allowedOrigins() {
   const configured = (Deno.env.get('APP_ORIGIN') || 'https://app.moveer.eu')
-    .split(',').map((origin) => origin.trim()).filter(Boolean);
+    .split(',').map((origin) => {
+      try {
+        return new URL(origin.trim()).origin;
+      } catch {
+        return null;
+      }
+    }).filter((origin): origin is string => Boolean(origin));
   return new Set([...configured, 'capacitor://localhost', 'https://localhost']);
 }
 

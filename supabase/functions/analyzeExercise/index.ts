@@ -1,6 +1,6 @@
-import { adminClient, authenticate, consumeQuota, generateGeminiText, json, parseGeminiJson } from '../_shared/runtime.ts';
+import { adminClient, authenticate, consumeQuota, enforceRateLimit, fetchWithTimeout, generateGeminiText, handle, HttpError, isUuid, json, parseGeminiJson, readJson } from '../_shared/runtime.ts';
 import { computeJointStress, getPatternCheckpoints } from '../_shared/biomechanics.ts';
-import { analyzeDepthData, projectDepthFrameToBodyDiagram, summarizeDepthAngles } from '../_shared/depth3d.ts';
+import { analyzeDepthData, projectDepthFrameToBodyDiagram, summarizeDepthAngles, type DepthData } from '../_shared/depth3d.ts';
 
 function toBase64(bytes: Uint8Array) {
   let binary = '';
@@ -10,24 +10,36 @@ function toBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return json({ ok: true });
+Deno.serve(handle('analyzeExercise', async (req) => {
   const auth = await authenticate(req);
-  if (!auth) return json({ error: 'Unauthorized' }, 401);
+  if (!auth) throw new HttpError(401, 'Accesso richiesto');
+  await enforceRateLimit(`analyzeExercise:${auth.user.id}`, 10, 10 * 60);
 
   let quotaConsumed = false;
   try {
-    const body = await req.json();
-    const exerciseName = String(body.exerciseName || '').trim();
-    const macroCategory = String(body.macroCategory || '').trim();
-    const subcategory = String(body.subcategory || '').trim();
+    const body = await readJson(req);
+    const cleanLabel = (value: unknown, maxLength: number) => String(value || '')
+      .replace(/[\x00-\x1f\x7f`]/g, '').trim().slice(0, maxLength);
+    const exerciseName = cleanLabel(body.exerciseName, 160);
+    const macroCategory = cleanLabel(body.macroCategory, 80);
+    const subcategory = cleanLabel(body.subcategory, 80);
     const notes = String(body.notes || '').trim().slice(0, 2000);
     const frameUrls: string[] = Array.isArray(body.frameUrls) ? body.frameUrls.filter(Boolean).slice(0, 6) : [];
-    const depthData = body.depthData?.frames?.length ? body.depthData : null;
+    const depthInput = body.depthData && typeof body.depthData === 'object' && !Array.isArray(body.depthData)
+      ? body.depthData as Record<string, unknown>
+      : null;
+    const depthFrames = Array.isArray(depthInput?.frames) ? depthInput.frames : [];
+    const depthData: DepthData | null = depthFrames.length
+      ? { ...depthInput, frames: depthFrames.slice(0, 900) } as unknown as DepthData
+      : null;
     const wearableData = body.wearableData || null;
+    if (wearableData && new TextEncoder().encode(JSON.stringify(wearableData)).byteLength > 20_000) {
+      throw new HttpError(400, 'I dati wearable superano il limite consentito');
+    }
     const athleteId = String(body.athleteId || '').trim();
 
-    if (!exerciseName) return json({ error: 'Nome esercizio obbligatorio' }, 400);
+    if (!exerciseName) throw new HttpError(400, 'Nome esercizio obbligatorio');
+    if (athleteId && !isUuid(athleteId)) throw new HttpError(400, 'Identificativo atleta non valido');
 
     if (athleteId) {
       const { data: athlete, error } = await auth.client.from('athletes')
@@ -68,12 +80,16 @@ Genera un JSON in italiano con score intero 0-100, summary (2-3 frasi), issues_d
       if (parsedUrl.origin !== appOrigin || !parsedUrl.pathname.includes('/storage/v1/object/sign/analysis-media/')) {
         return json({ error: 'URL frame non valido' }, 400);
       }
-      const response = await fetch(parsedUrl);
+      const response = await fetchWithTimeout(parsedUrl, { redirect: 'error' }, 20_000);
       if (!response.ok) throw new Error('Impossibile leggere un frame caricato');
-      const contentType = response.headers.get('content-type') || 'image/jpeg';
-      if (!contentType.startsWith('image/')) return json({ error: 'I frame devono essere immagini' }, 400);
+      const contentType = (response.headers.get('content-type') || 'image/jpeg').split(';')[0].trim().toLowerCase();
+      if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(contentType)) {
+        throw new HttpError(400, 'Formato frame non supportato');
+      }
+      const declaredLength = Number(response.headers.get('content-length') || 0);
+      if (declaredLength > 8 * 1024 * 1024) throw new HttpError(413, 'Un frame supera il limite di 8 MB');
       const bytes = new Uint8Array(await response.arrayBuffer());
-      if (bytes.byteLength > 8 * 1024 * 1024) return json({ error: 'Un frame supera il limite di 8 MB' }, 413);
+      if (bytes.byteLength > 8 * 1024 * 1024) throw new HttpError(413, 'Un frame supera il limite di 8 MB');
       imageParts.push({ inlineData: { mimeType: contentType, data: toBase64(bytes) } });
     }
 
@@ -120,10 +136,10 @@ Genera un JSON in italiano con score intero 0-100, summary (2-3 frasi), issues_d
       gender: profile?.gender || 'maschio',
       score: Math.max(0, Math.min(100, Number(analysis.score))),
       summary: String(analysis.summary).slice(0, 3000),
-      issues_detected: Array.isArray(analysis.issues_detected) ? analysis.issues_detected : [],
-      corrections: Array.isArray(analysis.corrections) ? analysis.corrections : [],
-      corrective_exercises: Array.isArray(analysis.corrective_exercises) ? analysis.corrective_exercises : [],
-      recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
+      issues_detected: Array.isArray(analysis.issues_detected) ? analysis.issues_detected.slice(0, 20) : [],
+      corrections: Array.isArray(analysis.corrections) ? analysis.corrections.slice(0, 20) : [],
+      corrective_exercises: Array.isArray(analysis.corrective_exercises) ? analysis.corrective_exercises.slice(0, 10) : [],
+      recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations.slice(0, 10) : [],
       body_diagram: computeJointStress(measuredDiagram, exerciseName, macroCategory, subcategory) || null,
       depth_analysis: depthAnalysis,
       depth_metadata: depthData ? {
@@ -151,7 +167,6 @@ Genera un JSON in italiano con score intero 0-100, summary (2-3 frasi), issues_d
       });
       if (releaseError) console.error('analyzeExercise quota release:', releaseError);
     }
-    console.error('analyzeExercise:', error);
-    return json({ error: error instanceof Error ? error.message : 'Errore durante l’analisi' }, 500);
+    throw error;
   }
-});
+}));
