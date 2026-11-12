@@ -10,15 +10,21 @@ Deno.serve(handle('suggestCorrectiveExercises', async (req) => {
     const reportId = String(body.reportId || '').trim();
     if (!isUuid(reportId)) throw new HttpError(400, 'Identificativo report non valido');
 
-    const [{ data: entitlement, error: entitlementError }, { data: report, error: reportError }] = await Promise.all([
+    const [
+      { data: entitlement, error: entitlementError },
+      { data: effectivePlan, error: planError },
+      { data: report, error: reportError },
+    ] = await Promise.all([
       auth.client.from('user_entitlements').select('plan, blocked').eq('user_id', auth.user.id).maybeSingle(),
+      auth.client.rpc('get_effective_entitlement_plan'),
       auth.client.from('analysis_reports').select('id, exercise_name, macro_category, issues_detected, corrections, corrective_exercises, corrective_suggestions')
         .eq('id', reportId).maybeSingle(),
     ]);
     if (entitlementError) throw entitlementError;
+    if (planError) throw planError;
     if (reportError) throw reportError;
     if (entitlement?.blocked) return json({ error: 'Account bloccato' }, 403);
-    if (!['pro', 'coach'].includes(entitlement?.plan || 'freemium')) {
+    if (!['pro', 'coach'].includes(effectivePlan || 'freemium')) {
       return json({ error: 'Funzionalità disponibile solo per i piani Pro e Coach' }, 403);
     }
     if (!report) return json({ error: 'Report non trovato' }, 404);

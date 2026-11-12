@@ -16,6 +16,8 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import {
   configureStorePurchases,
+  getStorePurchases,
+  isAndroidStore,
   isNativeStoreAvailable,
   purchaseStorePackage,
   restoreStorePurchases,
@@ -29,6 +31,27 @@ async function invokePaymentFunction(name, body = {}) {
   }
   if (data?.error) throw new Error(data.error);
   return data;
+}
+
+const googlePlayProductIds = new Set(["pro-monthly", "pro-annual", "coach-monthly", "coach-annual"]);
+
+async function syncStoreEntitlement(purchases) {
+  if (!isAndroidStore()) return invokePaymentFunction("syncStoreEntitlement");
+
+  const validPurchases = (Array.isArray(purchases) ? purchases : []).filter((purchase) =>
+    ["1", "PURCHASED"].includes(purchase.purchaseState) &&
+    googlePlayProductIds.has(purchase.productIdentifier)
+  );
+  let result = null;
+  for (const purchase of validPurchases) {
+    const purchaseToken = purchase.purchaseToken || purchase.transactionId;
+    if (!purchaseToken) throw new Error("Google Play non ha restituito il token dell’acquisto.");
+    result = await invokePaymentFunction("syncGooglePlayEntitlement", {
+      purchaseToken,
+      productId: purchase.productIdentifier,
+    });
+  }
+  return result || invokePaymentFunction("syncGooglePlayEntitlement");
 }
 
 export default function Subscription() {
@@ -53,7 +76,8 @@ export default function Subscription() {
         if (isNative && user?.id) {
           const availablePackages = await configureStorePurchases(user.id);
           if (!cancelled) setStorePackages(availablePackages);
-          const result = await invokePaymentFunction("syncStoreEntitlement");
+          const purchases = isAndroidStore() ? await getStorePurchases() : undefined;
+          const result = await syncStoreEntitlement(purchases);
           if (!cancelled) setMe((current) => ({ ...current, plan: result.plan }));
         }
       } catch (error) {
@@ -74,8 +98,8 @@ export default function Subscription() {
   const mentorUsed = (me?.mentor_query_month === monthKey ? me?.mentor_query_count : 0) || 0;
   const mentorLimit = currentPlan.limits.mentorQueriesPerMonth;
 
-  const syncStorePlan = async () => {
-    const result = await invokePaymentFunction("syncStoreEntitlement");
+  const syncStorePlan = async (purchases) => {
+    const result = await syncStoreEntitlement(purchases);
     setMe((current) => ({ ...current, plan: result.plan }));
     setStoreSyncPending(false);
     return result.plan;
@@ -89,9 +113,16 @@ export default function Subscription() {
     }
     setSwitchingTo(planId);
     try {
-      await purchaseStorePackage(storePackage);
+      const purchase = await purchaseStorePackage(storePackage, me?.id);
+      if (isAndroidStore() && (
+        !purchase ||
+        !("purchaseState" in purchase) ||
+        !["1", "PURCHASED"].includes(purchase.purchaseState || "")
+      )) {
+        throw new Error("Google Play non ha ancora confermato il pagamento.");
+      }
       try {
-        const plan = await syncStorePlan();
+        const plan = await syncStorePlan(isAndroidStore() ? [purchase] : undefined);
         toast({
           title: "Abbonamento attivato",
           description: `Il piano ${PLANS.find((item) => item.id === plan)?.name || plan} è attivo.`,
@@ -117,8 +148,8 @@ export default function Subscription() {
   const handleRestore = async () => {
     setRestoring(true);
     try {
-      await restoreStorePurchases();
-      const plan = await syncStorePlan();
+      const purchases = await restoreStorePurchases();
+      const plan = await syncStorePlan(Array.isArray(purchases) ? purchases : undefined);
       toast({
         title: plan === "freemium" ? "Nessun acquisto attivo" : "Acquisti ripristinati",
         description: plan === "freemium"

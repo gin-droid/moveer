@@ -20,8 +20,53 @@ type RevenueCatSubscriberResponse = {
 
 function providerForStore(store?: string | null) {
   if (store === 'APP_STORE' || store === 'app_store') return 'apple';
-  if (store === 'PLAY_STORE' || store === 'play_store') return 'google';
+  if (store === 'PLAY_STORE' || store === 'play_store') return 'google_play';
   return null;
+}
+
+export async function refreshCachedEntitlement(userId: string) {
+  const { data: current, error: currentError } = await adminClient.from('user_entitlements')
+    .select('billing_provider,plan').eq('user_id', userId).maybeSingle();
+  if (currentError) throw currentError;
+  if (current?.billing_provider === 'admin') {
+    return { plan: current.plan, billingProvider: 'admin' };
+  }
+
+  const { data: storeEntitlements, error: storeError } = await adminClient.from('user_store_entitlements')
+    .select('provider,plan,product_id,expires_at').eq('user_id', userId);
+  if (storeError) throw storeError;
+
+  const now = Date.now();
+  const active = (storeEntitlements || [])
+    .filter((entitlement) =>
+      (entitlement.plan === 'coach' || entitlement.plan === 'pro') &&
+      (!entitlement.expires_at || Date.parse(entitlement.expires_at) > now)
+    )
+    .sort((a, b) => {
+      const planDifference = Number(b.plan === 'coach') - Number(a.plan === 'coach');
+      if (planDifference) return planDifference;
+      const aExpiration = a.expires_at ? Date.parse(a.expires_at) : Number.POSITIVE_INFINITY;
+      const bExpiration = b.expires_at ? Date.parse(b.expires_at) : Number.POSITIVE_INFINITY;
+      return bExpiration - aExpiration;
+    });
+  const selected = active[0];
+  const providers = new Set(active.filter((item) => item.plan === selected?.plan).map((item) => item.provider));
+  const plan = selected?.plan || 'freemium';
+  const billingProvider = providers.size > 1 ? 'multiple' : selected?.provider || null;
+  const values = {
+    plan,
+    billing_provider: billingProvider,
+    store_product_id: selected?.product_id || null,
+    subscription_expires_at: selected?.expires_at || null,
+  };
+
+  const { error: entitlementError } = await adminClient.from('user_entitlements')
+    .upsert({ user_id: userId, ...values }, { onConflict: 'user_id' });
+  if (entitlementError) throw entitlementError;
+  const { error: profileError } = await adminClient.from('profiles').update({ plan }).eq('id', userId);
+  if (profileError) throw profileError;
+
+  return { plan, billingProvider };
 }
 
 export async function syncStoreEntitlement(userId: string) {
@@ -55,7 +100,7 @@ export async function syncStoreEntitlement(userId: string) {
     })
     .filter(({ identifier, provider, effectiveExpiration }) =>
       (identifier === 'coach' || identifier === 'pro') &&
-      provider &&
+      provider === 'apple' &&
       (!effectiveExpiration || Date.parse(effectiveExpiration) > now)
     )
     .sort((a, b) => Number(b.identifier === 'coach') - Number(a.identifier === 'coach'));
@@ -64,24 +109,20 @@ export async function syncStoreEntitlement(userId: string) {
   const { data: current, error: currentError } = await adminClient.from('user_entitlements')
     .select('plan,billing_provider').eq('user_id', userId).maybeSingle();
   if (currentError) throw currentError;
-  if (!active && current?.billing_provider === 'admin') {
+  if (current?.billing_provider === 'admin') {
     return { plan: current.plan, billingProvider: 'admin' };
   }
 
-  const plan = active?.identifier || 'freemium';
-  const billingProvider = active?.provider || null;
-  const values = {
-    plan,
-    billing_provider: billingProvider,
-    store_product_id: active?.entitlement.product_identifier || null,
-    subscription_expires_at: active?.effectiveExpiration || null,
-  };
+  const { error: storeError } = await adminClient.from('user_store_entitlements')
+    .upsert({
+      user_id: userId,
+      provider: 'apple',
+      plan: active?.identifier || 'freemium',
+      product_id: active?.entitlement.product_identifier || null,
+      expires_at: active?.effectiveExpiration || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,provider' });
+  if (storeError) throw storeError;
 
-  const { error: entitlementError } = await adminClient.from('user_entitlements')
-    .upsert({ user_id: userId, ...values }, { onConflict: 'user_id' });
-  if (entitlementError) throw entitlementError;
-  const { error: profileError } = await adminClient.from('profiles').update({ plan }).eq('id', userId);
-  if (profileError) throw profileError;
-
-  return { plan, billingProvider };
+  return refreshCachedEntitlement(userId);
 }

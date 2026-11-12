@@ -10,19 +10,20 @@ Applicazione React/Vite con backend Supabase: Auth, PostgreSQL con Row Level Sec
 4. Applica la migrazione SQL dal Supabase SQL Editor oppure collega il progetto con `npx supabase link --project-ref <project-ref>` e lancia `npm run supabase:db:push`.
 5. Avvia il frontend con `npm run dev`.
 
-Le chiavi `service_role`, AI, RevenueCat e provider email sono segreti server-side: non inserirle in variabili `VITE_*` né nel repository. Configurale nei secrets delle Edge Functions Supabase. Le chiavi SDK RevenueCat `appl_...` e `goog_...` sono invece chiavi pubbliche app-specific e vanno configurate solo nell'ambiente di build.
+Le chiavi `service_role`, AI, RevenueCat, Google Play e provider email sono segreti server-side: non inserirle in variabili `VITE_*` né nel repository. Configurale nei secrets delle Edge Functions Supabase. La chiave SDK RevenueCat iOS `appl_...` è pubblica e va configurata solo nell'ambiente di build.
 
 Secrets necessari per le funzioni:
 
 - `GEMINI_API_KEY` per analisi video, mentore e suggerimenti correttivi; `GEMINI_MODEL` è opzionale e predefinito a `gemini-3.8-flash`, con fallback a `gemini-3.7-flash` e `gemini-3.5-flash` in caso di sovraccarico temporaneo.
 - `APP_ORIGIN` per i redirect del checkout e l'origine web consentita.
 - `BREVO_API_KEY` e `EMAIL_FROM` per notifiche atleta e segnalazioni inviate dalle Edge Functions; `EMAIL_FROM_NAME` è opzionale e predefinito a `moVeerAI`.
-- `REVENUECAT_SECRET_API_KEY` per la verifica server-side degli entitlement e `REVENUECAT_WEBHOOK_AUTH` per autenticare i webhook RevenueCat.
+- `REVENUECAT_SECRET_API_KEY` per la verifica server-side degli acquisti Apple e `REVENUECAT_WEBHOOK_AUTH` per autenticare i webhook RevenueCat iOS.
+- `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` per verificare lato server i token Google Play tramite Android Publisher API.
 
 Variabili frontend per gli acquisti nativi, da inserire in `.env.local` (non sono segreti):
 
-- `VITE_REVENUECAT_IOS_API_KEY` e `VITE_REVENUECAT_ANDROID_API_KEY`: chiavi SDK pubbliche delle app configurate in RevenueCat.
-- `VITE_REVENUECAT_PRO_MONTHLY_PRODUCT_ID`, `VITE_REVENUECAT_PRO_ANNUAL_PRODUCT_ID`, `VITE_REVENUECAT_COACH_MONTHLY_PRODUCT_ID` e `VITE_REVENUECAT_COACH_ANNUAL_PRODUCT_ID`: identificativi prodotto in App Store Connect/Google Play, collegati nell'offerta RevenueCat corrente.
+- `VITE_REVENUECAT_IOS_API_KEY`: chiave SDK pubblica dell'app iOS configurata in RevenueCat.
+- `VITE_APPLE_PRO_MONTHLY_PRODUCT_ID`, `VITE_APPLE_PRO_ANNUAL_PRODUCT_ID`, `VITE_APPLE_COACH_MONTHLY_PRODUCT_ID` e `VITE_APPLE_COACH_ANNUAL_PRODUCT_ID`: identificativi Apple collegati all'offerta RevenueCat iOS.
 - `VITE_TURNSTILE_SITE_KEY`: chiave pubblica opzionale Cloudflare Turnstile per CAPTCHA su registrazione e richiesta reset password.
 
 ## Sicurezza Auth in produzione
@@ -45,9 +46,13 @@ where email = 'admin@your-domain.example';
 
 La migrazione iniziale crea profili, entitlements, esercizi, atleti, report, conversazioni e bucket Storage con policy RLS. Per usare email OTP e reset password configura URL di redirect e template in Authentication > URL Configuration. Per Google OAuth configura il provider sia in Supabase sia nel relativo pannello Google.
 
-Per configurare gli acquisti, crea in RevenueCat le app iOS e Android, collega i prodotti store e crea gli entitlement `pro` e `coach`. Aggiungi un'offerta corrente con i quattro prodotti mensili/annuali indicati in `.env.example`; gli ID devono corrispondere esattamente ai prodotti negli store. Imposta le due chiavi SDK pubbliche nell'ambiente frontend e configura nei secrets Supabase `REVENUECAT_SECRET_API_KEY` (API v1 secret) e `REVENUECAT_WEBHOOK_AUTH` (token casuale lungo).
+Gli acquisti iOS usano StoreKit tramite RevenueCat; Android usa direttamente Google Play Billing con `@capgo/native-purchases`. Per Apple, crea in RevenueCat l'app iOS, gli entitlement `pro` e `coach` e l'offerta con i quattro prodotti indicati in `.env.example`. Imposta la chiave SDK pubblica e gli ID Apple nell'ambiente frontend, e configura `REVENUECAT_SECRET_API_KEY` e `REVENUECAT_WEBHOOK_AUTH` nei secrets Supabase.
 
-Pubblica le Edge Functions con `npm run supabase:functions:deploy`. In RevenueCat configura un webhook POST a `https://<project-ref>.supabase.co/functions/v1/revenuecatWebhook` e imposta l'header Authorization a `Bearer <REVENUECAT_WEBHOOK_AUTH>`; invia gli eventi di acquisto, rinnovo, cambio prodotto e scadenza. `revenuecatWebhook` ha la verifica JWT Supabase disabilitata e verifica il token RevenueCat; `syncStoreEntitlement` richiede invece una sessione utente. La verifica delle ricevute resta server-side tramite RevenueCat.
+Per Google Play, configura gli abbonamenti con questi ID prodotto esatti: `pro-monthly`, `pro-annual`, `coach-monthly`, `coach-annual`. Ogni prodotto deve avere un base plan e un'offerta attivi con i prezzi scelti in Play Console; l'app mostra i prezzi localizzati restituiti da Google Play e acquista l'offerta mostrata. Non occorre configurare l'app Android in RevenueCat né impostare una chiave SDK RevenueCat Android.
+
+La verifica Play avviene solo sul server. Abilita la Google Play Android Developer API nel progetto Google Cloud collegato, crea un service account e autorizzalo alla gestione dell'app `com.moveerai.app` dalla sezione Accesso API di Play Console. Configura l'intero JSON del service account come secret Supabase `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`; non inserirlo nel repository, in `.env.local` o nella chat. Il backend usa il token d'acquisto e l'API Publisher per verificare prodotto, stato, scadenza e associazione all'account. Il database conserva i token in una tabella non accessibile agli utenti e riduce i piani scaduti a Freemium anche se l'app non si è ancora risincronizzata.
+
+Applica la migrazione con `npm run supabase:db:push` e pubblica le Edge Functions con `npm run supabase:functions:deploy`. In RevenueCat configura un webhook POST a `https://<project-ref>.supabase.co/functions/v1/revenuecatWebhook` e imposta l'header Authorization a `Bearer <REVENUECAT_WEBHOOK_AUTH>`; invia gli eventi di acquisto, rinnovo, cambio prodotto e scadenza. `revenuecatWebhook` ha la verifica JWT Supabase disabilitata e verifica il token RevenueCat; `syncStoreEntitlement` e `syncGooglePlayEntitlement` richiedono invece una sessione utente. Google Play viene verificato durante acquisto, ripristino e sincronizzazione dalla pagina Abbonamento.
 
 Le vecchie Edge Functions non più usate dall'app devono essere rimosse anche dai progetti Supabase collegati:
 
@@ -60,7 +65,7 @@ npx supabase functions delete createPortalSession
 npx supabase functions delete handleStripeWebhook
 ```
 
-La pagina Abbonamento vende e ripristina gli acquisti nativamente tramite StoreKit e Google Play Billing. La gestione e la cancellazione dei rinnovi avvengono nelle impostazioni dell'App Store o di Google Play; sul web l'acquisto non è disponibile. Non sono richiesti checkout, customer portal o credenziali Stripe.
+La pagina Abbonamento vende e ripristina gli acquisti nativamente tramite StoreKit/RevenueCat su iOS e Google Play Billing diretto su Android. La gestione e la cancellazione dei rinnovi avvengono nelle impostazioni dell'App Store o di Google Play; sul web l'acquisto non è disponibile. Non sono richiesti checkout, customer portal o credenziali Stripe.
 
 Per SMTP Auth con Brevo usa `smtp-relay.brevo.com`, porta `587`, lo SMTP login mostrato in Brevo e la SMTP key come password. Verifica prima il dominio mittente e usa un mittente autorizzato in `EMAIL_FROM`.
 

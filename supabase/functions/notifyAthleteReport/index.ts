@@ -11,14 +11,22 @@ Deno.serve(handle('notifyAthleteReport', async (req) => {
   const reportId = String(body.reportId || '').trim();
   if (!isUuid(athleteId) || !isUuid(reportId)) throw new HttpError(400, 'Identificativi non validi');
 
-  const [{ data: entitlement, error: entitlementError }, { data: report, error: reportError }, { data: athlete, error: athleteError }] = await Promise.all([
+  const [
+    { data: entitlement, error: entitlementError },
+    { data: effectivePlan, error: planError },
+    { data: report, error: reportError },
+    { data: athlete, error: athleteError },
+  ] = await Promise.all([
     auth.client.from('user_entitlements').select('plan, blocked').eq('user_id', auth.user.id).maybeSingle(),
+    auth.client.rpc('get_effective_entitlement_plan'),
     auth.client.from('analysis_reports').select('athlete_id, exercise_name, score').eq('id', reportId).maybeSingle(),
     auth.client.from('athletes').select('name, email').eq('id', athleteId).maybeSingle(),
   ]);
-  if (entitlementError || reportError || athleteError) throw entitlementError || reportError || athleteError;
+  if (entitlementError || planError || reportError || athleteError) {
+    throw entitlementError || planError || reportError || athleteError;
+  }
   if (entitlement?.blocked) return json({ error: 'Account bloccato' }, 403);
-  if (!['pro', 'coach'].includes(entitlement?.plan || 'freemium')) {
+  if (!['pro', 'coach'].includes(effectivePlan || 'freemium')) {
     return json({ skipped: true, reason: 'plan_not_allowed' }, 403);
   }
   if (!report || report.athlete_id !== athleteId || !athlete) return json({ skipped: true, reason: 'report_or_athlete_not_found' }, 404);
