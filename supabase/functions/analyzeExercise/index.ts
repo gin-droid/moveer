@@ -10,6 +10,67 @@ function toBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+const viewResponseSchema = {
+  type: 'object',
+  properties: {
+    joints: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          label: { type: 'string' },
+          x: { type: 'number' },
+          y: { type: 'number' },
+        },
+        required: ['id', 'x', 'y'],
+      },
+    },
+    segments: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          from: { type: 'string' },
+          to: { type: 'string' },
+          misaligned: { type: 'boolean' },
+        },
+        required: ['from', 'to'],
+      },
+    },
+  },
+  required: ['joints', 'segments'],
+};
+
+const responseSchema = {
+  type: 'object',
+  properties: {
+    score: { type: 'number' },
+    summary: { type: 'string' },
+    issues_detected: { type: 'array', items: { type: 'object' } },
+    corrections: { type: 'array', items: { type: 'object' } },
+    corrective_exercises: { type: 'array', items: { type: 'object' } },
+    recommendations: { type: 'array', items: { type: 'string' } },
+    body_diagram: {
+      type: 'object',
+      properties: {
+        front: viewResponseSchema,
+        side: viewResponseSchema,
+      },
+      required: ['front', 'side'],
+    },
+  },
+  required: [
+    'score',
+    'summary',
+    'issues_detected',
+    'corrections',
+    'corrective_exercises',
+    'recommendations',
+    'body_diagram',
+  ],
+};
+
 Deno.serve(handle('analyzeExercise', async (req) => {
   const auth = await authenticate(req);
   if (!auth) throw new HttpError(401, 'Accesso richiesto');
@@ -100,10 +161,32 @@ Genera un JSON in italiano con score intero 0-100, summary (2-3 frasi), issues_d
     }
     quotaConsumed = true;
 
-    const generated = await generateGeminiText([{ role: 'user', parts: [{ text: prompt }, ...imageParts] }]);
+    const generated = await generateGeminiText(
+      [{ role: 'user', parts: [{ text: prompt }, ...imageParts] }],
+      undefined,
+      true,
+      responseSchema,
+    );
     const analysis = parseGeminiJson(generated);
-    if (!Number.isFinite(Number(analysis.score)) || !analysis.summary) {
-      throw new Error('Risposta Gemini incompleta');
+    if (!analysis || typeof analysis !== 'object' || Array.isArray(analysis)) {
+      throw new HttpError(502, 'Risposta non valida dal motore di analisi.');
+    }
+    const diagram = analysis.body_diagram;
+    const isValidView = (view: unknown): view is { joints: Array<{ id: string; x: number; y: number }>; segments: unknown[] } => {
+      if (!view || typeof view !== 'object') return false;
+      const candidate = view as { joints?: unknown; segments?: unknown };
+      return Array.isArray(candidate.joints) && candidate.joints.length > 0 &&
+        candidate.joints.every((joint) =>
+          typeof joint === 'object' && joint !== null && !Array.isArray(joint) &&
+          'id' in joint && typeof joint.id === 'string' &&
+          'x' in joint && typeof joint.x === 'number' && Number.isFinite(joint.x) &&
+          'y' in joint && typeof joint.y === 'number' && Number.isFinite(joint.y)
+        ) &&
+        Array.isArray(candidate.segments);
+    };
+    if (!Number.isFinite(Number(analysis.score)) || typeof analysis.summary !== 'string' || !analysis.summary ||
+      !diagram || !isValidView(diagram.front) || !isValidView(diagram.side)) {
+      throw new HttpError(502, 'Analisi biomeccanica incompleta: impossibile calcolare lo stress articolare.');
     }
 
     type DepthKeyFrame = NonNullable<typeof depthAnalysis>['keyFrames'][number];
