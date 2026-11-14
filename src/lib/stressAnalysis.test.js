@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { analyzeFrontStress } from "./stressAnalysis.js";
+import { analyzeFrontStress, getStressBearingJoints } from "./stressAnalysis.js";
 
 const labels = {
   neck: "Collo",
@@ -29,6 +29,16 @@ test("reports tied joints instead of choosing the first joint in the array", () 
   const result = analyzeFrontStress(diagramWithStress({ neck: 90, knee_l: 90 }));
   assert.equal(result.joint?.label, "Collo / Ginocchio sinistro (pari stress)");
   assert.deepEqual(result.joint?.ids, ["neck", "knee_l"]);
+});
+
+test("does not report the head landmark as the most stressed articulation", () => {
+  const result = analyzeFrontStress(diagramWithStress({ head: 100, knee_l: 35 }));
+  assert.equal(result.joint?.id, "knee_l");
+});
+
+test("excludes head stress from diagram joint gauges, including older reports", () => {
+  const view = { joints: [{ id: "head", stress: 100 }, { id: "neck", stress: 35 }] };
+  assert.deepEqual(getStressBearingJoints(view).map((joint) => joint.id), ["neck"]);
 });
 
 test("does not classify the cervical spine as a limb", () => {

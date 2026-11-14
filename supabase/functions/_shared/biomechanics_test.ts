@@ -20,6 +20,7 @@ const neutralFront = () => ({
   ],
 });
 
+
 Deno.test('neutral front posture does not give the neck artificial stress', () => {
   const diagram = computeJointStress({ front: neutralFront() }, 'Posizione eretta', 'Postura');
   const neck = diagram.front.joints.find((joint: { id: string }) => joint.id === 'neck');
@@ -35,5 +36,19 @@ Deno.test('front neck stress responds to head-to-neck lateral bend', () => {
   const neck = diagram.front.joints.find((joint: { id: string }) => joint.id === 'neck');
   if ((neck?.stress || 0) <= 0) {
     throw new Error('Expected lateral head-to-neck bend to increase neck stress.');
+  }
+});
+
+Deno.test('head landmark stress is attributed to the neck, not treated as an articulation', () => {
+  const front = {
+    ...neutralFront(),
+    segments: [{ from: 'head', to: 'neck', misaligned: true }],
+  };
+  front.joints.find((joint) => joint.id === 'head')!.x = 44;
+  const diagram = computeJointStress({ front }, 'Posizione eretta', 'Postura');
+  const head = diagram.front.joints.find((joint: { id: string }) => joint.id === 'head');
+  const neck = diagram.front.joints.find((joint: { id: string }) => joint.id === 'neck');
+  if (head?.stress !== 0 || (neck?.stress || 0) <= 0) {
+    throw new Error(`Expected head stress 0 and positive neck stress, received ${head?.stress} and ${neck?.stress}.`);
   }
 });

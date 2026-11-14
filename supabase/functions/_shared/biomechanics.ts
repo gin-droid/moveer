@@ -316,7 +316,6 @@ const JOINT_WEIGHT: Record<string, number> = {
   ankle_l: 1.1, ankle_r: 1.1, ankle: 1.1,
   neck: 1.2,
   shoulder_l: 1.0, shoulder_r: 1.0, shoulder: 1.0,
-  head: 0.9,
   elbow_l: 0.7, elbow_r: 0.7, elbow: 0.7,
   wrist_l: 0.5, wrist_r: 0.5, wrist: 0.5,
 };
@@ -354,6 +353,11 @@ function tiltFromVertical(from: Point, to: Point): number {
   return (Math.atan2(to.x - from.x, to.y - from.y) * 180) / Math.PI;
 }
 
+function addSegmentStress(map: Record<string, Joint>, id: string, amount: number): void {
+  const joint = map[id === 'head' ? 'neck' : id];
+  if (joint) joint.stress = (joint.stress || 0) + amount;
+}
+
 function computeFront(view: View | undefined, profile: PatternProfile): View | undefined {
   if (!view || !Array.isArray(view.joints)) return view;
   const joints: Joint[] = (view.joints as Joint[]).map((j) => ({ ...j, stress: 0 }));
@@ -365,12 +369,13 @@ function computeFront(view: View | undefined, profile: PatternProfile): View | u
   (view.segments || []).forEach((s) => {
     if (!s.misaligned) return;
     [s.from, s.to].forEach((id) => {
-      if (map[id]) map[id].stress = (map[id].stress || 0) + G.misalign;
+      addSegmentStress(map, id, G.misalign);
     });
   });
 
   // 2. Scostamento dalla posizione OTTIMA del pattern (pesato per importanza)
   joints.forEach((j) => {
+    if (j.id === 'head') return;
     const n = opt[j.id];
     if (!n) return;
     const w = JOINT_WEIGHT[j.id] || 1.0;
@@ -407,11 +412,8 @@ function computeFront(view: View | undefined, profile: PatternProfile): View | u
     }
   });
 
-  // 6. Deviazione laterale della colonna (head/neck lontani da x=50)
-  ['head', 'neck'].forEach((id) => {
-    const j = map[id];
-    if (j) j.stress = (j.stress || 0) + Math.abs(j.x - 50) * G.lateralSpine;
-  });
+  // 6. Deviazione laterale del collo rispetto all'asse corporeo
+  if (map.neck) map.neck.stress = (map.neck.stress || 0) + Math.abs(map.neck.x - 50) * G.lateralSpine;
 
   // 7. Inclinazione cervicale frontale rispetto all'asse testa-collo.
   const head = map.head, neck = map.neck;
@@ -436,12 +438,13 @@ function computeSide(view: View | undefined, profile: PatternProfile): View | un
   (view.segments || []).forEach((s) => {
     if (!s.misaligned) return;
     [s.from, s.to].forEach((id) => {
-      if (map[id]) map[id].stress = (map[id].stress || 0) + G.misalign;
+      addSegmentStress(map, id, G.misalign);
     });
   });
 
   // 2. Scostamento dalla posizione OTTIMA del pattern (pesato)
   joints.forEach((j) => {
+    if (j.id === 'head') return;
     const n = opt[j.id];
     if (!n) return;
     const w = JOINT_WEIGHT[j.id] || 1.0;
@@ -508,9 +511,11 @@ function computeSide(view: View | undefined, profile: PatternProfile): View | un
   }
 
   // 9. Forward head (head spostato in avanti rispetto al previsto)
-  if (map.head && opt.head) {
-    const fwdDev = Math.max(0, map.head.x - opt.head.x - 2);
-    if (fwdDev > 0) map.head.stress = (map.head.stress || 0) + fwdDev * G.forwardHead;
+  if (map.head && map.neck && opt.head && opt.neck) {
+    const observedOffset = map.head.x - map.neck.x;
+    const optimalOffset = opt.head.x - opt.neck.x;
+    const fwdDev = Math.max(0, observedOffset - optimalOffset - 2);
+    if (fwdDev > 0) map.neck.stress = (map.neck.stress || 0) + fwdDev * G.forwardHead;
   }
 
   // 10. Stacking verticale catena inferiore (anca-ginocchio-caviglia)

@@ -5,7 +5,7 @@ import { Capacitor } from "@capacitor/core";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { silhouettePoints } from "@/lib/bodySilhouette";
-import { analyzeFrontStress } from "@/lib/stressAnalysis";
+import { analyzeFrontStress, getStressBearingJoints } from "@/lib/stressAnalysis";
 
 const sevColors = {
   Lievo: [251, 191, 36],
@@ -116,7 +116,7 @@ export default function ReportPdfExport({ report, logoUrl, correctiveExercises, 
       });
 
       // stress gauges (collegamenti esterni)
-      joints
+      getStressBearingJoints(view)
         .filter((j) => (j.stress || 0) > 0)
         .forEach((j) => {
           const left = j.x < 50;
@@ -143,7 +143,7 @@ export default function ReportPdfExport({ report, logoUrl, correctiveExercises, 
 
       // joints
       joints.forEach((j) => {
-        const col = sc(j.stress || 0);
+        const col = sc(j.id === "head" ? 0 : j.stress || 0);
         const isTop = highlightJointIds.includes(j.id);
         if (isTop) {
           // anello di evidenziazione attorno all'articolazione più sollecitata

@@ -37,14 +37,18 @@ function describeLimbTie(limbs) {
   return "Arti diversi (pari stress)";
 }
 
+export function getStressBearingJoints(view) {
+  if (!view || !Array.isArray(view.joints)) return [];
+  return view.joints.filter((joint) => joint.id !== "head");
+}
+
 /**
  * Restituisce l'articolazione con stress massimo nella vista fornita.
  * @param {object} view - vista del body_diagram (front o side)
  * @returns {object|null} { id, label, stress } o null
  */
 export function getMostStressedJoint(view) {
-  if (!view || !Array.isArray(view.joints)) return null;
-  const joints = view.joints.filter((j) => (j.stress || 0) > 0);
+  const joints = getStressBearingJoints(view).filter((joint) => (joint.stress || 0) > 0);
   if (!joints.length) return null;
   const maxStress = Math.max(...joints.map((joint) => joint.stress || 0));
   const topJoints = joints.filter((joint) => (joint.stress || 0) === maxStress);

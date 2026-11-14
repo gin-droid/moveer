@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Activity, Target } from "lucide-react";
 import { silhouettePath } from "@/lib/bodySilhouette";
-import { analyzeFrontStress } from "@/lib/stressAnalysis";
+import { analyzeFrontStress, getStressBearingJoints } from "@/lib/stressAnalysis";
 
 const stressColor = (s) =>
   s >= 61 ? "#fb7185" : s >= 31 ? "#fbbf24" : "#34d399";
@@ -39,8 +39,8 @@ export default function BodyDiagram({ diagram, gender = "maschio" }) {
   const activeData = view === "front" ? front : side;
 
   const allJoints = [
-    ...((front || {}).joints || []),
-    ...((side || {}).joints || []),
+    ...getStressBearingJoints(front),
+    ...getStressBearingJoints(side),
   ];
   const maxStress = allJoints.length
     ? Math.max(...allJoints.map((j) => j.stress || 0))
@@ -197,7 +197,7 @@ function DiagramView({ view, title, silhouette, gender, highlightJointIds = [] }
         })}
 
         {/* collegamenti esterni + scala stress */}
-        {joints
+        {getStressBearingJoints(view)
           .filter((j) => (j.stress || 0) > 0)
           .map((j, i) => {
             const left = j.x < 50;
@@ -243,7 +243,7 @@ function DiagramView({ view, title, silhouette, gender, highlightJointIds = [] }
 
         {/* giunzioni */}
         {joints.map((j, i) => {
-          const col = stressColor(j.stress || 0);
+          const col = stressColor(j.id === "head" ? 0 : j.stress || 0);
           const isTop = highlightJointIds.includes(j.id);
           return (
             <g key={`j-${i}`}>
