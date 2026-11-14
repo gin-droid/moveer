@@ -205,11 +205,11 @@ export async function generateGeminiText(
         ...(systemInstruction ? { system_instruction: systemInstruction } : {}),
         generation_config: { temperature: 0.35 },
         ...(jsonResponse ? {
-          response_format: [{
+          response_format: {
             type: 'text',
             mime_type: 'application/json',
             ...(jsonSchema ? { schema: jsonSchema } : {}),
-          }],
+          },
         } : {}),
       }),
     }, 90_000);

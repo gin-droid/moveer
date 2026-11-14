@@ -58,7 +58,6 @@ const responseSchema = {
           description: { type: 'string' },
         },
         required: ['title', 'severity', 'description'],
-        additionalProperties: false,
       },
     },
     corrections: {
@@ -72,7 +71,6 @@ const responseSchema = {
           cue: { type: 'string' },
         },
         required: ['issue', 'correction', 'cue'],
-        additionalProperties: false,
       },
     },
     corrective_exercises: {
@@ -87,7 +85,6 @@ const responseSchema = {
           why: { type: 'string' },
         },
         required: ['name', 'target', 'sets_reps', 'why'],
-        additionalProperties: false,
       },
     },
     recommendations: { type: 'array', items: { type: 'string' } },
