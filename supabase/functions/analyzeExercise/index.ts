@@ -47,9 +47,49 @@ const responseSchema = {
   properties: {
     score: { type: 'number' },
     summary: { type: 'string' },
-    issues_detected: { type: 'array', items: { type: 'object' } },
-    corrections: { type: 'array', items: { type: 'object' } },
-    corrective_exercises: { type: 'array', items: { type: 'object' } },
+    issues_detected: {
+      type: 'array',
+      maxItems: 20,
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          severity: { type: 'string', enum: ['Lievo', 'Moderato', 'Grave'] },
+          description: { type: 'string' },
+        },
+        required: ['title', 'severity', 'description'],
+        additionalProperties: false,
+      },
+    },
+    corrections: {
+      type: 'array',
+      maxItems: 20,
+      items: {
+        type: 'object',
+        properties: {
+          issue: { type: 'string' },
+          correction: { type: 'string' },
+          cue: { type: 'string' },
+        },
+        required: ['issue', 'correction', 'cue'],
+        additionalProperties: false,
+      },
+    },
+    corrective_exercises: {
+      type: 'array',
+      maxItems: 10,
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          target: { type: 'string' },
+          sets_reps: { type: 'string' },
+          why: { type: 'string' },
+        },
+        required: ['name', 'target', 'sets_reps', 'why'],
+        additionalProperties: false,
+      },
+    },
     recommendations: { type: 'array', items: { type: 'string' } },
     body_diagram: {
       type: 'object',
@@ -132,7 +172,8 @@ ${depthSummary ? `Dati LiDAR/ToF misurati: ${depthSummary}. Dai priorità a ques
 ${depthPoints.length ? `PUNTI ARTICOLARI 3D MISURATI (metri, origine al bacino; proiezione frontale x/y e laterale z/y). Usa questi punti dei frame chiave per posizionare le giunzioni del diagramma e considera gli angoli misurati come riferimento, non come stime: ${JSON.stringify(depthPoints)}` : ''}
 ${wearableData ? `Dati wearable misurati: ${JSON.stringify(wearableData)}. Usali solo per contestualizzare intensità e stabilità.` : ''}
 ${notes ? `Note dell'utente: ${notes}` : ''}
-Genera un JSON in italiano con score intero 0-100, summary (2-3 frasi), issues_detected (title, severity Lievo/Moderato/Grave, description), corrections (issue, correction, cue), corrective_exercises (name, target, sets_reps, why), recommendations (3-5 stringhe) e body_diagram con viste front e side. Ogni vista include joints (id, label, x, y) e segments (from, to, misaligned). Coordinate normalizzate 0-100. Usa soltanto giunzioni coerenti con l'anatomia e con i frame. Se i frame non sono leggibili, dichiara il limite nella sintesi e non inventare osservazioni certe. Questo report non sostituisce una valutazione clinica.`;
+Genera un report JSON in italiano: score intero 0-100, summary di 2-3 frasi, issues_detected (title, severity Lievo/Moderato/Grave, description), corrections (issue, correction, cue), corrective_exercises (name, target, sets_reps, why), recommendations (3-5 stringhe) e body_diagram front/side. Valuta esplicitamente ciascun checkpoint e indica i difetti tecnici effettivamente visibili, specificando fase e articolazione. Per ogni difetto rilevato fornisci almeno una correzione concreta e un esercizio correttivo pertinente; non restituire oggetti vuoti. Se non osservi difetti chiari, non inventarli: spiega il limite nella summary e lascia vuote le sole liste che non hanno elementi pertinenti.
+Ogni vista del body_diagram include joints (id, label, x, y) e segments (from, to, misaligned). Coordinate normalizzate 0-100. Usa soltanto giunzioni coerenti con l'anatomia e con i frame. Se i frame non sono leggibili, dichiara il limite nella sintesi e non inventare osservazioni certe. Questo report non sostituisce una valutazione clinica.`;
 
     const imageParts = [];
     const appOrigin = new URL(Deno.env.get('SUPABASE_URL')!).origin;
@@ -187,6 +228,30 @@ Genera un JSON in italiano con score intero 0-100, summary (2-3 frasi), issues_d
     if (!Number.isFinite(Number(analysis.score)) || typeof analysis.summary !== 'string' || !analysis.summary ||
       !diagram || !isValidView(diagram.front) || !isValidView(diagram.side)) {
       throw new HttpError(502, 'Analisi biomeccanica incompleta: impossibile calcolare lo stress articolare.');
+    }
+    const hasRequiredText = (value: unknown, fields: string[]) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+      const record = value as Record<string, unknown>;
+      return fields.every((field) => typeof record[field] === 'string' && record[field].trim().length > 0);
+    };
+    const validIssues = Array.isArray(analysis.issues_detected) &&
+      analysis.issues_detected.every((issue: unknown) => {
+        if (!hasRequiredText(issue, ['title', 'severity', 'description'])) return false;
+        const severity = (issue as Record<string, unknown>).severity;
+        return typeof severity === 'string' && ['Lievo', 'Moderato', 'Grave'].includes(severity);
+      });
+    const validCorrections = Array.isArray(analysis.corrections) &&
+      analysis.corrections.every((correction: unknown) =>
+        hasRequiredText(correction, ['issue', 'correction', 'cue'])
+      );
+    const validCorrectiveExercises = Array.isArray(analysis.corrective_exercises) &&
+      analysis.corrective_exercises.every((exercise: unknown) =>
+        hasRequiredText(exercise, ['name', 'target', 'sets_reps', 'why'])
+      );
+    if (!validIssues || !validCorrections || !validCorrectiveExercises ||
+      (analysis.issues_detected.length > 0 &&
+        (!analysis.corrections.length || !analysis.corrective_exercises.length))) {
+      throw new HttpError(502, 'Report incompleto: problemi, correzioni o esercizi correttivi non validi.');
     }
 
     type DepthKeyFrame = NonNullable<typeof depthAnalysis>['keyFrames'][number];
