@@ -1,0 +1,470 @@
+moVeerAI — Cronologia dello sviluppo
+Documento riassuntivo di tutti i passaggi compiuti per arrivare alla versione attuale dell'app.
+====================================================================================================
+
+1. Mission e obiettivo
+----------------------------------------------------------------------------------------------------
+moVeerAI (gia FormPerfect/FormAI) e un'app mobile (iOS) di analisi del movimento basata sull'intelligenza artificiale.
+Fornisce correzione posturale in tempo reale e feedback mirato sull'esecuzione degli esercizi.
+
+Obiettivi di progetto:
+- Ottimizzare UX e rendering layout iOS-safe
+- Mantenere una codebase snella
+- Costruire un catalogo esercizi completo con nomenclatura professionale e anatomicamente accurata
+
+====================================================================================================
+
+2. Fondamenta dell'app
+----------------------------------------------------------------------------------------------------
+- Stack: React + Tailwind CSS + Vite (JSX), backend Base44 BaaS.
+- Autenticazione: pagine boilerplate (Login, Register, ForgotPassword, ResetPassword) con Google OAuth, OTP e reset password.
+- Routing: src/App.jsx con AuthProvider, QueryClientProvider, BrowserRouter, ProtectedRoute che racchiude le pagine autenticate sotto AppLayout.
+- Design system: token HSL in src/index.css (tema dark, accento verde lime), font Oswald (display) + Inter (body), mappati in tailwind.config.js.
+
+Entita dati create:
+- Exercise: catalogo esercizi (nome, macro-categoria, sottocategoria, descrizione, gruppi muscolari, attrezzatura, difficolta, istruzioni di setup, errori comuni, immagine, video).
+- AnalysisReport: report di analisi generati dall'IA (esercizio, genere atleta, punteggio, sintesi, problemi rilevati, correzioni, esercizi correttivi, raccomandazioni, body_diagram con giunzioni/segmenti/stress articolare) con RLS che isola i report per utente (created_by_id).
+- User: entita built-in con campo gender personalizzato (maschio/femmina) per la personalizzazione anatomica delle sagome.
+
+Funzioni backend:
+- analyzeExercise: analizza frame video estratti dall'upload e genera un report strutturato.
+- deleteOwnAccount: cancellazione account da parte dell'utente.
+
+====================================================================================================
+
+3. Decisioni architetturali e di design
+----------------------------------------------------------------------------------------------------
+- Dialog nativi custom: adottati AlertDialog/Dialog (Radix/Shadcn) al posto di window.alert/window.confirm per coerenza visiva su iOS.
+- useAuth hook: stato utente centralizzato per ridurre chiamate API ridondanti e flickering UI.
+- Safe-area iOS: classi utility pt-safe/pb-safe/pl-safe/pr-safe basate su env(safe-area-inset-*) per notch e home indicator.
+- PullToRefresh: componente standardizzato per le pagine a lista pesante.
+- JSX runtime automatico: eliminazione degli import React espliciti (Vite).
+- Entita Exercise centralizzata: categorizzazione per macro-categoria e sottocategoria.
+- Nomenclatura bilingue: formato standardizzato "Nome italiano (English Standard Nomenclature)".
+- Descrizioni tecniche: terminologia anatomica e cue biomeccanici precisi.
+
+====================================================================================================
+
+4. Layout e navigazione
+----------------------------------------------------------------------------------------------------
+- AppLayout (src/components/AppLayout.jsx): shell responsive con sidebar desktop e top-bar + bottom-tab-bar mobile, gestione history, animazioni transizione via framer-motion.
+- Componenti di sistema creati:
+  - MoreMenuSheet — sheet per sezioni secondarie.
+  - SettingsDrawer — profilo utente, ruolo, logout, zona "danger" con conferma email.
+  - LogoutButton — logout con redirect.
+  - ConfirmDialog / InfoDialog — wrapper standard per conferme e avvisi.
+  - DemoModal — player video dimostrativi (YouTube/embed o HTML5).
+  - ExercisePicker — ricerca e selezione esercizi con filtri per categoria.
+  - BottomSelectDrawer — drawer mobile per selezioni a lista.
+  - PullToRefresh — refresh a trascinamento per le liste.
+  - ScrollToTop — reset scroll al cambio route.
+
+====================================================================================================
+
+5. Pagine principali
+----------------------------------------------------------------------------------------------------
+- Home: dashboard con statistiche (score medio, categorie), report recenti, CTA.
+- Exercises: catalogo ricercabile con filtri macro/sottocategoria/difficolta + pull-to-refresh.
+- ExerciseDetail: dettaglio completo di un esercizio.
+- Demos: catalogo video tutorial con ricerca, filtri e modal di riproduzione.
+- Analyze: upload video -> estrazione frame -> analisi IA -> report.
+- Reports: storico report con eliminazione (optimistic UI) e pull-to-refresh.
+- ReportDetail: dettaglio report, score ring, problemi/correzioni/correttivi, export PDF.
+- Compare: confronto di due report dello stesso esercizio con grafico trend (recharts).
+- Users: gestione utenti (admin).
+
+====================================================================================================
+
+6. Catalogo esercizi
+----------------------------------------------------------------------------------------------------
+Fase 1 — Nomenclatura
+- Standardizzazione dei nomi di tutti gli esercizi al formato bilingue "Nome italiano (English Standard Nomenclature)".
+- Aggiornamento di tutti gli esercizi di Calisthenics e non-Calisthenics.
+
+Fase 2 — Descrizioni tecniche
+- Aggiornamento batch di 169 record esercizi con descrizioni in terminologia anatomica e biomeccanica.
+- Deduplicazione degli ID durante il bulk update per evitare conflitti.
+
+Fase 3 — Espansione Calisthenics
+- Aggiunta di 34 esercizi: propedeutiche di trazione (negative, jumping, scapolari, sospensioni attiva/passiva/flessa, typewriter), propedeutiche di spinta (wall/knee push-up, pike, pseudo planche, bench/negative dip, wall handstand, HSPU negativa), propedeutiche di core (tuck L-sit, knee raise, compressione), skill semplici (pullover, elbow lever, posa del corvo, tuck/advanced tuck planche e front/back lever, headstand, skin the cat, german hang) ed esercizi sugli anelli (support, RTO, ring dip, ring L-sit, ring pull-up).
+
+====================================================================================================
+
+7. Ottimizzazione dell'analisi video
+----------------------------------------------------------------------------------------------------
+Interventi sulla pipeline di analisi per renderla piu efficace:
+
+1. Estrazione frame: da 3 a 6 frame per catturare tutte le fasi del movimento (setup -> eccentrica -> fondo -> concentrica -> lockout).
+2. Qualita frame: qualita JPEG aumentata da 0.72 a 0.85 per leggere meglio gli angoli articolari.
+3. Modello tecnico di riferimento: la funzione analyzeExercise ora recupera il record dell'esercizio (setup, errori comuni, gruppi muscolari) e lo passa al modello come criterio di giudizio, invece di un'analisi generica.
+4. Prompt strutturato: analisi fase-per-fase con scala di punteggio calibrata (90-100 esemplare, 75-89 buona, 60-74 accettabile, <60 carente) e descrizioni che specificano fase del movimento e articolazione coinvolta.
+
+Flusso tecnico dell'analisi (src/pages/Analyze.jsx):
+1. Selezione esercizio (con preselezione via query param ?exercise=).
+2. Upload video/immagine con validazione (videoFrames.js: formati, dimensioni, esclusione HEIC).
+3. Estrazione frame lato client via <canvas> con gestione robusta di seek timeout, durata Infinity, Safari/iOS detached-element.
+4. Upload dei frame JPEG (piccoli) per l'analisi; upload del video originale in background (cap 50MB) senza bloccare l'analisi.
+5. Invocazione della funzione backend analyzeExercise con i frame.
+6. Salvataggio del report in AnalysisReport e attach del video originale se l'upload e riuscito.
+7. Redirect a /report/:id.
+
+====================================================================================================
+
+8. Preferenze di progetto
+----------------------------------------------------------------------------------------------------
+- Priorita alla rimozione di codice morto e dipendenze inutilizzate in ogni refactoring.
+- Modifiche minime e mirate; niente funzionalita extra non richieste.
+- Preferenza per find_replace sulle modifiche a file esistenti.
+- Componenti piccoli e focalizzati (file separati, <50 righe dove possibile).
+
+====================================================================================================
+
+9. Diagramma corporeo e sagome anatomiche
+----------------------------------------------------------------------------------------------------
+- Campo gender: aggiunto a User e AnalysisReport per personalizzare la sagoma anatomica (maschio/femmina).
+- Sagome realistiche (src/lib/bodySilhouette.js): contorni corporei definiti come punti di ancoraggio (coordinate 0-100) smussati da una spline Catmull-Rom chiusa; sorgente unica per SVG (schermo) e jsPDF (export).
+- Quattro sagome: vista frontale e laterale, ciascuna con variante maschile (spalle larghe, vita a V) e femminile (spalle strette, anche larghe, curve).
+- BodyDiagram (src/components/BodyDiagram.jsx): render SVG con sagoma di sfondo a linea sottile, linee di riferimento orizzontali (spalle/bacino/ginocchia/caviglie) e asse verticale, segmenti scheletrici, gauge di stress esterni e giunzioni colorate; toggle singola vista frontale/laterale.
+- Onboarding genere: selezione obbligatoria in Register per i nuovi utenti; componente GenderOnboarding per prompt a richiesta agli utenti esistenti; selezione persistente in SettingsDrawer.
+- Integrazione: BodyDiagram integrato in ReportDetail; il campo gender viene propagato dal profilo utente al report durante l'analisi.
+
+====================================================================================================
+
+10. Calcolo biomeccanico dello stress articolare
+----------------------------------------------------------------------------------------------------
+- Modulo (base44/functions/analyzeExercise/biomechanics.ts): calcolo deterministico dello stress articolare a partire dalla postura osservata, in sostituzione delle stime soggettive del modello LLM.
+- Profili biomeccanici per pattern: il motore classifica l'esercizio in uno dei pattern di movimento (squat, hinge, push, pull, lunge, overhead, core, static) e confronta la postura con l'esecuzione ottima specifica del pattern, non piu con una generica posizione neutra in piedi.
+- Angoli ottimi per pattern: ogni pattern definisce angoli articolari target nella fase critica (es. squat: ginocchio ~100, anca ~90; hinge: ginocchio ~150, anca ~45; push: gomito ~90, spalla ~90) e priorita pesate per ogni giunzione.
+- Contributi di stress:
+  - Disallineamento segmenti: ogni segmento misaligned collegato a una giunzione aggiunge stress.
+  - Scostamento dall'angolo ottimo del pattern: deviazione angolare pesata per priorita.
+  - Asimmetria (front): differenza di y tra giunzioni accoppiate (spalle, anche, ginocchia, caviglie).
+  - Ginocchio valgo (front): avvicinamento delle ginocchia alla linea mediana.
+  - Deviazione laterale colonna (front): head/neck lontani da x=50.
+  - Stacking verticale (side): disallineamento anca-ginocchio-caviglia.
+  - Antiversione bacino (side) e forward head (side).
+- Output: stress 0-100 per ogni giunzione, clamped e arrotondato; salvato nel body_diagram del report e visualizzato automaticamente da schermo e PDF.
+
+====================================================================================================
+
+11. Export PDF
+----------------------------------------------------------------------------------------------------
+- ReportPdfExport (src/components/ReportPdfExport.jsx): generazione PDF via jsPDF con header, score box, mappa posturale, sintesi, problemi, correzioni, esercizi correttivi, raccomandazioni e footer numerato.
+- Mappa posturale PDF: singolo corpo (vista frontale, fallback laterale) piu grande e centrato, con sagoma a linea sottile, linee di riferimento, segmenti, gauge di stress e legenda; coerente con la visualizzazione a schermo.
+
+====================================================================================================
+
+12. Stato attuale
+----------------------------------------------------------------------------------------------------
+- App funzionante con autenticazione, catalogo esercizi esteso (691 esercizi, 14 macro-categorie), analisi video IA, storico report, confronto, gestione utenti e gestione atleti.
+- Catalogo esercizi completo con nomenclatura e descrizioni professionali; tutti i record con setup ed errori comuni; attrezzatura normalizzata in 11 categorie.
+- Pipeline di analisi ottimizzata con modello tecnico di riferimento, analisi fase-per-fase, profili biomeccanici pattern-specifici (incluso ciclismo), supporto depth 3D LiDAR/ToF e dati wearable Bluetooth.
+- Sagome anatomiche realistiche gender-specific (frontale/laterale, maschile/femminile) con diagramma corporeo interattivo.
+- Calcolo biomeccanico deterministico dello stress articolare basato su profili di movimento pattern-specifici, integrato nel report e nell'export PDF.
+- Export PDF con mappa posturale a corpo singolo centrato; export PDF monetizzazione admin-only.
+- Agente AI Mentore conversazionale con accesso a catalogo e report utente.
+- Sistema di monetizzazione con piani di abbonamento e tracciamento piano utente.
+- Sicurezza: RLS su Exercise e AnalysisReport; blocco account admin; segnalazioni utenti via email agli admin.
+- Architettura offline-first per lo storico report con cache locale.
+- Pagine pubbliche (About, Contact) e documenti legali (Termini, Privacy).
+
+====================================================================================================
+
+13. Rebranding e affinamenti UX (25 agosto 2026)
+----------------------------------------------------------------------------------------------------
+- Rebranding: app rinominata da FormPerfect/FormAI a moVeerAI; nome aggiornato in sidebar desktop, top-bar mobile e documentazione (SCHEDA_SOFTWARE.txt).
+- Home semplificata: rimosso lo strip "Esercizi in evidenza" e la CTA del catalogo dalla home; titolo hero aggiornato a "Allenati meglio."
+- Navigazione: link "Esercizi" spostato dalla navigazione primaria al menu "Altro" (secondary items) per decluttering.
+- SettingsDrawer: aggiunto pulsante indietro (ArrowLeft) nell'header con spaziatura safe-area iOS.
+- Ottimizzazioni mobile: padding e gap ridotti per leggibilita su schermi piccoli; hero header, blocchi statistiche e liste report/utenti ottimizzati per rendering mobile-first.
+- SCHEDA_SOFTWARE.txt: creato documento identificativo del software con descrizione, linguaggio di programmazione e dati di pubblicazione.
+- Sicurezza (RLS): applicate regole di row-level security alle entita Exercise (lettura pubblica, scrittura solo admin) e AnalysisReport (lettura/scrittura limitate a proprietario o admin).
+
+====================================================================================================
+
+14. Motore biomeccanico pattern-specifico (25 agosto 2026)
+----------------------------------------------------------------------------------------------------
+- Classificazione del pattern: il motore biomeccanico (biomechanics.ts) identifica il pattern di movimento dell'esercizio (squat, hinge, push, pull, lunge, overhead, core, static) a partire dai metadati dell'esercizio (nome, macro-categoria, sottocategoria).
+- Profili di riferimento: ogni pattern definisce coordinate articolari ottimali, angoli target e priorita pesate per giunzione nella fase critica del movimento.
+- Calcolo dello stress pattern-specifico: lo stress articolare e ora calcolato come deviazione dall'esecuzione ottima del pattern, non piu dalla posizione neutra in piedi. Questo elimina la falsa penalizzazione di esecuzioni corrette con grande escursione articolare (es. squat profondo con ginocchia flesse ~100 non viene piu considerato un errore).
+- Checkpoint tecnici nel prompt: la funzione analyzeExercise recupera i checkpoint biomeccanici specifici del pattern e li passa al LLM come blocco di istruzioni, includendo angoli ottimi e checkpoint tecnici da valutare.
+- Posizionamento giunzioni LLM: il prompt istruisce il modello di posizionare le giunzioni confrontandole con l'esecuzione ottima del pattern (non la stazione eretta), migliorando la precisione delle coordinate e quindi l'accuratezza del calcolo dello stress.
+- Calibrazione del punteggio: il punteggio 0-100 e ora calibrato sui checkpoint del pattern: 90-100 (tutti i checkpoint rispettati, angoli entro ±5), 75-89 (1-2 checkpoint non perfetti, ±15), 60-74 (2-3 checkpoint violati, ±25), <60 (piu checkpoint violati, oltre ±25).
+
+====================================================================================================
+
+15. Redesign silhouette laterale (25 agosto 2026)
+----------------------------------------------------------------------------------------------------
+- Profilo anatomico naturale: la sagoma laterale (bodySilhouette.js) e stata ridisegnata con curve anatomiche piu realistiche e armoniose — cranio arrotondato, collo con inclinazione frontale naturale, spalla deltoidia arrotondata, petto, addome, gluteo prominente, polpaccio definito e piede proporzionato — mantenendo l'approccio gender-neutral.
+- Piu punti di ancoraggio: il profilo passa da ~28 a ~43 ancore per una definizione piu fine del contorno corporeo.
+- Rendering migliorato: la silhouette a schermo (BodyDiagram.jsx) ora include un sottile riempimento sfumato (gradient verticale) oltre al contorno a linea sottile, per un aspetto piu elegante e tridimensionale.
+- Coerenza PDF: il rendering della sagoma nell'export PDF (ReportPdfExport.jsx) aggiornato con un leggero riempimento solido per coerenza visiva con la versione a schermo.
+
+====================================================================================================
+
+16. Integrazione profondita nativa LiDAR/ToF (31 agosto 2026)
+----------------------------------------------------------------------------------------------------
+- Plugin Capacitor @moVeerAI/depth-scanner (src/native/depth-scanner-plugin/): scaffold completo del plugin nativo per acquisire dati di profondita reali dai sensori LiDAR/ToF dei dispositivi mobili.
+  - Definizioni TS (src/definitions.ts): API isAvailable, startRecording, stopRecording, cancelRecording; tipi Joint3D, DepthFrame, DepthData con giunzioni 3D + statistiche di profondita per frame.
+  - Fallback web (src/index.ts): isAvailable restituisce false sul browser; la pagina Analizza ricade sul CameraRecorder RGB.
+  - iOS (ios/DepthScannerPlugin.swift): usa ARKit ARBodyTrackingConfiguration per lo scheletro 3D (91 giunzioni mappate ai nomi del backend) e sceneDepth LiDAR per la mappa di profondita reale (min/max/mediana in mm); richiede iOS 14+ e dispositivo con LiDAR per l'alta precisione.
+  - Android (android/DepthScannerPlugin.kt): usa ARCore Depth API (DepthMode.AUTOMATIC) per la depth map (Depth16, mm per pixel) e fonde ML Kit Pose Detection con la profondita per ricostruire giunzioni 3D; richiede ARCore 1.32+.
+- Helper depth3d.ts (base44/functions/analyzeExercise/depth3d.ts): calcolo di angoli articolari 3D reali (flessione ginocchio, anca, gomito, spalla, inclinazione tronco da verticale, Q-angle, asimmetria L/R) a partire dalle giunzioni 3D misurate, invece di stimarli dal 2D. Restituisce un riepilogo testuale con medie/minimi per ogni angolo.
+- Backend analyzeExercise esteso: la funzione ora accetta un campo opzionale depthData nel payload; quando presente calcola gli angoli 3D reali e li inietta nel prompt dell'LLM come riferimento primario (con istruzione di fidarsi del dato misurato), migliorando la precisione dell'analisi e del posizionamento delle giunzioni nel body_diagram.
+- Entita AnalysisReport estesa: aggiunto il campo depth_metadata (sensor_type lidar/tof, frame_count, accuracy alta/media) per tracciare l'origine e la qualita dei dati di profondita usati in ogni report.
+- Fallback graduale: sui dispositivi senza sensore di profondita l'analisi procede normalmente con i soli frame RGB; i dati di profondita arricchiscono l'analisi solo quando disponibili.
+
+===================================================================================================
+
+17. Salvataggio video registrati sul telefono (31 agosto 2026)
+----------------------------------------------------------------------------------------------------
+- Anteprima post-registrazione: il componente CameraRecorder ora, dopo lo stop della registrazione, mostra un'anteprima del video con tre azioni invece di passare direttamente all'analisi.
+- Salva sul telefono: pulsante che scarica il video nella memoria del dispositivo (download via anchor con attributo download), con nome file moVeerAI-<timestamp>.<ext>.
+- Usa per l'analisi: pulsante che procede con il flusso di analisi come in precedenza (passa il file a onRecorded).
+- Registra di nuovo: pulsante per scartare la registrazione e riprovare.
+- Gestione memoria: revoca degli object URL alla chiusura del componente e al cambio registrazione per evitare leak.
+
+===================================================================================================
+
+18. Integrazione sensori wearable Bluetooth (2 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Libreria sensori (src/lib/wearableSensors.js): integrazione di fascia cardio esterna via Web Bluetooth (GATT service 0x180D, characteristic 0x2A37) con parsing del payload Heart Rate Measurement (risoluzione 8/16 bit, RR intervals) e aggregazione statistica (avg/min/max/samples_count).
+- Componente connettore (src/components/WearableConnector.jsx): UI per scoprire, connettere e disconnettere dispositivi BLE; visualizzazione live della frequenza cardiaca; stato connessione e compatibilita browser; emissione del pacchetto dati aggregato al parent ogni secondo.
+- Integrazione in Analizza (src/pages/Analyze.jsx): step 3 opzionale "Sensori wearable" che raccoglie i dati durante la sessione di registrazione e li passa alla funzione backend.
+- Entita AnalysisReport estesa: aggiunto il campo wearable_data (device_type, heart_rate {avg/min/max/samples_count}, motion {avg_accel/peak_accel/avg_rot/cadence/duration_s/samples_count}).
+- Backend analyzeExercise esteso: la funzione ora accetta wearableData nel payload e ne sintetizza un riepilogo nel prompt dell'LLM (frequenza cardiaca media/min/max, intensita, cadenza) per correlare lo sforzo cardiaco e il ritmo con la qualita tecnica dell'esecuzione.
+- Solo dispositivi esterni: i sensori di movimento del telefono sono esclusi per mantenere il device libero come camera fissa; solo fascia cardio Bluetooth esterna per i dati fisiologici.
+
+==================================================================================================
+
+19. Agente AI Mentore (2 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Config agente (base44/agents/exercise_mentor.jsonc): agente in-app exercise_mentor con istruzioni di system prompt per guidare l'utente prima (setup), durante (cue tecnici) e dopo (analisi e progressione) ogni esercizio; stile motivante e professionale in italiano, risposte concise e pratiche.
+- Permessi tool: agente con accesso in lettura alle entita Exercise (per basarsi sul catalogo reale) e AnalysisReport (per consultare i report precedenti dell'utente e personalizzare i consigli).
+- Pagina Mentore (src/pages/Mentor.jsx): UI conversazionale con creazione/switch conversazioni via base44.agents SDK, subscription realtime ai messaggi, input con invio su Enter, nuova conversazione.
+- Bolla messaggi (src/components/mentor/MessageBubble.jsx): rendering markdown per le risposte dell'assistente (ReactMarkdown), espansione dei tool call con stato (pending/success/failed) e dettagli parametri/risultati.
+- Indicatore "sta scrivendo": feedback visivo con punti animati quando l'ultimo messaggio e dell'utente o un tool call e in corso.
+- Navigazione: voce "Mentore" aggiunta al menu "Altro" (secondary items) in AppLayout; rotta /mentore registrata in App.jsx.
+
+==================================================================================================
+
+20. Gestione atleti e pagine pubbliche (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Entita Athlete: creata entita dedicata agli atleti/clienti (nome, genere, data di nascita, note) con RLS che isola i record per utente (created_by_id) o admin.
+- Pagina Athletes (src/pages/Athletes.jsx): elenco atleti con creazione, modifica ed eliminazione; pull-to-refresh.
+- Pagina AthleteDetail (src/pages/AthleteDetail.jsx): scheda dettaglio atleta con dati anagrafici, note e storico report associati.
+- Integrazione in Analyze: selezione atleta opzionale nella pagina di analisi; l'atleta selezionato viene collegato al report (athlete_id) e il genere dell'atleta prevale sul genere del profilo utente per la sagoma anatomica.
+- Pagine pubbliche: create pagine About (src/pages/About.jsx) e Contact (src/pages/Contact.jsx) accessibili senza autenticazione.
+- PublicLayout (src/components/PublicLayout.jsx): layout per le pagine pubbliche (about, contact) fuori dal ProtectedRoute.
+- Documenti legali: componenti TermsContent (Termini d'uso) e PrivacyContent (Privacy & Policy) esposti in modal dalla home e dal SettingsDrawer; informativa GDPR completa in italiano.
+
+==================================================================================================
+
+21. Monetizzazione e abbonamenti (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Pagina Monetization (src/pages/Monetization.jsx): dashboard admin-only con riepilogo costi annuali, piani di abbonamento, scenari di break-even e note strategiche; accesso riservato al ruolo admin (redirect automatico per gli altri utenti).
+- Pagina Subscription (src/pages/Subscription.jsx): pagina di gestione abbonamento per l'utente, con stato del piano e opzioni di upgrade.
+- User estesa: aggiunto il campo plan per tracciare lo stato di abbonamento dell'utente.
+- Export PDF monetizzazione (src/components/MonetizationPdfExport.jsx): generazione PDF del piano di monetizzazione via jsPDF con tabelle costi, piani e scenari; salvataggio diretto (doc.save) per compatibilita native mobile.
+- Dati monetizzazione (src/lib/monetizationData.js): configurazione centralizzata di costi, piani (Free, Coach, Pro) e limiti (cap 100 analisi/mese e 200 query mentore/mese per il piano Coach).
+- Funzionalita admin-only: la pagina Monetization e l'export PDF sono restritti al ruolo admin tramite controllo ruolo e rendering condizionale.
+
+==================================================================================================
+
+22. Sicurezza, admin e segnalazioni (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- User estesa: aggiunti i campi blocked (boolean) e role per il controllo amministrativo degli account.
+- AuthContext guard: blocco automatico dell'accesso per utenti flaggati (blocked=true) con schermata dedicata "Account bloccato" e istruzione di contattare l'assistenza.
+- Pagina Users (src/pages/Users.jsx): gestione utenti admin-only con elenco registrati, blocco/sblocco account non-admin ed eliminazione; conferme via AlertDialog.
+- FeedbackDialog (src/components/FeedbackDialog.jsx): modal per inviare segnalazioni/feedback degli utenti; collegato a notifiche email agli amministratori.
+- Funzione backend sendUserReport: riceve la segnalazione dall'utente e la inoltra via email agli admin registrati per la presa in carico.
+- SettingsDrawer: aggiunta voce "Invia segnalazione" che apre il FeedbackDialog; aggiunta voce "Piano di monetizzazione" (solo admin).
+
+==================================================================================================
+
+23. Architettura offline-first dei report (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Cache locale report (src/lib/reportCache.js): modulo di caching lato client per lo storico report; funzioni cacheReportList e getCachedReportList per persistere e recuperare i report in localStorage.
+- Reports offline-first: la pagina Reports e la Home caricano prima i dati cached; in caso di errore di rete mostrano i report cached garantendo accessibilita anche offline.
+- Resilienza: fallback graduale — dati live quando disponibili, dati cached come fallback; nessun blocco dell'UI in assenza di connessione.
+
+==================================================================================================
+
+24. Audit e espansione del catalogo esercizi (settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Audit completo: verificati 572+ esercizi per campi mancanti, duplicati ed errori di categorizzazione.
+- Deduplicazione: eliminati 36 esercizi duplicati mantenendo i record piu completi.
+- Generazione LLM batch: creazione automatica di setup_instructions e common_mistakes per 151 record incompleti tramite invocazione LLM batch.
+- Espansione categorie: aggiunti 80+ esercizi nelle macro-categorie Ciclismo e Funzionale; espansione generale con 146 nuovi esercizi (totale 682).
+- Standardizzazione attrezzatura: normalizzazione delle stringhe equipment in 11 categorie standardizzate per filtri coerenti.
+- Nuove macro-categorie: aggiunte Riabilitazione e Posturali alla tassonomia.
+- Completezza record: tutti gli esercizi ora contengono descrizione, gruppi muscolari, attrezzatura, istruzioni di setup ed errori comuni.
+- Limiti caricamento: Home.jsx e Exercises.jsx portati a 1000 record per gestire l'intero catalogo.
+- Pattern ciclismo: integrato il pattern di movimento ciclismo nel motore biomeccanico (biomechanics.ts).
+
+==================================================================================================
+
+25. Riorganizzazione della tassonomia macro-categorie (25 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Promozione a macro-categorie top-level: Ciclismo, Camminata e Corsa promosse da sottocategorie di Cardio a macro-categorie indipendenti, posizionate subito dopo Funzionale (vicino a Body Building).
+- Riassegnazione esercizi: 16 esercizi di ciclismo spostati a macro Ciclismo; 7 esercizi di corsa (hill sprint, sprint shuttle, shuttle run, tempo run, corsa lunga, corsa continua) spostati a macro Corsa; 1 esercizio di camminata esistente spostato a macro Camminata.
+- Espansione Camminata: aggiunti 9 nuovi esercizi di camminata (power walking, incline walk, nordic walking, loaded carry, ruck walk, stair walking, sand walk, backward walk, race walk) per popolare la macro-categoria (10 totali).
+- Catalogo finale: 691 esercizi distribuiti su 14 macro-categorie (Forza, Powerlifting, Body Building, Calisthenics, Corpo Libero, Cardio, Mobilita, Funzionale, Ciclismo, Camminata, Corsa, Kettlebell, Posturali, Riabilitazione).
+- Filtri dinamici: la pagina Exercises deriva le macro-categorie dinamicamente dai dati, quindi le nuove categorie compaiono automaticamente nei filtri.
+
+==================================================================================================
+
+26. Dashboard progressi report (25 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Componente ReportsProgressDashboard (src/components/ReportsProgressDashboard.jsx): dashboard analitica integrata in cima alla pagina Reports, con KPI cards (punteggio medio, trend postura, trend potenza, analisi totali) e grafici recharts (AreaChart punteggio nel tempo, LineChart postura, LineChart potenza wearable).
+- Metriche derivate: punteggio postura calcolato da issues_detected (penalizzazione pesata per severita Lievo/Moderato/Grave); potenza derivata dai dati wearable motion (peak_accel/avg_accel); delta tra prima e ultima analisi.
+- Soglia visualizzazione: il dashboard si mostra solo con almeno 2 analisi; sotto soglia mostra messaggio informativo.
+- Gestione dati mancanti: se non ci sono dati wearable, il grafico potenza mostra placeholder con CTA al collegamento dispositivo.
+
+=================================================================================================
+
+27. Branding personalizzato Pro/Coach (25 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- User estesa: aggiunto il campo logo_url (formato url) per memorizzare l'URL del logo personale caricato dagli utenti con piano Pro o Coach.
+- Componente LogoUploader (src/components/LogoUploader.jsx): uploader per caricare/rimuovere un logo personale; validazione formato immagine (PNG/JPG/SVG/WebP) e dimensione (max 2 MB); upload via UploadPublicFile e persistenza via base44.auth.updateMe.
+- SettingsDrawer: aggiunta sezione "Logo personale" visibile solo per utenti con piano Pro o Coach, con anteprima del logo corrente e pulsanti carica/rimuovi.
+- ReportDetail: il logo personale appare nell'intestazione del report a schermo (in alto a destra) per gli utenti Pro/Coach con un logo caricato.
+- ReportPdfExport: il logo viene renderizzato nell'intestazione del PDF esportato (in alto a destra, su sfondo bianco arrotondato) quando presente; gestito con try/catch per ignorare logo non caricabili.
+
+=================================================================================================
+
+28. Correzione API deprecata e audit codice (25 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Analyze.jsx: sostituite entrambe le occorrenze di base44.integrations.Core.UploadFile (API ritirata) con UploadPublicFile (API corrente), sia per l'upload dei frame che per l'upload del video originale in background.
+- Audit completo: verificati tutti i file principali dell'app (pagine, componenti, backend functions, lib) per errori di sintassi, import mancanti e problemi runtime; l'unico problema riscontrato era l'uso dell'API deprecata, ora corretto.
+
+=================================================================================================
+
+====================================================================================================
+
+32. Sicurezza, quote e abbonamenti Stripe (29 settembre 2026)
+----------------------------------------------------------------------------------------------------
+- Quote mensili per analisi e richieste al Mentore con contatori e blocco
+  lato server quando il piano raggiunge il limite.
+- Flusso di abbonamento Pro con creazione checkout Stripe e webhook per
+  sincronizzare gli eventi di pagamento e lo stato dell'abbonamento.
+- Verifica server-side di entitlements e piano; rafforzati i flussi email,
+  messaggistica del Mentore e checkout per ridurre rischi di accesso improprio.
+- Funzioni dedicate per amministrazione utenti, modifica piano e cancellazione
+  account; email di segnalazione e notifica agli atleti tramite backend.
+
+====================================================================================================
+
+33. Migrazione del backend a Supabase (4 ottobre 2026)
+----------------------------------------------------------------------------------------------------
+- Backend runtime migrato da Base44 a Supabase: Auth, PostgreSQL con RLS,
+  Storage ed Edge Functions; la facciata applicativa e' in src/api/appApi.js.
+- Aggiunti schema e policy SQL versionati in supabase/migrations/ e funzioni
+  Edge per analisi, Mentore, quote, suggerimenti, notifiche, amministrazione
+  e abbonamenti.
+- Base44 e' mantenuto come riferimento legacy e per gli script di importazione
+  del catalogo/media; non e' una dipendenza runtime dell'app attuale.
+- Configurazione locale, secrets, migrazioni e pubblicazione delle funzioni
+  sono documentati nel README.md. Le chiavi segrete restano lato server.
+
+====================================================================================================
+
+34. Pubblicazione PWA e acquisizione depth nativa (4 ottobre 2026)
+----------------------------------------------------------------------------------------------------
+- Preparata la PWA e la pubblicazione web tramite GitHub Pages sul dominio
+  configurato; aggiunta la pagina Gestione con collegamenti utili.
+- Consolidata l'app Capacitor per Android e iOS e corretta l'integrazione
+  del plugin nativo di acquisizione profondita'.
+- Il flusso corrente registra prima il video RGB; nell'app nativa puo' poi
+  avviare una scansione depth facoltativa di 10 secondi. Le due acquisizioni
+  non sono sincronizzate; se la scansione non e' disponibile o fallisce,
+  il video resta analizzabile. Il browser non espone LiDAR/ToF.
+- Aggiornato il runtime di analisi Gemini e resa piu' robusta la gestione
+  dei frame e del fallback tecnico.
+
+====================================================================================================
+
+35. Miglioramenti report, amministrazione e layout (6-14 ottobre 2026)
+----------------------------------------------------------------------------------------------------
+- Sincronizzati con il catalogo gli esercizi correttivi e aggiunta la
+  selezione manuale/persistente nel report; affinata la selezione dei difetti
+  articolari da mettere in evidenza.
+- Aggiunta gestione amministrativa degli abbonamenti e del logo del brand.
+- Migliorati impaginazione PDF, pagine report e schede esercizio; larghezza
+  contenuti resa piu' uniforme (24 rem) e filtri del catalogo ampliati.
+- Ottimizzata la registrazione video su iPhone rispettando safe area e notch,
+  con controlli riposizionati per evitare sovrapposizioni.
+- Migliorati i flussi di autenticazione e la gestione degli overload temporanei
+  del provider IA.
+
+====================================================================================================
+
+36. Stato del repository al 14 ottobre 2026
+----------------------------------------------------------------------------------------------------
+- Il codice corrente comprende frontend React/Vite, PWA, shell Capacitor,
+  backend Supabase e migrazioni SQL; la scheda software e' stata riallineata
+  a questa architettura.
+- Nel working tree, oltre ai commit registrati, risultano modifiche locali
+  non ancora committate a deploy GitHub Pages, configurazione, README,
+  plugin iOS, runtime condiviso e schermate Login/Register. In particolare,
+  Login e Register includono pulsanti Google; queste modifiche locali non
+  sono presentate come una release verificata.
+- Versione npm attualmente dichiarata: 0.0.0; non e' indicato un numero di
+  versione commerciale.
+
+====================================================================================================
+
+====================================================================================================
+
+37. Migrazione pagamenti a Apple App Store e Google Play (14 ottobre 2026)
+----------------------------------------------------------------------------------------------------
+- Rimosso Stripe dal checkout, dal portale abbonamenti, dalle Edge Functions
+  attive, dalle dipendenze frontend e dalla configurazione locale.
+- Integrato RevenueCat Capacitor per StoreKit e Google Play Billing, con
+  acquisto e ripristino nativi per Pro e Coach, mensile e annuale.
+- Aggiunta sincronizzazione server-side degli entitlement `pro` e `coach`
+  tramite verifica RevenueCat e webhook autenticato; le modifiche amministrative
+  restano gestite da Supabase.
+- La gestione e la cancellazione dei rinnovi avvengono nelle impostazioni dello
+  store. La pagina web non avvia acquisti.
+- Per l'attivazione servono chiavi SDK pubbliche per app, prodotti e offerta
+  RevenueCat configurati, oltre ai secrets server-side documentati nel README.
+
+====================================================================================================
+
+====================================================================================================
+
+38. Configurazione store in attesa dei dati account (15 ottobre 2026)
+----------------------------------------------------------------------------------------------------
+- Verificato lo stato del progetto Supabase dopo la migrazione: la tabella
+  user_entitlements contiene billing_provider, store_product_id e
+  subscription_expires_at; stripe_customer_id non e' piu' presente.
+- Le funzioni revenuecatWebhook, syncStoreEntitlement, changePlan e
+  adminManageUsers sono pubblicate. Gli endpoint Stripe Checkout, portale
+  e webhook sono stati rimossi dal progetto remoto.
+- Le chiavi RevenueCat, gli ID prodotto Apple/Google e le offerte reali non
+  risultano ancora configurati; non e' stata eseguita una transazione test
+  su App Store Sandbox o Google Play.
+- Aggiunta una guida/prompt Claude per configurare progressivamente Apple
+  App Store Connect, Google Play Console, RevenueCat e Supabase, senza
+  condividere secrets in chat.
+- Eventuali abbonamenti Stripe esistenti non sono stati migrati o annullati
+  automaticamente e vanno verificati nel relativo account Stripe.
+
+====================================================================================================
+
+39. RAFFORZAMENTO SICUREZZA RLS E PULIZIA DEL WORKING TREE (21 ottobre 2026)
+- Verificato che il frontend contenga solo chiavi pubbliche (anon Supabase,
+  SDK RevenueCat); nessun segreto server-side nel bundle.
+- Nuova migrazione 20261021230000_harden_rls_policies.sql: policy separate
+  per operazione, permessi a livello di colonna, nessun accesso anonimo;
+  report e messaggi del Mentore scritti solo dalle Edge Functions con
+  service role; rilascio della quota riservato al server.
+- Bucket public-assets limitato a PNG, JPEG e WebP fino a 2 MB.
+- Ripristinate le versioni committate di runtime Gemini (fallback 3.8 ->
+  3.7 -> 3.5 flash), workflow di deploy, plugin iOS depth e schermate
+  Login/Register senza Google.
+
+====================================================================================================
+
+Documento aggiornato il 21 ottobre 2026.

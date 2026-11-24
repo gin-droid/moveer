@@ -1,0 +1,260 @@
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { appApi } from "@/api/appApi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import AuthLayout from "@/components/AuthLayout";
+import { toast } from "@/components/ui/use-toast";
+import { safeReturnTo } from "@/lib/authReturnTo";
+import OnboardingFlow from "@/components/OnboardingFlow";
+import { getPasswordPolicyError, PASSWORD_MIN_LENGTH } from "@/lib/passwordPolicy";
+import { Turnstile } from "@marsidev/react-turnstile";
+
+const OTP_LENGTH = 8;
+
+export default function Register() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [gender, setGender] = useState("");
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaVersion, setCaptchaVersion] = useState(0);
+  const captchaSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    const policyError = getPasswordPolicyError(password);
+    if (policyError) {
+      setError(policyError);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Le password non coincidono");
+      return;
+    }
+    if (captchaSiteKey && !captchaToken) {
+      setError("Completa la verifica di sicurezza.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await appApi.auth.register({ email, password, captchaToken: captchaToken || undefined });
+      setShowOtp(true);
+    } catch (err) {
+      setError(err.message || "Registrazione fallita");
+      setCaptchaToken("");
+      setCaptchaVersion((version) => version + 1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const result = await appApi.auth.verifyOtp({ email, otpCode });
+      if (result?.access_token) {
+        try { await appApi.auth.updateMe({ gender }); } catch { /* non-blocking */ }
+        setShowOnboarding(true);
+      }
+    } catch (err) {
+      setError(err.message || "Codice di verifica non valido");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError("");
+    try {
+      await appApi.auth.resendOtp(email);
+      toast({
+        title: "Codice inviato",
+        description: "Controlla la tua email per il nuovo codice.",
+      });
+    } catch (err) {
+      setError(err.message || "Impossibile reinviare il codice");
+    }
+  };
+
+  if (showOtp) {
+    return (
+      <AuthLayout
+        icon={Mail}
+        title="Verifica la tua email"
+        subtitle={`Abbiamo inviato un codice a ${email}`}
+      >
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+            {error}
+          </div>
+        )}
+        <div className="flex justify-center mb-6">
+          <InputOTP
+            maxLength={OTP_LENGTH}
+            value={otpCode}
+            onChange={setOtpCode}
+            autoFocus
+            autoComplete="one-time-code"
+          >
+            <InputOTPGroup className="gap-1 sm:gap-2">
+              {Array.from({ length: OTP_LENGTH }, (_, index) => (
+                <InputOTPSlot key={index} index={index} className="w-7 sm:w-9" />
+              ))}
+            </InputOTPGroup>
+          </InputOTP>
+        </div>
+        <Button
+          className="w-full h-12 font-medium"
+          onClick={handleVerify}
+          disabled={loading || otpCode.length !== OTP_LENGTH}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Verifica...
+            </>
+          ) : (
+            "Verifica"
+          )}
+        </Button>
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          Non hai ricevuto il codice?{" "}
+          <button onClick={handleResend} className="text-primary font-medium hover:underline">
+            Reinvia
+          </button>
+        </p>
+      </AuthLayout>
+    );
+  }
+
+  if (showOnboarding) {
+    return <OnboardingFlow />;
+  }
+
+  return (
+    <AuthLayout
+      icon={UserPlus}
+      title="Crea il tuo account"
+      subtitle="Registrati per iniziare"
+      footer={
+        <>
+          Hai già un account?{" "}
+          <Link
+            to={"/login" + (safeReturnTo() !== "/" ? "?returnTo=" + encodeURIComponent(safeReturnTo()) : "")}
+            className="text-primary font-medium hover:underline"
+          >
+            Accedi
+          </Link>
+        </>
+      }
+    >
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              autoFocus
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="password"
+              type="password"
+              minLength={PASSWORD_MIN_LENGTH}
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirm">Conferma password</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="confirm"
+              type="password"
+              minLength={PASSWORD_MIN_LENGTH}
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        {captchaSiteKey && (
+          <Turnstile
+            key={captchaVersion}
+            siteKey={captchaSiteKey}
+            onSuccess={setCaptchaToken}
+            onExpire={() => setCaptchaToken("")}
+          />
+        )}
+        <div className="space-y-2">
+          <Label>Genere</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { v: "maschio", l: "Maschio" },
+              { v: "femmina", l: "Femmina" },
+              { v: "altro", l: "Altro" },
+            ].map((opt) => (
+              <button
+                type="button"
+                key={opt.v}
+                onClick={() => setGender(opt.v)}
+                className={`h-11 rounded-md border text-sm font-medium transition-colors ${gender === opt.v ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:border-primary/50"}`}
+              >
+                {opt.l}
+              </button>
+            ))}
+          </div>
+        </div>
+        <Button type="submit" className="w-full h-12 font-medium" disabled={loading || !gender || (captchaSiteKey && !captchaToken)}>
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Creazione account...
+            </>
+          ) : (
+            "Crea account"
+          )}
+        </Button>
+      </form>
+    </AuthLayout>
+  );
+}

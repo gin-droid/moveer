@@ -1,0 +1,126 @@
+import { adminClient, authenticate, enforceRateLimit, generateGeminiText, handle, HttpError, isUuid, json, parseGeminiJson, readJson } from '../_shared/runtime.ts';
+
+const correctiveCategories = ['Riabilitazione', 'Mobilità', 'Posturali', 'Corpo Libero', 'Funzionale'];
+
+Deno.serve(handle('suggestCorrectiveExercises', async (req) => {
+  const auth = await authenticate(req);
+  if (!auth) throw new HttpError(401, 'Accesso richiesto');
+
+    const body = await readJson(req);
+    const reportId = String(body.reportId || '').trim();
+    if (!isUuid(reportId)) throw new HttpError(400, 'Identificativo report non valido');
+
+    const [
+      { data: entitlement, error: entitlementError },
+      { data: effectivePlan, error: planError },
+      { data: report, error: reportError },
+    ] = await Promise.all([
+      auth.client.from('user_entitlements').select('plan, blocked').eq('user_id', auth.user.id).maybeSingle(),
+      auth.client.rpc('get_effective_entitlement_plan'),
+      auth.client.from('analysis_reports').select('id, exercise_name, macro_category, issues_detected, corrections, corrective_exercises, corrective_suggestions')
+        .eq('id', reportId).maybeSingle(),
+    ]);
+    if (entitlementError) throw entitlementError;
+    if (planError) throw planError;
+    if (reportError) throw reportError;
+    if (entitlement?.blocked) return json({ error: 'Account bloccato' }, 403);
+    if (!['pro', 'coach'].includes(effectivePlan || 'freemium')) {
+      return json({ error: 'Funzionalità disponibile solo per i piani Pro e Coach' }, 403);
+    }
+    if (!report) return json({ error: 'Report non trovato' }, 404);
+    if (Array.isArray(report.corrective_suggestions)) {
+      return json({ suggestions: report.corrective_suggestions, cached: true });
+    }
+    await enforceRateLimit(`suggestCorrectiveExercises:${auth.user.id}`, 30, 60 * 60);
+
+    const issues = Array.isArray(report.issues_detected) ? report.issues_detected : [];
+    if (!issues.length) return json({ suggestions: [], reason: 'no_issues' });
+
+    const { data: exercises, error: exerciseError } = await auth.client.from('exercises')
+      .select('id, name, macro_category, subcategory, muscle_groups, description')
+      .in('macro_category', correctiveCategories).order('created_at', { ascending: false });
+    if (exerciseError) throw exerciseError;
+    if (!exercises?.length) return json({ suggestions: [], reason: 'no_candidates' });
+
+    const corrections = Array.isArray(report.corrections) ? report.corrections : [];
+    const reportExercises = Array.isArray(report.corrective_exercises) ? report.corrective_exercises : [];
+    const prompt = `Sei un esperto di biomeccanica e riabilitazione sportiva. Collega i difetti del report a esercizi correttivi realmente presenti nel catalogo.
+ESERCIZIO ANALIZZATO: ${report.exercise_name} (${report.macro_category || 'generale'})
+DIFETTI RILEVATI: ${JSON.stringify(issues)}
+CORREZIONI TECNICHE DEL REPORT: ${JSON.stringify(corrections)}
+ESERCIZI GIÀ INDICATI DAL REPORT: ${JSON.stringify(reportExercises)}
+CATALOGO CORRETTIVO COMPLETO (id, nome, categoria, sottocategoria, muscoli e descrizione): ${JSON.stringify(exercises)}
+Seleziona fino a 5 esercizi pertinenti ai difetti e alle correzioni, considerando gruppi muscolari e descrizione. Usa esclusivamente gli exercise_id presenti nel catalogo; non inventare o modificare gli ID. Per ogni elemento restituisci exercise_id, target_issue, why e sets_reps. Se nessun esercizio del catalogo è pertinente, restituisci suggestions vuoto.`;
+    const responseSchema = {
+      type: 'object',
+      properties: {
+        suggestions: {
+          type: 'array',
+          maxItems: 5,
+          items: {
+            type: 'object',
+            properties: {
+              exercise_id: { type: 'string' },
+              target_issue: { type: 'string' },
+              why: { type: 'string' },
+              sets_reps: { type: 'string' },
+            },
+            required: ['exercise_id', 'target_issue', 'why', 'sets_reps'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['suggestions'],
+      additionalProperties: false,
+    };
+    const result = parseGeminiJson(await generateGeminiText(
+      [{ role: 'user', parts: [{ text: prompt }] }],
+      undefined,
+      true,
+      responseSchema,
+    ));
+    const validExercises = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+    type CorrectiveSuggestion = {
+      exercise_id: string;
+      target_issue?: unknown;
+      why?: unknown;
+      sets_reps?: unknown;
+    };
+    const candidates: unknown[] = Array.isArray(result.suggestions) ? result.suggestions : [];
+    const suggestions = candidates
+      .filter((item): item is CorrectiveSuggestion =>
+        typeof item === 'object' && item !== null && !Array.isArray(item) &&
+        'exercise_id' in item && typeof item.exercise_id === 'string'
+      )
+      .filter((item) => validExercises.has(item.exercise_id))
+      .slice(0, 5)
+      .flatMap((item) => {
+        const exercise = validExercises.get(item.exercise_id);
+        if (!exercise) return [];
+        return [{
+          exercise_id: item.exercise_id,
+          exercise_name: exercise.name,
+          target_issue: String(item.target_issue || '').slice(0, 300),
+          why: String(item.why || '').slice(0, 500),
+          sets_reps: String(item.sets_reps || '').slice(0, 80),
+        }];
+      });
+
+    const { data: cachedRows, error: cacheError } = await adminClient.from('analysis_reports')
+      .update({ corrective_suggestions: suggestions })
+      .eq('id', report.id)
+      .is('corrective_suggestions', null)
+      .select('id');
+    if (cacheError) {
+      console.error('suggestCorrectiveExercises cache:', cacheError);
+    } else if (!cachedRows?.length) {
+      // Another request cached its list first: return that one so every client agrees.
+      const { data: stored } = await adminClient.from('analysis_reports')
+        .select('corrective_suggestions').eq('id', report.id).maybeSingle();
+      if (Array.isArray(stored?.corrective_suggestions)) {
+        return json({ suggestions: stored.corrective_suggestions, cached: true });
+      }
+    }
+
+    return json({ suggestions });
+}));

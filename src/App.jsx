@@ -1,0 +1,154 @@
+import { Suspense } from 'react';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
+import AppErrorBoundary from '@/components/AppErrorBoundary';
+import { appApi } from '@/api/appApi';
+import { Toaster } from "@/components/ui/toaster"
+import { BrowserRouter, HashRouter, Route, Routes, useSearchParams } from 'react-router-dom';
+import PageNotFound from './lib/PageNotFound';
+import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import ScrollToTop from './components/ScrollToTop';
+import AppLayout from '@/components/AppLayout';
+import AdminRoute from '@/components/AdminRoute';
+const Home = lazyWithRetry(() => import('@/pages/Home'));
+const Exercises = lazyWithRetry(() => import('@/pages/Exercises'));
+const ExerciseDetail = lazyWithRetry(() => import('@/pages/ExerciseDetail'));
+const Demos = lazyWithRetry(() => import('@/pages/Demos'));
+const Analyze = lazyWithRetry(() => import('@/pages/Analyze'));
+const Reports = lazyWithRetry(() => import('@/pages/Reports'));
+const ReportDetail = lazyWithRetry(() => import('@/pages/ReportDetail'));
+const Compare = lazyWithRetry(() => import('@/pages/Compare'));
+const Users = lazyWithRetry(() => import('@/pages/Users'));
+const SubscriptionManagement = lazyWithRetry(() => import('@/pages/SubscriptionManagement'));
+const Athletes = lazyWithRetry(() => import('@/pages/Athletes'));
+const AthleteDetail = lazyWithRetry(() => import('@/pages/AthleteDetail'));
+const Mentor = lazyWithRetry(() => import('@/pages/Mentor'));
+const Monetization = lazyWithRetry(() => import('@/pages/Monetization'));
+const Subscription = lazyWithRetry(() => import('@/pages/Subscription'));
+const About = lazyWithRetry(() => import('@/pages/About'));
+const ManagementLinks = lazyWithRetry(() => import('@/pages/ManagementLinks'));
+import PublicLayout from '@/components/PublicLayout';
+const Login = lazyWithRetry(() => import('@/pages/Login'));
+const Register = lazyWithRetry(() => import('@/pages/Register'));
+const ForgotPassword = lazyWithRetry(() => import('@/pages/ForgotPassword'));
+const ResetPassword = lazyWithRetry(() => import('@/pages/ResetPassword'));
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { Navigate } from 'react-router-dom';
+import { appPath } from '@/lib/appPath';
+
+const Router = import.meta.env.BASE_URL === '/' ? BrowserRouter : HashRouter;
+
+const AppLoading = () => (
+  <div className="fixed inset-0 flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+  </div>
+);
+
+const AuthenticatedApp = () => {
+  const { isLoadingAuth, authError, navigateToLogin } = useAuth();
+
+  if (isLoadingAuth) {
+    return <AppLoading />;
+  }
+
+  // Handle authentication errors
+  if (authError) {
+    if (authError.type === 'user_blocked') {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center bg-background p-6">
+          <div className="max-w-sm text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/15 flex items-center justify-center mx-auto">
+              <span className="text-2xl">⛔</span>
+            </div>
+            <h1 className="font-display text-2xl font-semibold text-white">Account bloccato</h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Il tuo account è stato bloccato da un amministratore.
+              Per assistenza contatta info@moveer.ai
+            </p>
+            <button
+              onClick={() => appApi.auth.logout(appPath('/login'))}
+              className="inline-flex items-center justify-center bg-primary text-primary-foreground font-semibold text-sm px-5 py-2.5 rounded-xl"
+            >
+              Esci
+            </button>
+          </div>
+        </div>
+      );
+    } else if (authError.type === 'user_suspended') {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center bg-background p-6">
+          <div className="max-w-sm space-y-4 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-2xl">⏸</div>
+            <h1 className="font-display text-2xl font-semibold text-white">Account sospeso</h1>
+            <p className="text-sm leading-relaxed text-muted-foreground">L’accesso è stato sospeso da un amministratore. Per assistenza contatta info@moveer.ai</p>
+            <button onClick={() => appApi.auth.logout(appPath('/login'))} className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Esci</button>
+          </div>
+        </div>
+      );
+    } else if (authError.type === 'auth_required') {
+      // Redirect to login automatically
+      navigateToLogin();
+      return null;
+    }
+  }
+
+  // Render the main app
+  return (
+    <Suspense fallback={<AppLoading />}>
+      <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route element={<PublicLayout />}>
+        <Route path="/about" element={<About />} />
+      </Route>
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/esercizi" element={<Exercises />} />
+          <Route path="/esercizi/:id" element={<ExerciseDetail />} />
+          <Route path="/video" element={<Demos />} />
+          <Route path="/analizza" element={<Analyze />} />
+          <Route path="/report" element={<ReportRoute />} />
+          <Route path="/report/:id" element={<ReportDetail />} />
+          <Route path="/confronta" element={<Compare />} />
+          <Route path="/atleti" element={<Athletes />} />
+          <Route path="/atleti/:id" element={<AthleteDetail />} />
+          <Route path="/mentore" element={<Mentor />} />
+          <Route path="/abbonamento" element={<Subscription />} />
+          <Route element={<AdminRoute />}>
+            <Route path="/utenti" element={<Users />} />
+            <Route path="/gestione-abbonamenti" element={<SubscriptionManagement />} />
+            <Route path="/monetizzazione" element={<Monetization />} />
+            <Route path="/gestione" element={<ManagementLinks />} />
+          </Route>
+        </Route>
+      </Route>
+      <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </Suspense>
+  );
+};
+
+function ReportRoute() {
+  const [searchParams] = useSearchParams();
+  return searchParams.get("report") ? <ReportDetail /> : <Reports />;
+}
+
+
+function App() {
+
+  return (
+    <AuthProvider>
+      <Router basename={Router === BrowserRouter ? import.meta.env.BASE_URL : undefined}>
+        <ScrollToTop />
+        <AppErrorBoundary>
+          <AuthenticatedApp />
+        </AppErrorBoundary>
+      </Router>
+      <Toaster />
+    </AuthProvider>
+  )
+}
+
+export default App

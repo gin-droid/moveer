@@ -1,0 +1,285 @@
+import { useEffect, useRef, useState } from "react";
+import { Outlet, NavLink, Link, useLocation, useOutlet, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard, Dumbbell, Video, FileText, TrendingUp,
+  Users as UsersIcon, PlayCircle, User as UserIcon, ArrowLeft, Menu, Sparkles, UserCheck, CreditCard,
+  Info, MessageSquareWarning,
+} from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/lib/AuthContext";
+import LogoutButton from "@/components/LogoutButton";
+import SettingsDrawer from "@/components/SettingsDrawer";
+import MoreMenuSheet from "@/components/MoreMenuSheet";
+import FeedbackDialog from "@/components/FeedbackDialog";
+import BrandLogo from "@/components/BrandLogo";
+
+const primaryItems = [
+  { to: "/", label: "Home", icon: LayoutDashboard, end: true },
+  { to: "/esercizi", label: "Esercizi", icon: Dumbbell },
+  { to: "/analizza", label: "Analizza", icon: Video, center: true },
+  { to: "/report", label: "Report", icon: FileText },
+];
+
+const secondaryItems = [
+  { to: "/video", label: "Video", icon: PlayCircle },
+  { to: "/atleti", label: "Atleti", icon: UserCheck },
+  { to: "/confronta", label: "Progressi", icon: TrendingUp },
+  { to: "/mentore", label: "Mentore", icon: Sparkles },
+  { to: "/abbonamento", label: "Abbonamento", icon: CreditCard },
+  { to: "/gestione-abbonamenti", label: "Abbonamenti", icon: UsersIcon },
+  { to: "/about", label: "Cos'è", icon: Info },
+  { action: "feedback", label: "Inviaci una segnalazione", icon: MessageSquareWarning },
+];
+
+export default function AppLayout() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const location = useLocation();
+  const outlet = useOutlet();
+  const isMobile = useIsMobile();
+  const { user } = useAuth();
+
+  const isAdmin = user?.role === "admin";
+  const visibleSecondary = isAdmin
+    ? secondaryItems
+    : secondaryItems.filter((i) => i.to !== "/gestione-abbonamenti");
+  const allItems = [...primaryItems, ...visibleSecondary];
+
+  const navigate = useNavigate();
+  const lastPaths = useRef({});
+
+  const owningTab = (path) => {
+    if (path === "/") return "/";
+    let best = "/";
+    for (const item of allItems) {
+      const root = item.to;
+      if (root === "/") continue;
+      if (path === root || path.startsWith(root + "/")) best = root;
+    }
+    return best;
+  };
+
+  useEffect(() => {
+    lastPaths.current[owningTab(location.pathname)] = `${location.pathname}${location.search}`;
+  }, [location.pathname, location.search]);
+
+  const handleTabClick = (item) => {
+    const active = owningTab(location.pathname);
+    if (item.to === active) {
+      navigate(item.to); // re-click active tab → reset to root
+    } else {
+      navigate(lastPaths.current[item.to] || item.to);
+    }
+  };
+
+  const isExerciseDetail = /^\/esercizi\/[^/]+$/.test(location.pathname);
+  const isReportDetail = /^\/report\/[^/]+$/.test(location.pathname) ||
+    (location.pathname === "/report" && new URLSearchParams(location.search).has("report"));
+  const isAthleteDetail = /^\/atleti\/[^/]+$/.test(location.pathname);
+  const isDetail = isExerciseDetail || isReportDetail || isAthleteDetail;
+  const isHome = location.pathname === "/";
+  const showBack = !isHome;
+  const detailTitle = isExerciseDetail
+    ? "Dettaglio esercizio"
+    : isReportDetail
+    ? "Report analisi"
+    : isAthleteDetail
+    ? "Dettaglio atleta"
+    : "";
+  const currentTab = allItems.find((i) => i.to === owningTab(location.pathname));
+  const pageTitle = detailTitle || currentTab?.label || "";
+
+  const activeSecondary = visibleSecondary.some(
+    (i) => i.to === owningTab(location.pathname)
+  );
+
+  return (
+    <div className="min-h-screen min-h-[100dvh] bg-background text-foreground flex overflow-x-hidden">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar fixed inset-y-0 left-0 z-30">
+        <div className="px-6 py-7">
+          <Link to="/" className="flex w-full justify-center">
+            <BrandLogo />
+          </Link>
+        </div>
+        <nav className="flex-1 px-3 space-y-1">
+          {allItems.map((item) => {
+            const Icon = item.icon;
+            if (item.action === "feedback") {
+              return (
+                <button
+                  key="feedback"
+                  onClick={() => setFeedbackOpen(true)}
+                  className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                >
+                  <Icon className="w-[18px] h-[18px]" strokeWidth={2} />
+                  {item.label}
+                </button>
+              );
+            }
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                  }`
+                }
+              >
+                <Icon className="w-[18px] h-[18px]" strokeWidth={2} />
+                {item.label}
+              </NavLink>
+            );
+          })}
+        </nav>
+        <div className="px-6 py-5 border-t border-sidebar-border space-y-3">
+          <div className="text-[11px] text-muted-foreground leading-relaxed">
+            Analisi guidata dall'IA<br />per allenamenti più sicuri.
+          </div>
+          <LogoutButton className="text-muted-foreground hover:text-rose-300" />
+        </div>
+      </aside>
+
+      {/* Mobile top bar */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-30 bg-sidebar backdrop-blur border-b border-sidebar-border pt-safe">
+        <div className="relative flex items-center justify-between px-4 h-16">
+          {showBack ? (
+            <button
+              onClick={() => (isDetail ? navigate(-1) : navigate("/"))}
+              aria-label="Indietro"
+              className="inline-flex items-center gap-2 text-foreground active:scale-95 transition-transform select-none"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="font-display font-semibold text-white text-sm">{pageTitle}</span>
+            </button>
+          ) : (
+            <Link to="/" className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center">
+              <BrandLogo className="min-w-[7rem]" />
+            </Link>
+          )}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Impostazioni account"
+            className="w-11 h-11 rounded-lg border border-sidebar-border bg-sidebar-accent flex items-center justify-center text-foreground active:scale-95 transition-transform select-none"
+          >
+            <UserIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="min-w-0 flex-1 md:ml-64 pt-[calc(4rem+env(safe-area-inset-top))] md:pt-0 pb-28 md:pb-0 min-h-screen min-h-[100dvh]">
+        <header className="hidden md:flex sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border">
+          <div className="mx-auto flex h-14 w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+            {showBack ? (
+              <button
+                onClick={() => (isDetail ? navigate(-1) : navigate("/"))}
+                className="inline-flex items-center gap-2 text-foreground hover:text-primary transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-display font-semibold text-white text-base">{pageTitle}</span>
+              </button>
+            ) : (
+              <span className="font-display font-semibold text-white text-base">{pageTitle || "moVeerAI"}</span>
+            )}
+          </div>
+        </header>
+        <div className="mx-auto w-full min-w-0 max-w-7xl px-4 py-6 sm:px-6 md:py-10 lg:px-8">
+          {isMobile ? (
+            <div
+              key={location.pathname}
+              className="w-full min-w-0"
+            >
+              {outlet}
+            </div>
+          ) : (
+            <Outlet />
+          )}
+        </div>
+      </main>
+
+      {/* Mobile bottom tab bar */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 pb-safe bg-sidebar border-t border-sidebar-border h-[calc(4.5rem+env(safe-area-inset-bottom))]">
+        <div className="flex items-end justify-around h-[4.5rem]">
+          {primaryItems.map((item) => {
+            const Icon = item.icon;
+            if (item.center) {
+              const active = owningTab(location.pathname) === item.to;
+              return (
+                <button
+                  key={item.to}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleTabClick(item);
+                  }}
+                  className="flex flex-col items-center justify-center gap-1 flex-1 min-h-[44px] text-[10px] font-medium transition-colors select-none"
+                >
+                  <span className={`w-12 h-12 -mt-4 rounded-2xl flex items-center justify-center transition-all active:scale-95 ${
+                    active
+                      ? "bg-primary shadow-lg shadow-primary/40"
+                      : "bg-primary/15 shadow-md shadow-black/20"
+                  }`}>
+                    <Icon className={`w-6 h-6 ${active ? "text-primary-foreground" : "text-primary"}`} strokeWidth={2.5} />
+                  </span>
+                  <span className={active ? "text-primary" : "text-muted-foreground"}>{item.label}</span>
+                </button>
+              );
+            }
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleTabClick(item);
+                }}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center gap-1 flex-1 min-h-[44px] pb-1.5 text-[10px] font-medium transition-colors select-none ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`
+                }
+              >
+                <Icon className="w-5 h-5" strokeWidth={2} />
+                {item.label}
+              </NavLink>
+            );
+          })}
+          <button
+            onClick={() => setMoreOpen(true)}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 min-h-[44px] pb-1.5 text-[10px] font-medium transition-colors select-none ${
+              activeSecondary ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            <Menu className="w-5 h-5" strokeWidth={2} />
+            Altro
+          </button>
+        </div>
+      </nav>
+
+      <MoreMenuSheet
+        items={visibleSecondary}
+        open={moreOpen}
+        onOpenChange={setMoreOpen}
+        activeTo={owningTab(location.pathname)}
+        onSelect={(item) => {
+          setMoreOpen(false);
+          if (item.action === "feedback") {
+            setFeedbackOpen(true);
+          } else {
+            handleTabClick(item);
+          }
+        }}
+      />
+
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+
+      <SettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </div>
+  );
+}

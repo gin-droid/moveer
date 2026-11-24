@@ -1,0 +1,6 @@
+{
+  "appId": "com.moveerai.app",
+  "appName": "moVeerAI",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

@@ -1,0 +1,94 @@
+apply plugin: 'com.android.application'
+
+// Firma release: credenziali in android/keystore.properties (escluso da git)
+// oppure nelle variabili d'ambiente MOVEER_UPLOAD_*.
+def keystoreProps = new Properties()
+def keystorePropsFile = rootProject.file('keystore.properties')
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+def signingValue = { String prop, String env -> keystoreProps.getProperty(prop) ?: System.getenv(env) }
+def uploadStoreFile = signingValue('storeFile', 'MOVEER_UPLOAD_STORE_FILE')
+def uploadStorePassword = signingValue('storePassword', 'MOVEER_UPLOAD_STORE_PASSWORD')
+def uploadKeyAlias = signingValue('keyAlias', 'MOVEER_UPLOAD_KEY_ALIAS')
+def uploadKeyPassword = signingValue('keyPassword', 'MOVEER_UPLOAD_KEY_PASSWORD')
+def hasUploadSigningConfig = [uploadStoreFile, uploadStorePassword, uploadKeyAlias, uploadKeyPassword].every { it }
+
+android {
+    namespace = "com.moveerai.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        // ID registrato su Google Play Console (diverso dal bundle iOS com.moveerai.app)
+        applicationId "com.moveer.myapp"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // Ogni upload su Play richiede un versionCode piu' alto del precedente.
+        // versionCode 9 e 10 sono stati usati per versioni precedenti
+        // Usa versionCode 11 o superiore per il prossimo upload
+        versionCode 11
+        versionName "1.9"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    signingConfigs {
+        if (hasUploadSigningConfig) {
+            release {
+                storeFile rootProject.file(uploadStoreFile)
+                storePassword uploadStorePassword
+                keyAlias uploadKeyAlias
+                keyPassword uploadKeyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            if (hasUploadSigningConfig) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
+            // Ottimizzazioni R8 per ridurre la dimensione dell'app
+            // NOTA: shrinkResources è stato commentato per ora per evitare conflitti
+            // When ready for production, enable: shrinkResources true
+            // shrinkResources true
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

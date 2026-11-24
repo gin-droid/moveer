@@ -1,0 +1,90 @@
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { appApi } from "@/api/appApi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Mail, ArrowLeft, Loader2 } from "lucide-react";
+import AuthLayout from "@/components/AuthLayout";
+import { Turnstile } from "@marsidev/react-turnstile";
+
+export default function ForgotPassword() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaVersion, setCaptchaVersion] = useState(0);
+  const captchaSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await appApi.auth.resetPasswordRequest(email, captchaToken || undefined);
+    } catch {
+      // Always show success regardless
+      setCaptchaToken("");
+      setCaptchaVersion((version) => version + 1);
+    } finally {
+      setLoading(false);
+      setSent(true);
+    }
+  };
+
+  return (
+    <AuthLayout
+      icon={Mail}
+      title="Reimposta password"
+      subtitle="Ti invieremo un link per reimpostarla"
+      footer={
+        <Link to="/login" className="text-primary font-medium hover:underline">
+          <ArrowLeft className="w-3 h-3 inline mr-1" />Torna al login
+        </Link>
+      }
+    >
+      {sent ? (
+        <p className="text-sm text-foreground text-center">
+          Se esiste un account con questa email, riceverai a breve un link per reimpostare la password.
+        </p>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Indirizzo email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                autoFocus
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10 h-12"
+                required
+              />
+            </div>
+          </div>
+          {captchaSiteKey && (
+            <Turnstile
+              key={captchaVersion}
+              siteKey={captchaSiteKey}
+              onSuccess={setCaptchaToken}
+              onExpire={() => setCaptchaToken("")}
+            />
+          )}
+          <Button type="submit" className="w-full h-12 font-medium" disabled={loading || (captchaSiteKey && !captchaToken)}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Invio...
+              </>
+            ) : (
+              "Invia link di reset"
+            )}
+          </Button>
+        </form>
+      )}
+    </AuthLayout>
+  );
+}
